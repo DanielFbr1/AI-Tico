@@ -169,14 +169,21 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
 
     const handleEditarGrupo = async (id: number | string, grupoEditado: Omit<Grupo, 'id'>) => {
         try {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { id: _, ...datosSinId } = grupoEditado as any; // Safe cast to remove ID if present
+
             const { error } = await supabase
                 .from('grupos')
-                .update(grupoEditado)
+                .update(datosSinId)
                 .eq('id', id);
+
             if (error) throw error;
-            setLocalGrupos(localGrupos.map(g => g.id === id ? { ...grupoEditado, id } : g));
+
+            // Update local state with the full object (including ID)
+            setLocalGrupos(localGrupos.map(g => g.id === id ? { ...g, ...grupoEditado, id } : g));
         } catch (err) {
             console.error('Error editing group:', err);
+            toast.error('Error al actualizar el grupo');
         }
     };
 
@@ -317,7 +324,8 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
                     tipo: proyecto.tipo,
                     codigo_sala: proyecto.codigo_sala,
                     clase: proyecto.clase,
-                    fases: proyecto.fases
+                    fases: proyecto.fases,
+                    rubrica: proyecto.rubrica
                 }}
                 onUpdateProjectName={handleUpdateProjectName}
             />

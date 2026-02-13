@@ -55,6 +55,22 @@ export interface ProyectoFase {
     hitos?: string[];
 }
 
+export interface Criterio {
+    nombre: string;
+    descripcion: string;
+    niveles: { puntos: string; descripcion: string }[] | {
+        insuficiente: { puntos: string; descripcion: string };
+        suficiente: { puntos: string; descripcion: string };
+        notable: { puntos: string; descripcion: string };
+        sobresaliente: { puntos: string; descripcion: string };
+    };
+}
+
+export interface Rubrica {
+    criterios: Criterio[];
+    descripcion?: string;
+}
+
 export interface Proyecto {
     id: string;
     nombre: string;
@@ -66,6 +82,8 @@ export interface Proyecto {
     clase?: string;
     grupos?: Grupo[];
     created_by?: string;
+    contexto_ia?: string;
+    rubrica?: Rubrica;
 }
 
 export interface AlumnoConectado {
@@ -100,4 +118,5 @@ export interface ProyectoActivo {
     clase?: string;
     fases: ProyectoFase[];
     grupos?: Grupo[];
+    rubrica?: Rubrica;
 }

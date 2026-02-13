@@ -25,7 +25,7 @@ function getFallbackResponse(): string {
     return RESPUESTAS_FALLBACK[index] + " (Modo mentor local)"
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }

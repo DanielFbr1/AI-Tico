@@ -1,6 +1,6 @@
-import { Plus, Users, Layout, LogOut, MessageSquare, History, Globe, Sparkles, Award, Key, CircleHelp, Upload, Loader2, Bot } from 'lucide-react';
+import { Plus, Users, Layout, LogOut, MessageSquare, History, Globe, Sparkles, Award, Key, CircleHelp, Upload, Loader2, Bot, FolderOpen, Trophy, CheckCircle2, Star, AlertCircle, TrendingUp, Target } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Perfil, Grupo, HitoGrupo, ProyectoFase } from '../types';
+import { Grupo, HitoGrupo, ProyectoFase, Rubrica } from '../types';
 import { supabase } from '../lib/supabase';
 import { MentorChat } from './MentorChat';
 import { ChatGrupo } from './ChatGrupo';
@@ -40,7 +40,7 @@ interface DashboardAlumnoProps {
 
 export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   // Estados de Vista
-  const [vistaActiva, setVistaActiva] = useState<'grupo' | 'comunidad' | 'chat' | 'perfil'>('grupo');
+  const [vistaActiva, setVistaActiva] = useState<'grupo' | 'tareas' | 'comunidad' | 'chat' | 'perfil'>('grupo');
   const [chatTab, setChatTab] = useState<'ia' | 'equipo'>('ia');
 
   // Custom Hook for Tracking
@@ -48,6 +48,9 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
   const [grupoReal, setGrupoReal] = useState<Grupo | null>(null);
   const [nombreProyecto, setNombreProyecto] = useState<string>(''); // New state for AI context
+  const [contextoProyecto, setContextoProyecto] = useState<string>(''); // NEW: AI Context from Project
+  const [rubricaProyecto, setRubricaProyecto] = useState<Rubrica | null>(null);
+  const [fasesProyecto, setFasesProyecto] = useState<ProyectoFase[]>([]);
   const [todosLosGrupos, setTodosLosGrupos] = useState<Grupo[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
@@ -68,6 +71,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   });
 
   const [historialClases, setHistorialClases] = useState<any[]>([]);
+  const [notaGrupal, setNotaGrupal] = useState<number | null>(null); // State for group grade
 
   useEffect(() => {
     if (alumno?.nombre) {
@@ -150,6 +154,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   ];
 
   const [realEvaluacion, setRealEvaluacion] = useState<any[]>([]);
+  const [asistenciaStats, setAsistenciaStats] = useState({ present: 0, total: 0, percentage: 0 });
+  const [hasNewEvaluation, setHasNewEvaluation] = useState(false);
 
   const evaluacionAlumno = showExample ? evaluacionEjemplo : realEvaluacion;
 
@@ -166,7 +172,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       if (!targetProjectId && roomCode) {
         const { data: proyecto, error: errorProyecto } = await supabase
           .from('proyectos')
-          .select('id, nombre')
+          .select('id, nombre, contexto_ia, rubrica, fases')
           .eq('codigo_sala', roomCode)
           .single();
 
@@ -176,6 +182,20 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         }
         targetProjectId = proyecto.id;
         setNombreProyecto(proyecto.nombre); // Capture name from Room Code resolution
+        setContextoProyecto(proyecto.contexto_ia || ''); // Capture AI context
+        setRubricaProyecto(proyecto.rubrica as Rubrica);
+        setFasesProyecto(proyecto.fases as ProyectoFase[] || []);
+      }
+
+      if (targetProjectId && !nombreProyecto) {
+        // Fetch project details if we have ID but not details (e.g. login via profile)
+        const { data: pData } = await supabase.from('proyectos').select('nombre, contexto_ia, rubrica, fases').eq('id', targetProjectId).single();
+        if (pData) {
+          setNombreProyecto(pData.nombre);
+          setContextoProyecto(pData.contexto_ia || '');
+          setRubricaProyecto(pData.rubrica as Rubrica);
+          setFasesProyecto(pData.fases as ProyectoFase[] || []);
+        }
       }
 
       if (!targetProjectId) {
@@ -224,12 +244,48 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         .select('*')
         .eq('alumno_nombre', alumno.nombre)
         .eq('proyecto_id', targetProjectId)
-        .single();
+        .maybeSingle();
 
       if (evalData && evalData.criterios) {
         setRealEvaluacion(evalData.criterios);
+      } else if (rubricaProyecto?.criterios) {
+        // Fallback to Rubric Criteria (Pending state) so they see what they will be evaluated on
+        setRealEvaluacion(rubricaProyecto.criterios.map(c => ({ criterio: c.nombre, puntos: 0, nivel: 'Pendiente' })));
       } else {
         setRealEvaluacion([]);
+      }
+
+      // Fetch Group Evaluation (New)
+      if (miGrupo && miGrupo.id) {
+        const { data: groupEval } = await supabase
+          .from('evaluaciones_grupales')
+          .select('nota_final')
+          .eq('grupo_id', miGrupo.id)
+          .eq('proyecto_id', targetProjectId)
+          .maybeSingle();
+
+        if (groupEval) {
+          setNotaGrupal(groupEval.nota_final);
+        } else {
+          setNotaGrupal(null);
+        }
+      }
+
+      // Fetch Assistance
+      const { data: attendanceData } = await supabase
+        .from('asistencia')
+        .select('*')
+        .eq('proyecto_id', targetProjectId)
+        .eq('alumno_nombre', alumno.nombre);
+
+      if (attendanceData) {
+        const total = attendanceData.length;
+        const present = attendanceData.filter(a => a.presente === true).length;
+        setAsistenciaStats({
+          present,
+          total,
+          percentage: total > 0 ? Math.round((present / total) * 100) : 0
+        });
       }
 
     } catch (err) {
@@ -295,6 +351,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     // Channel for data updates (hitos, etc.)
     // Suscribimos a TODOS los cambios en la tabla grupos para este proyecto
     // Si el filtro específico falla, escuchar todo 'public:grupos' es un fallback seguro para depuración.
+    // CHANNEL PARA ACTUALIZACIONES GENERALES (Ayuda, Hitos)
     const channelupdates = supabase.channel(`updates_project_${grupoReal.proyecto_id}_${Date.now()}`)
       .on(
         'postgres_changes',
@@ -302,28 +359,22 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           event: '*',
           schema: 'public',
           table: 'grupos',
-          filter: `proyecto_id=eq.${grupoReal.proyecto_id}` // Filtramos por proyecto
+          filter: `proyecto_id=eq.${grupoReal.proyecto_id}`
         },
         async (payload) => {
-          console.log("🔔 Realtime payload received:", payload);
-
-          // Actualización silenciosa de datos
-          await fetchDatosAlumno(true).catch(e => console.error(e));
+          console.log("🔔 Realtime group update received:", payload);
+          await fetchDatosAlumno(true);
 
           if (payload.eventType === 'UPDATE') {
             const oldRecord = payload.old as Grupo;
             const newRecord = payload.new as Grupo;
 
-            // 1. Notificar si el profesor resolvió dudas
             if (oldRecord.pedir_ayuda === true && newRecord.pedir_ayuda === false) {
-              toast.success("✅ ¡El profesor ha resuelto vuestra duda!", { duration: 4000 });
+              toast.success("✅ ¡El profesor ha resuelto vuestra duda!");
             }
 
-            // 2. Notificar cambios en Hitos (Feedback o Aprobación)
-            // Comparamos el array de hitos para ver si alguno cambió de estado
             if (oldRecord.hitos && newRecord.hitos) {
-              const oldHitosMap = new Map((oldRecord.hitos as any[]).map(h => [h.id || h.titulo, h])); // Fallback to titulo if id missing
-
+              const oldHitosMap = new Map((oldRecord.hitos as any[]).map(h => [h.id || h.titulo, h]));
               let feedbackReceived = false;
               let approvalReceived = false;
 
@@ -335,15 +386,112 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 }
               });
 
-              if (feedbackReceived) toast.info("📩 Tienes nuevas correcciones en tus tareas", { duration: 5000 });
-              if (approvalReceived) toast.success("⭐ ¡Tarea aprobada! Gran trabajo", { duration: 5000 });
+              if (feedbackReceived) toast.info("📩 Tienes nuevas correcciones");
+              if (approvalReceived) toast.success("⭐ ¡Tarea aprobada!");
             }
           }
         }
       )
-      .subscribe((status) => {
-        console.log(`Supabase Realtime Status (${grupoReal.proyecto_id}):`, status);
-      });
+      .subscribe();
+
+    // SUSCRIPCIÓN PARA ASISTENCIA REAL-TIME
+    const channelAsistencia = supabase.channel(`asistencia_alumno_${alumno.id}_${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'asistencia',
+          filter: `proyecto_id=eq.${grupoReal.proyecto_id}`
+        },
+        async (payload) => {
+          console.log("🔔 Realtime asistencia received:", payload);
+          // Recalcular asistencia
+          const { data: attendanceData } = await supabase
+            .from('asistencia')
+            .select('*')
+            .eq('proyecto_id', grupoReal.proyecto_id)
+            .eq('alumno_nombre', alumno.nombre);
+
+          if (attendanceData) {
+            const total = attendanceData.length;
+            const present = attendanceData.filter(a => a.presente === true).length;
+            setAsistenciaStats({
+              present,
+              total,
+              percentage: total > 0 ? Math.round((present / total) * 100) : 0
+            });
+
+            // Si el evento fue INSERT o UPDATE, lanzar un pequeño brindis
+            if (payload.eventType !== 'DELETE' && (payload.new as any).presente === true && (payload.new as any).alumno_nombre === alumno.nombre) {
+              toast.success("✅ ¡Se ha registrado tu asistencia!", { icon: '📝' });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // SUSCRIPCIÓN PARA EVALUACIONES INDIVIDUALES
+    // Usamos filter por proyecto_id (más seguro que strings con espacios) y filtramos en cliente
+    const channelEvaluaciones = supabase.channel(`evaluaciones_alumno_${alumno.id}_${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'evaluaciones',
+          filter: `proyecto_id=eq.${grupoReal.proyecto_id}`
+        },
+        async (payload) => {
+          console.log("🔔 Realtime individual evaluation received:", payload);
+          if (payload.eventType !== 'DELETE') {
+            const newRecord = payload.new as any;
+            // Verificar si es para este alumno
+            if (newRecord.alumno_nombre === alumno.nombre) {
+              const newEval = newRecord.criterios || [];
+              if (newEval.length > 0) {
+                setRealEvaluacion(newEval);
+                // Individual evaluations change
+                setHasNewEvaluation(true);
+                toast.success("✨ ¡Tienes nuevas notas individuales disponibles!", {
+                  duration: 6000,
+                  icon: '🎯'
+                });
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // SUSCRIPCIÓN PARA EVALUACIONES GRUPALES REAL-TIME
+    let channelEvaluacionesGrupales: any = null;
+
+    if (grupoReal.id && Number(grupoReal.id) > 0) {
+      channelEvaluacionesGrupales = supabase.channel(`evaluaciones_grupales_${grupoReal.id}_${Date.now()}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'evaluaciones_grupales',
+            filter: `grupo_id=eq.${grupoReal.id}`
+          },
+          async (payload) => {
+            console.log("🔔 Realtime group evaluation received:", payload);
+            if (payload.eventType !== 'DELETE') {
+              const newNota = (payload.new as any).nota_final;
+              setNotaGrupal(newNota);
+              setHasNewEvaluation(true); // Activar aviso visual también para notas grupales
+              toast.success("🏆 ¡Se ha actualizado la nota de tu grupo!", {
+                duration: 6000,
+                icon: '🚀'
+              });
+            }
+          }
+        )
+        .subscribe();
+    }
 
     // POLLING FALLBACK: Ensure updates happen even if sockets fail locally
     const intervalId = setInterval(() => {
@@ -356,6 +504,9 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     return () => {
       supabase.removeChannel(channelpresence);
       supabase.removeChannel(channelupdates);
+      supabase.removeChannel(channelAsistencia);
+      supabase.removeChannel(channelEvaluaciones);
+      supabase.removeChannel(channelEvaluacionesGrupales);
       clearInterval(intervalId);
     };
   }, [grupoReal?.proyecto_id, alumno.id, grupoReal?.id]);
@@ -523,7 +674,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           <nav className="grid grid-cols-2 md:flex gap-1 md:gap-2 p-2 md:p-0">
             <button
               onClick={() => { setVistaActiva('grupo'); window.scrollTo(0, 0); }}
-              className={`px-4 md:px-8 py-3 md:py-5 font-bold text-[10px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'grupo'
+              className={`px-4 md:px-6 py-3 md:py-5 font-bold text-[10px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'grupo'
                 ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
                 : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
                 }`}
@@ -531,6 +682,20 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
                 <Users className="w-4 h-4" />
                 <span>Mi Grupo</span>
+              </div>
+            </button>
+
+            {/* NUEVO BOTÓN TAREAS */}
+            <button
+              onClick={() => { setVistaActiva('tareas'); window.scrollTo(0, 0); }}
+              className={`px-4 md:px-6 py-3 md:py-5 font-bold text-[10px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'tareas'
+                ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
+                : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
+                }`}
+            >
+              <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
+                <Layout className="w-4 h-4" />
+                <span>Tareas</span>
               </div>
             </button>
             <button
@@ -558,8 +723,12 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               </div>
             </button>
             <button
-              onClick={() => { setVistaActiva('perfil'); window.scrollTo(0, 0); }}
-              className={`px-4 md:px-8 py-3 md:py-5 font-bold text-[10px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'perfil'
+              onClick={() => {
+                setVistaActiva('perfil');
+                setHasNewEvaluation(false); // Limpiar aviso al entrar
+                window.scrollTo(0, 0);
+              }}
+              className={`px-4 md:px-8 py-3 md:py-5 font-bold text-[10px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] relative ${vistaActiva === 'perfil'
                 ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
                 : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
                 }`}
@@ -568,6 +737,14 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 <Award className="w-4 h-4" />
                 <span>Mis Notas</span>
               </div>
+
+              {/* INDICADOR DE EVALUACIÓN DISPONIBLE */}
+              {hasNewEvaluation && vistaActiva !== 'perfil' && (
+                <span className="absolute top-2 right-2 md:top-4 md:right-4 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-pink-500 border-2 border-white shadow-sm"></span>
+                </span>
+              )}
             </button>
           </nav>
         </div>
@@ -607,53 +784,31 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-
-                  {/* COLUMNA 1: Tarjeta de Grupo */}
-                  <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 relative overflow-hidden h-full">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -translate-y-1/2 translate-x-1/2 -z-0"></div>
-                    <div className="relative z-10 flex flex-col h-full justify-between">
-                      <div>
-                        <div className="flex items-start justify-between mb-6">
-                          <div>
-                            <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase leading-none mb-2">{grupoDisplay.nombre}</h2>
-                          </div>
-                          <button
-                            onClick={() => setModalSubirRecursoOpen(true)}
-                            className="bg-slate-900 text-white w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all group"
-                            title="Subir aportación"
-                          >
-                            <Upload className="w-6 h-6 group-hover:text-purple-400 transition-colors" />
-                          </button>
+                {/* COLUMNA 1: Tarjeta de Grupo - Full Width */}
+                <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 relative overflow-hidden">
+                  {/* ... (Contenido Tarjeta Grupo Existente) ... */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -translate-y-1/2 translate-x-1/2 -z-0"></div>
+                  <div className="relative z-10 flex flex-col h-full justify-between">
+                    <div>
+                      <div className="flex items-start justify-between mb-6">
+                        <div>
+                          <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase leading-none mb-2">{grupoDisplay.nombre}</h2>
                         </div>
-
-                        <div className="mb-8">
-                          <span className={`px-4 py-2 font-black text-[10px] uppercase tracking-widest rounded-full border-2 ${grupoDisplay.estado === 'Casi terminado' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                            grupoDisplay.estado === 'En progreso' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                              grupoDisplay.estado === 'Bloqueado' ? 'bg-rose-50 text-rose-600 border-rose-200' :
-                                'bg-emerald-50 text-emerald-600 border-emerald-200'
-                            }`}>
-                            {grupoDisplay.estado}
-                          </span>
-                        </div>
-
-                        <div className="mb-8">
-                          <div className="flex justify-between text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
-                            <span>Progreso del equipo</span>
-                            <span className="text-slate-800">{grupoDisplay.progreso}%</span>
-                          </div>
-                          <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden p-[2px] border border-slate-200">
-                            <div
-                              className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all duration-1000"
-                              style={{ width: `${grupoDisplay.progreso}%` }}
-                            />
-                          </div>
-                        </div>
+                        <button
+                          onClick={() => setModalSubirRecursoOpen(true)}
+                          className="bg-slate-900 text-white w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all group"
+                          title="Subir aportación"
+                        >
+                          <Upload className="w-6 h-6 group-hover:text-purple-400 transition-colors" />
+                        </button>
                       </div>
 
-                      <div>
+
+
+                      {/* Members */}
+                      <div className="mb-6">
                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Compañeros</h3>
-                        <div className="grid grid-cols-2 gap-3 mb-8">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
                           {(grupoDisplay.miembros || []).map((miembro: string, index: number) => (
                             <div key={index} className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
                               <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-purple-600 font-bold text-xs">
@@ -664,46 +819,59 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                           ))}
                         </div>
                       </div>
-
-                      {/* Recursos del Equipo (Mini Dashboard) */}
-                      <div>
-                        <div className="mb-4">
-                          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Recursos del Equipo</h3>
-                        </div>
-                        <div className="bg-slate-50 rounded-2xl p-0 border border-slate-100 max-h-96 overflow-y-auto custom-scrollbar">
-                          <RepositorioColaborativo
-                            grupo={grupoDisplay}
-                            todosLosGrupos={todosLosGrupos}
-                            esDocente={false}
-                            filterByGroupId={grupoDisplay.id}
-                            className="!gap-0"
-                          />
-                        </div>
-                      </div>
                     </div>
                   </div>
-
-                  {/* COLUMNA 2: Árbol de Progreso */}
-                  <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden h-full min-h-[400px]">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-green-500"></div>
-                    <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase mb-4 z-10 w-full text-center">Nuestro Árbol</h2>
-                    <div className="relative z-10 transform scale-100">
-                      <LivingTree progress={grupoDisplay.progreso || 0} health={100} size={280} />
-                    </div>
-                    <div className="mt-8 flex gap-8 text-center">
-                      <div>
-                        <div className="text-2xl font-black text-slate-800">{grupoDisplay.progreso}%</div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Crecimiento</div>
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
 
-                {/* ROW 2: Roadmap Completo (Sin Scroll Horizontal) */}
-                <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-200">
-                  <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-6 px-2">Tareas</h3>
 
+
+                {/* Sección de Recursos del Grupo */}
+                <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                        <FolderOpen className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos del Equipo</h3>
+                    </div>
+                  </div>
+                  <RepositorioColaborativo
+                    grupo={grupoDisplay}
+                    todosLosGrupos={todosLosGrupos}
+                    proyectoId={alumno.proyecto_id}
+                    filterByGroupId={grupoDisplay.id}
+                    className="!gap-4"
+                    hideTitle={true}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* VISTA TAREAS (Movida aquí) */}
+        {
+          vistaActiva === 'tareas' && grupoDisplay && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Árbol (Ocupa 1/3) */}
+                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[400px]">
+                  <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-green-500"></div>
+                  <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase mb-4 z-10 w-full text-center">Nuestro Árbol</h2>
+                  <div className="relative z-10 transform scale-100">
+                    <LivingTree progress={grupoDisplay.progreso || 0} health={100} size={240} />
+                  </div>
+                  <div className="mt-8 flex gap-8 text-center">
+                    <div>
+                      <div className="text-2xl font-black text-slate-800">{grupoDisplay.progreso}%</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Crecimiento</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Roadmap (Ocupa 2/3) */}
+                <div className="lg:col-span-2 bg-slate-50 rounded-[2.5rem] p-6 border border-slate-200 h-full">
+                  <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-6 px-2">Mapa de Ruta</h3>
                   {(!grupoReal?.hitos || grupoReal.hitos.length === 0) ? (
                     <div className="text-center py-12 px-6 bg-white rounded-3xl border-2 border-dashed border-slate-200">
                       <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-500">
@@ -714,7 +882,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                     </div>
                   ) : (
                     <RoadmapView
-                      fases={(todosLosGrupos.length > 0 && alumno.proyecto_id) ? (PROYECTOS_MOCK.find(p => p.id === alumno.proyecto_id)?.fases || PROYECTOS_MOCK[0]?.fases || []) : []}
+                      fases={fasesProyecto.length > 0 ? fasesProyecto : (todosLosGrupos.length > 0 && alumno.proyecto_id) ? (PROYECTOS_MOCK.find(p => p.id === alumno.proyecto_id)?.fases || PROYECTOS_MOCK[0]?.fases || []) : []}
                       hitosGrupo={grupoReal?.hitos || []}
                       onToggleHito={async (faseId, hitoTitulo, currentStatus) => {
                         if (!grupoReal) return;
@@ -723,7 +891,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                         if (currentStatus === 'pendiente' || currentStatus === 'propuesto' || currentStatus === 'rechazado') nextStatus = 'en_progreso';
                         else if (currentStatus === 'en_progreso') nextStatus = 'revision';
 
-                        if (!nextStatus) return; // No action for other states
+                        if (!nextStatus) return;
 
                         try {
                           const updatedHitos = (grupoReal.hitos || []).map(h =>
@@ -732,10 +900,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                               : h
                           ) as HitoGrupo[];
 
-                          // Optimistic Update
                           setGrupoReal({ ...grupoReal, hitos: updatedHitos });
 
-                          // DB Update
                           const { error } = await supabase
                             .from('grupos')
                             .update({ hitos: updatedHitos })
@@ -751,7 +917,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                         }
                       }}
                       onProposeMilestones={(faseId) => {
-                        const fases = (todosLosGrupos.length > 0 && alumno.proyecto_id) ? (PROYECTOS_MOCK.find(p => p.id === alumno.proyecto_id)?.fases || PROYECTOS_MOCK[0]?.fases || []) : [];
+                        const fases = fasesProyecto.length > 0 ? fasesProyecto : (todosLosGrupos.length > 0 && alumno.proyecto_id) ? (PROYECTOS_MOCK.find(p => p.id === alumno.proyecto_id)?.fases || PROYECTOS_MOCK[0]?.fases || []) : [];
                         const fase = fases.find(f => f.id === faseId);
                         if (fase) {
                           setFaseParaProponer(fase);
@@ -762,91 +928,90 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                     />
                   )}
                 </div>
-              </>
-            )}
-          </div>
-        )}
+              </div>
+            </div>
+          )
+        }
 
 
         {/* VISTA TODOS LOS GRUPOS (NUEVA: Comunidad con detalles) */}
         {
           vistaActiva === 'comunidad' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
-              {/* 1. Árbol Global */}
-              <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
-                  <div className="flex-1">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/20 mb-4 backdrop-blur-md">
-                      <Sparkles className="w-3 h-3 text-indigo-300" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-100">Progreso Global de la Clase</span>
-                    </div>
-                    <h2 className="text-4xl font-black tracking-tight mb-4 leading-none">Jardín Colaborativo</h2>
-                    <p className="text-indigo-200 max-w-lg text-lg leading-relaxed">
-                      Así es como vuestro esfuerzo conjunto hace crecer el proyecto global. Cada tarea de cada grupo cuenta.
-                    </p>
+            <div className="space-y-6 animate-in fade-in duration-500">
+              {/* Grid Unificado: Árbol + Equipos + Recursos */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* 1. Árbol Global (Simple) */}
+                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[400px]">
+                  <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-400 to-purple-500"></div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100 mb-6">
+                    <Globe className="w-3 h-3 text-indigo-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Jardín de la Clase</span>
                   </div>
-                  <div className="shrink-0 bg-white/5 rounded-full p-8 backdrop-blur-sm border border-white/10">
+
+                  <div className="relative z-10 transform scale-100">
                     <LivingTree
                       progress={todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)}
                       health={100}
-                      size={200}
-                      isDark
+                      size={240}
                     />
                   </div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* 2. Lista de Progreso de Otros Grupos (DETALLADA) */}
-                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 h-fit">
-                  <h3 className="text-xl font-black text-slate-800 mb-6 uppercase tracking-tight">Equipos en Misión</h3>
-                  <div className="space-y-6">
+                  <div className="mt-8 text-center">
+                    <div className="text-3xl font-black text-slate-800">
+                      {(todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)).toFixed(0)}%
+                    </div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Progreso Global</div>
+                    <p className="text-xs text-slate-400 mt-2 max-w-[200px] leading-tight">
+                      El esfuerzo combinado de todos los equipos.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2. Equipos en Misión */}
+                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 h-full max-h-[600px] overflow-y-auto custom-scrollbar">
+                  <h3 className="text-xl font-black text-slate-800 mb-6 uppercase tracking-tight">Equipos</h3>
+                  <div className="space-y-4">
                     {todosLosGrupos.map((g, idx) => {
-                      // Calcular hitos pendientes (Mock logic: fases del proyecto)
                       const proyecto = PROYECTOS_MOCK.find(p => p.id === g.proyecto_id) || PROYECTOS_MOCK[0];
                       const hitosTotales = proyecto.fases.flatMap(f => f.hitos || []);
-                      // Asumimos que los hitos en g.hitos están completados/aprobados
                       const hitosCompletadosLabels = (g.hitos || []).filter(h => h.estado === 'aprobado').map(h => h.titulo);
-                      const hitosPendientes = hitosTotales.filter(h => !hitosCompletadosLabels.includes(h)).slice(0, 3); // Mostrar max 3
+                      const hitosPendientes = hitosTotales.filter(h => !hitosCompletadosLabels.includes(h)).slice(0, 2);
 
                       return (
-                        <div key={idx} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-all">
-                          <div className="flex items-center justify-between mb-4">
-                            <div>
-                              <div className="font-bold text-slate-700 text-sm">{g.nombre}</div>
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black text-indigo-600 shadow-sm">
+                        <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-all">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="font-bold text-slate-700 text-sm truncate max-w-[120px]" title={g.nombre}>{g.nombre}</div>
+                            <div className="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[9px] font-black text-indigo-600 shadow-sm">
                               {g.progreso}%
                             </div>
                           </div>
 
-                          {/* Miembros mini */}
-                          <div className="flex -space-x-2 mb-4 overflow-hidden py-1 pl-1">
-                            {g.miembros?.map((m, i) => (
-                              <div key={i} title={m} className="w-6 h-6 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-[8px] font-bold text-indigo-800 uppercase ring-1 ring-slate-100">
+                          <div className="flex -space-x-2 mb-3 overflow-hidden py-1 pl-1">
+                            {g.miembros?.slice(0, 4).map((m, i) => (
+                              <div key={i} title={m} className="w-5 h-5 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-[7px] font-bold text-indigo-800 uppercase ring-1 ring-slate-100">
                                 {m.charAt(0)}
                               </div>
                             ))}
+                            {(g.miembros?.length || 0) > 4 && (
+                              <div className="w-5 h-5 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[7px] font-bold text-slate-500 ring-1 ring-slate-100">
+                                +{g.miembros!.length - 4}
+                              </div>
+                            )}
                           </div>
 
-                          {/* Hitos pendientes */}
-                          <div className="space-y-2">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Trabajando en:</p>
+                          <div className="space-y-1">
                             {(g.hitos && g.hitos.length > 0) ? (
-                              g.hitos.map((h, i) => (
-                                <div key={i} className="flex items-center gap-1.5">
-                                  <div className={`shrink-0 w-1.5 h-1.5 rounded-full ${h.estado === 'aprobado' ? 'bg-emerald-300' :
-                                    h.estado === 'revision' ? 'bg-amber-400 animate-pulse' :
-                                      'bg-indigo-400'
-                                    }`}></div>
-                                  <span className={`text-[10px] font-medium truncate ${h.estado === 'aprobado' ? 'text-emerald-600 line-through opacity-60' : 'text-slate-600'}`} title={h.titulo}>
-                                    {h.titulo}
+                              hitosPendientes.map((h, i) => (
+                                <div key={i} className="flex items-center gap-1.5 opacity-70">
+                                  <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                                  <span className="text-[9px] font-medium truncate text-slate-500 max-w-full block" title={h}>
+                                    {h}
                                   </span>
                                 </div>
                               ))
                             ) : (
-                              <div className="text-[10px] font-medium text-slate-400 italic">Sin tareas asignadas</div>
+                              <span className="text-[9px] text-slate-300 italic">Sin actividad</span>
                             )}
                           </div>
                         </div>
@@ -856,12 +1021,20 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 </div>
 
                 {/* 3. Repositorio Compartido */}
-                <div className="lg:col-span-2">
-                  <RepositorioColaborativo
-                    grupo={grupoReal || grupoEjemplo} // Solo para contexto de permisos
-                    todosLosGrupos={todosLosGrupos}
-                    mostrarEjemplo={showExample}
-                  />
+                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-0 shadow-sm border border-slate-200 h-full overflow-hidden flex flex-col">
+                  <div className="p-8 pb-4">
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos</h3>
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
+                    <RepositorioColaborativo
+                      grupo={grupoReal || grupoEjemplo}
+                      todosLosGrupos={todosLosGrupos}
+                      proyectoId={alumno.proyecto_id}
+                      mostrarEjemplo={showExample}
+                      className="!gap-4 !grid-cols-1"
+                      hideTitle={true}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -901,7 +1074,9 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div className="flex-1 min-h-0 relative rounded-2xl overflow-hidden border border-slate-100 bg-white">
                 {chatTab === 'ia' ? (
                   <div className="h-full">
-                    <MentorChat grupo={grupoDisplay} mostrarEjemplo={showExample} proyectoNombre={nombreProyecto} />
+                    <div className="h-full">
+                      <MentorChat grupo={grupoDisplay} mostrarEjemplo={showExample} proyectoNombre={nombreProyecto} contextoIA={contextoProyecto} />
+                    </div>
                   </div>
                 ) : (
                   <div className="h-full">
@@ -919,39 +1094,103 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         {/* VISTA MIS NOTAS (Revertido a solo notas) */}
         {
           vistaActiva === 'perfil' && grupoDisplay && (
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Header de Rendimiento */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-[2rem] p-6 shadow-lg text-white">
-                  <div className="text-3xl font-bold">{notaMedia.toFixed(1)}</div>
-                  <div className="text-xs font-bold uppercase tracking-widest opacity-90">Nota media</div>
+                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200 group hover:border-emerald-200 transition-all">
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                      <Trophy className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-800 tracking-tight">{notaMedia.toFixed(1)}</div>
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nota media</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-[2rem] p-6 shadow-lg text-white">
-                  <div className="text-3xl font-bold">{Math.floor((grupoDisplay.interacciones_ia || 0) / (grupoDisplay.miembros?.length || 1))}</div>
-                  <div className="text-xs font-bold uppercase tracking-widest opacity-90">Preguntas IA</div>
+
+                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200 group hover:border-indigo-200 transition-all">
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-800 tracking-tight">{Math.floor((grupoDisplay.interacciones_ia || 0) / Math.max(1, grupoDisplay.miembros?.length || 1))}</div>
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Preguntas IA</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-[2rem] p-6 shadow-lg text-white">
-                  <div className="text-3xl font-bold">{grupoDisplay.progreso}%</div>
-                  <div className="text-xs font-bold uppercase tracking-widest opacity-90">Progreso Global</div>
+
+                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200 group hover:border-purple-200 transition-all">
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-800 tracking-tight">{asistenciaStats.percentage}%</div>
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Asistencia</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
-                <h2 className="text-2xl font-black text-slate-800 mb-6 tracking-tight uppercase">Tus notas</h2>
+
                 <div className="space-y-6">
-                  {evaluacionAlumno.map((item, index) => (
-                    <div key={index} className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                      <div className="flex justify-between mb-2">
-                        <span className="font-bold text-slate-700 uppercase tracking-widest text-xs">{item.criterio}</span>
-                        <span className="font-black text-slate-900">{item.puntos}/10</span>
-                      </div>
-                      <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-slate-800" style={{ width: `${item.puntos * 10}%` }}></div>
-                      </div>
+                  {evaluacionAlumno.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <p className="text-slate-400 font-bold italic uppercase tracking-widest text-sm">Pendiente de evaluación</p>
                     </div>
-                  ))}
+                  ) : (
+                    evaluacionAlumno.map((item, index) => {
+                      const nombreCriterio = item.nombre || item.criterio || `Criterio ${index + 1}`;
+                      const puntos = Number(item.puntos || 0);
+
+                      const getNivelFromPuntos = (p: number) => {
+                        if (p >= 9) return 'Sobresaliente';
+                        if (p >= 7) return 'Notable';
+                        if (p >= 5) return 'Suficiente';
+                        return 'Insuficiente';
+                      };
+
+                      const getNivelStyles = (p: number) => {
+                        const nivel = getNivelFromPuntos(p);
+                        switch (nivel) {
+                          case 'Sobresaliente': return { color: 'text-emerald-600', bg: 'bg-emerald-500', bgLight: 'bg-emerald-50', icon: <Trophy className="w-3.5 h-3.5" /> };
+                          case 'Notable': return { color: 'text-blue-600', bg: 'bg-blue-500', bgLight: 'bg-blue-50', icon: <CheckCircle2 className="w-3.5 h-3.5" /> };
+                          case 'Suficiente': return { color: 'text-amber-600', bg: 'bg-amber-500', bgLight: 'bg-amber-50', icon: <Star className="w-3.5 h-3.5" /> };
+                          default: return { color: 'text-rose-600', bg: 'bg-rose-500', bgLight: 'bg-rose-50', icon: <AlertCircle className="w-3.5 h-3.5" /> };
+                        }
+                      };
+
+                      const styles = getNivelStyles(puntos);
+
+                      return (
+                        <div key={index} className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 group hover:bg-white hover:shadow-xl hover:shadow-slate-100 transition-all duration-300">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                            <div className="flex-1">
+                              <h4 className="font-black text-slate-800 uppercase tracking-wide text-sm mb-1">{nombreCriterio}</h4>
+                              <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${styles.bgLight} ${styles.color}`}>
+                                {styles.icon}
+                                {getNivelFromPuntos(puntos)}
+                              </div>
+                            </div>
+                            <div className="text-2xl font-black text-slate-900 shrink-0">
+                              {puntos.toFixed(1)}<span className="text-sm text-slate-400 font-bold ml-1">/10</span>
+                            </div>
+                          </div>
+                          <div className="h-3 bg-slate-200 rounded-full overflow-hidden p-0.5">
+                            <div
+                              className={`h-full ${styles.bg} rounded-full transition-all duration-1000 ease-out shadow-sm`}
+                              style={{ width: `${puntos * 10}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
-              {/* YA NO HAY REPOSITORIO AQUÍ */}
             </div>
           )
         }
@@ -978,6 +1217,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         modalSubirRecursoOpen && grupoDisplay && (
           <ModalSubirRecurso
             grupo={grupoReal || grupoEjemplo}
+            proyectoId={alumno.proyecto_id}
             onClose={() => setModalSubirRecursoOpen(false)}
             onSuccess={() => {
               toast.success("Recurso subido correctamente");

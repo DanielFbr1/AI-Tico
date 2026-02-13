@@ -1,26 +1,30 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar, Check, Save, Loader2, UserCheck, UserX } from 'lucide-react';
-import { Grupo } from '../types';
+import { X, Calendar, Check, Save, Loader2, UserCheck, Eye } from 'lucide-react';
+import { Grupo, Rubrica } from '../types';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { PerfilAlumno } from './PerfilAlumno';
 
 interface ModalAsistenciaProps {
     grupos: Grupo[];
     proyectoId: string;
+    rubrica?: Rubrica;
     onClose: () => void;
 }
 
 interface AlumnoAsistencia {
     nombre: string;
     grupo: string;
+    grupoCompleto: Grupo;
     presente: boolean;
 }
 
-export function ModalAsistencia({ grupos, proyectoId, onClose }: ModalAsistenciaProps) {
+export function ModalAsistencia({ grupos, proyectoId, rubrica, onClose }: ModalAsistenciaProps) {
     const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
     const [alumnos, setAlumnos] = useState<AlumnoAsistencia[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [alumnoSeleccionado, setAlumnoSeleccionado] = useState<AlumnoAsistencia | null>(null);
 
     // Initial load of students and attendance for selected date
     useEffect(() => {
@@ -32,6 +36,7 @@ export function ModalAsistencia({ grupos, proyectoId, onClose }: ModalAsistencia
                     g.miembros.map(m => ({
                         nombre: m,
                         grupo: g.nombre,
+                        grupoCompleto: g,
                         presente: false // Default to false until checked against DB
                     }))
                 ).reduce((acc, current) => {
@@ -178,9 +183,8 @@ export function ModalAsistencia({ grupos, proyectoId, onClose }: ModalAsistencia
                             {alumnos.map((alumno, idx) => (
                                 <div
                                     key={idx}
-                                    onClick={() => handleToggle(idx)}
                                     className={`
-                                        cursor-pointer relative overflow-hidden rounded-2xl p-4 border-2 transition-all duration-200 group
+                                        relative overflow-hidden rounded-2xl p-4 border-2 transition-all duration-200 group
                                         ${alumno.presente
                                             ? 'bg-white border-emerald-200 shadow-sm hover:border-emerald-400'
                                             : 'bg-gray-50 border-transparent opacity-60 hover:opacity-100 hover:bg-white hover:border-gray-300'
@@ -188,7 +192,10 @@ export function ModalAsistencia({ grupos, proyectoId, onClose }: ModalAsistencia
                                     `}
                                 >
                                     <div className="flex items-center justify-between relative z-10">
-                                        <div className="flex items-center gap-3">
+                                        <div
+                                            className="flex items-center gap-3 cursor-pointer flex-1"
+                                            onClick={() => handleToggle(idx)}
+                                        >
                                             <div className={`
                                                 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-colors
                                                 ${alumno.presente ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-gray-200 text-gray-500 border-gray-300'}
@@ -200,11 +207,26 @@ export function ModalAsistencia({ grupos, proyectoId, onClose }: ModalAsistencia
                                                 <p className="text-[10px] uppercase font-bold text-gray-400">{alumno.grupo}</p>
                                             </div>
                                         </div>
-                                        <div className={`
-                                            w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all
-                                            ${alumno.presente ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300 bg-transparent'}
-                                        `}>
-                                            {alumno.presente && <Check className="w-4 h-4 text-white" />}
+
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setAlumnoSeleccionado(alumno);
+                                                }}
+                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                                title="Ver perfil detallado"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                            <div
+                                                onClick={() => handleToggle(idx)}
+                                                className={`
+                                                cursor-pointer w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all
+                                                ${alumno.presente ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300 bg-transparent'}
+                                            `}>
+                                                {alumno.presente && <Check className="w-4 h-4 text-white" />}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -218,6 +240,15 @@ export function ModalAsistencia({ grupos, proyectoId, onClose }: ModalAsistencia
                     )}
                 </div>
             </div>
+
+            {alumnoSeleccionado && (
+                <PerfilAlumno
+                    alumno={alumnoSeleccionado.nombre}
+                    grupo={alumnoSeleccionado.grupoCompleto}
+                    rubrica={rubrica}
+                    onClose={() => setAlumnoSeleccionado(null)}
+                />
+            )}
         </div>
     );
 }

@@ -112,7 +112,7 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
             const payload: any = {
                 // If global (id 0), set grupo_id NULL and proyecto_id
                 grupo_id: isGlobal ? null : grupoIdValue,
-                proyecto_id: isGlobal ? proyectoId : undefined, // If schema supports it
+                proyecto_id: proyectoId, // Always save project ID if available
 
                 grupo_nombre: grupo.nombre,
                 tipo: tipoSeleccionado,

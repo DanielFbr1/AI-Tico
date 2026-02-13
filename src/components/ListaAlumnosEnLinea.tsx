@@ -1,71 +1,14 @@
 import { Users, Circle, Hand } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { Grupo } from '../types';
-
-interface AlumnoEnLinea {
-  id: string;
-  nombre: string;
-  timestamp: Date;
-}
+import { useAlumnosOnline } from '../hooks/useAlumnosOnline';
 
 interface ListaAlumnosProps {
   proyectoId?: string;
-  grupos?: Grupo[]; // New prop to check 'pedir_ayuda' status
+  grupos?: Grupo[];
 }
 
 export function ListaAlumnosEnLinea({ proyectoId, grupos = [] }: ListaAlumnosProps) {
-  const [alumnosConectados, setAlumnosConectados] = useState<AlumnoEnLinea[]>([]);
-
-  useEffect(() => {
-    // Si no hay proyecto, mostramos vacío o mock
-    if (!proyectoId) return;
-
-    const channel = supabase.channel(`room:${proyectoId}`)
-      .on('presence', { event: 'sync' }, () => {
-        const newState = channel.presenceState();
-        const connected: AlumnoEnLinea[] = [];
-
-        // Transformar estado de presencia a nuestro array
-        for (const id in newState) {
-          const users = newState[id] as any[]; // Array de sesiones por usuario
-          users.forEach(user => {
-            connected.push({
-              id: user.id,
-              nombre: user.nombre,
-              timestamp: new Date(user.online_at)
-            });
-          });
-        }
-
-        // Eliminar duplicados si el mismo usuario abre varias pestañas
-        const uniqueConnected = Array.from(new Map(connected.map(item => [item.id, item])).values());
-        setAlumnosConectados(uniqueConnected);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [proyectoId]);
-
-  const isAskingForHelp = (nombreAlumno: string) => {
-    // Find group where this student is a member
-    const grupo = grupos.find(g => {
-      // Normalizamos para comparar (ignorar mayúsculas/espacios si es necesario)
-      return g.miembros.some(m => m.toLowerCase().includes(nombreAlumno.toLowerCase()) || nombreAlumno.toLowerCase().includes(m.toLowerCase()));
-    });
-
-    if (grupo?.pedir_ayuda) {
-      console.log(`MATCH FOUND: ${nombreAlumno} needs help in group ${grupo.nombre}`);
-    } else if (grupo) {
-      // Found group but no help needed
-    } else {
-      console.log(`NO MATCH: Could not find group for online user: ${nombreAlumno}`, grupos.map(g => g.miembros));
-    }
-
-    return grupo?.pedir_ayuda;
-  };
+  const { alumnosConectados, isAskingForHelp } = useAlumnosOnline(proyectoId, grupos);
 
   return (
     <div className="space-y-2">
@@ -103,7 +46,6 @@ export function ListaAlumnosEnLinea({ proyectoId, grupos = [] }: ListaAlumnosPro
                 )}
               </div>
               <div className="text-xs text-gray-500">
-                {/* Cálculo simple de tiempo, o "En línea" */}
                 En línea
               </div>
             </div>

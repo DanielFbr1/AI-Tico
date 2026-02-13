@@ -1,214 +1,398 @@
-import { callGroq, GroqMessage } from './groq';
 
-// Interfaz para mensajes (adaptada a lo que podría necesitar la UI)
+import { Rubrica, MensajeIA } from '../types';
+import { supabase } from '../lib/supabase';
+import { embeddingService } from './embeddings';
+
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_AUDIO_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
+const TAVILY_API_KEY = import.meta.env.VITE_TAVILY_API_KEY;
+
+if (!GROQ_API_KEY) {
+    console.error("❌ Faltan las claves de API de Groq en .env");
+}
+
 export interface Mensaje {
-    id?: string;
     role: 'user' | 'assistant' | 'system';
     content: string;
 }
 
-const RESPUESTAS_MOCK = [
-    "¡Buena idea! 🌟 Pensad también: ¿cómo encaja esto con lo que están haciendo los otros equipos? ¿Creeis que les gustará?",
-    "¡Muy interesante! Antes de lanzaros, ¿habéis comprobado si el equipo de Diseño necesita saber esto? Recordad que trabajamos todos juntos.",
-    "¡Genial! 🚀 Si hacéis eso, ¿haréis el trabajo más fácil o más difícil para el siguiente grupo? ¡La colaboración es la clave!",
-    "¡Me gusta vuestra energía! ¿Estáis seguros de que esto sigue el tema principal del proyecto? Hablemos un momento sobre ello."
-];
+// Helper para llamadas a Groq
+async function callGroq(messages: Mensaje[], jsonMode: boolean = false): Promise<string> {
+    if (!GROQ_API_KEY) return "Error: API Key no configurada.";
 
-// Fallback Mock Function (Client-side failover)
-const generarRespuestaMock = async (): Promise<string> => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            const indiceAleatorio = Math.floor(Math.random() * RESPUESTAS_MOCK.length);
-            resolve(RESPUESTAS_MOCK[indiceAleatorio]);
-        }, 1000);
-    });
-};
-
-/**
- * Obtiene respuesta de Groq AI.
- */
-/**
- * Obtiene respuesta de Groq AI.
- */
-export const generarRespuestaIA = async (mensajeUsuario: string, nombreGrupo: string, nombreProyecto: string, historial: Mensaje[] = [], hitos: any[] = []): Promise<string> => {
     try {
-        const hitosContext = hitos.map(h => `- ${h.titulo} (${h.estado})`).join('\n');
+        const response = await fetch(GROQ_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile', // Modelo versátil y soportado
+                messages: messages,
+                temperature: 0.7,
+                max_tokens: 1024,
+                response_format: jsonMode ? { type: "json_object" } : undefined
+            })
+        });
 
-        const promptSystem = `
-        Eres el MENTOR SOCRÁTICO del grupo "${nombreGrupo}", que está trabajando en el proyecto "${nombreProyecto}".
-        NO eres un buscador de información. NO les des las respuestas. TU OBJETIVO ES HACERLES PENSAR.
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Error Groq API:", errorData);
+            throw new Error(`Groq Error: ${response.status}`);
+        }
 
-        TUS TAREAS ACTUALES Y SU ESTADO:
-        ${hitosContext || "No hay tareas registradas aún."}
-
-        TUS REGLAS DE ORO:
-        1. MÉTODO SOCRÁTICO: Responde SIEMPRE con una pregunta (o reflexión + pregunta) que les guíe al siguiente paso lógico.
-        2. CONTEXTO: Sabes que son estudiantes jóvenes. Usa un tono motivador, curioso y cercano (usa emojis 🌟). Usa la informacion de sus tareas para guiarles mejor.
-        3. PERSONALIZACIÓN: Menciona el nombre de su grupo ("${nombreGrupo}") o el proyecto ("${nombreProyecto}") cuando tenga sentido para que sientan que les conoces.
-        4. BREVEDAD: Máximo 3 oraciones.
-        
-        EJEMPLOS DE INTERACCIÓN:
-        Alumno: "¿Qué podemos hacer ahora?"
-        Tú: "¡Hola equipo ${nombreGrupo}! 👋 Veo que tenéis pendiente la tarea [Menciona una tarea pendiente]. ¿Por qué creéis que es importante completarla antes de seguir?"
-
-        Alumno: "Queremos hacer un vídeo sobre el reciclaje."
-        Tú: "¡Suena interesante! 🎥 ¿Qué mensaje queréis que se lleve la gente al ver vuestro vídeo? ¿Queréis que se rían, que se asusten o que aprendan algo nuevo?"
-
-        Alumno: "No sabemos cómo repartirnos el trabajo."
-        Tú: "Entiendo. 🤔 Si pensáis en las habilidades de cada uno de vosotros, ¿quién creéis que disfrutaría más organizando y quién creando? ¿Cómo podríais equilibrarlo?"
-
-        RECUERDA: ¡No les hagas el trabajo! Ayúdales a descubrir la solución ellos mismos.
-        `.trim();
-
-        // Adaptar historial al formato de Groq
-        const messages: GroqMessage[] = [
-            { role: 'system', content: promptSystem },
-            ...historial.map(m => ({ role: m.role, content: m.content })),
-            { role: 'user', content: mensajeUsuario }
-        ];
-
-        // Llamada directa a Groq
-        const respuesta = await callGroq(messages);
-        return respuesta;
-
-    } catch (error: any) {
-        console.error("Error general en servicio AI con Groq:", error);
-        return generarRespuestaMock();
+        const data = await response.json();
+        return data.choices[0]?.message?.content || "";
+    } catch (error) {
+        console.error("Error calling Groq:", error);
+        return "Lo siento, hubo un error al procesar tu solicitud.";
     }
-};
+}
 
-/**
- * Registra una interacción en la base de datos (Backend simple).
- * Útil para trazabilidad y analítica docente.
- */
-export const registrarInteraccion = async (mensaje: string, respuesta: string, grupoId: number, usuarioId?: string) => {
-    try {
-        const { supabase } = await import('../lib/supabase');
+// --- MENTOR IA (Chat Principal) ---
 
-        // El guardado se hace ahora en el componente para control de estado, 
-        // pero centralizamos aquí por si se escala a otros servicios.
-        console.log("📝 Log Backend: Guardando interacción para grupo:", grupoId);
-    } catch (err) {
-        console.error("Error registrando interacción en backend:", err);
-    }
-};
+export const generarRespuestaIA = async (
+    mensaje: string,
+    grupoNombre: string,
+    proyectoNombre: string,
+    historial: any[],
+    hitos: any[],
+    contextoIA: string
+) => {
+    // 1. Definición de Herramientas
+    const availableToolsDescription = `
+TIENES ACCESO A LAS SIGUIENTES HERRAMIENTAS (TOOLS):
+1. searchWeb(query: string): Usa esto para buscar información ACTUALIZADA en internet (noticias, datos recientes, hechos).
+   Uso: TOOL: searchWeb("query")
+2. fetchWebPage(url: string): Usa esto para LEER el contenido de un enlace que te pase el usuario.
+   Uso: TOOL: fetchWebPage("https://example.com")
+3. saveMemory(fact: string): Usa esto para RECORDAR un dato importante del usuario para el futuro.
+   Uso: TOOL: saveMemory("Al usuario le gustan los dinosaurios")
 
-/**
- * Analiza el estado de un grupo basándose en el historial de chat.
- * Ayuda al profesor a detectar bloqueos sin leer todo el chat.
- */
-export const analizarEstadoGrupo = async (historial: Mensaje[]): Promise<{ estado: 'OK' | 'Bloqueado', resumen: string }> => {
-    if (historial.length === 0) return { estado: 'OK', resumen: 'Sin actividad inicial.' };
 
-    try {
-        const promptSystem = "Eres un analista educativo. Basándote en el historial de chat entre un grupo de alumnos y su mentor IA, determina si el grupo está REALMENTE BLOQUEADO (no avanzan) o si todo fluye OK. Responde en JSON con { \"estado\": \"OK\"/\"Bloqueado\", \"resumen\": \"frase corta de 10 palabras max\" }";
+REGLAS:
+- Si necesitas usar una herramienta, RESPONDE SOLO CON EL COMANDO DE LA HERRAMIENTA.
+- No uses herramientas si no es necesario.
+- Si usas una herramienta, yo te devolveré el resultado y podrás generar la respuesta final.
+    `;
 
-        const messages: GroqMessage[] = [
-            { role: 'system', content: promptSystem } as any,
-            ...historial.slice(-10).map(m => ({
-                role: (m.role === 'assistant' ? 'assistant' : 'user') as any,
-                content: m.content
-            })),
-            { role: 'user', content: "Analiza el estado actual de este grupo." } as any
-        ];
+    // 2. Prompt del Sistema
+    const systemPrompt = `Eres un Mentor Socrático experto en Aprendizaje Basado en Proyectos.
+    Estás guiando al grupo "${grupoNombre}" en su proyecto "${proyectoNombre}".
+    Contexto del proyecto: ${contextoIA || "No definido"}
+    
+    Tu objetivo es guiar a los estudiantes mediante preguntas y reflexiones, NO darles las respuestas directamente.
+    Fomenta el pensamiento crítico, la creatividad y la colaboración.
+    
+    Hitos del proyecto: ${JSON.stringify(hitos.map(h => h.titulo))}${availableToolsDescription}`;
 
-        const respuestaRaw = await callGroq(messages);
+    let messages: Mensaje[] = [
+        { role: 'system', content: systemPrompt },
+        ...historial.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        { role: 'user', content: mensaje }
+    ];
 
-        // Intentamos parsear la respuesta (la IA a veces mete texto extra)
-        try {
-            const match = respuestaRaw.match(/\{.*\}/s);
-            if (match) {
-                return JSON.parse(match[0]);
+    // 3. BUCLE AGÉNTICO (Max 3 iteraciones para evitar bucles infinitos)
+    for (let i = 0; i < 3; i++) {
+        // A. Llamar a la IA
+        const response = await callGroq(messages);
+
+        // B. Detectar uso de herramientas
+        const toolMatch = response.match(/TOOL:\s*(\w+)\((.*)\)/);
+
+        if (toolMatch) {
+            const toolName = toolMatch[1];
+            const toolArgs = toolMatch[2].replace(/["']/g, ""); // Limpieza básica de argumentos
+
+            console.log(`🤖 Agente decidió usar: ${toolName} con args: ${toolArgs}`);
+
+            let toolResult = "";
+
+            // C. Ejecutar herramienta
+            if (toolName === 'searchWeb') {
+                toolResult = await searchWeb(toolArgs);
+            } else if (toolName === 'fetchWebPage') {
+                toolResult = await fetchWebPage(toolArgs);
+            } else if (toolName === 'saveMemory') {
+                // Necesitamos el ID del usuario, por ahora usamos 'unknown' o lo sacamos del contexto si es posible
+                const { data } = await supabase.auth.getSession();
+                const userId = data.session?.user?.id;
+                if (userId) {
+                    toolResult = await saveMemory(userId, toolArgs);
+                } else {
+                    toolResult = "Error: No pude guardar la memoria porque no encontré el ID de usuario.";
+                }
+            } else {
+                toolResult = "Error: Herramienta desconocida.";
             }
-        } catch (e) {
-            console.error("Error parseando análisis IA:", e);
+
+            // D. Añadir resultado al historial y repetir
+            messages.push({ role: 'assistant', content: response });
+            messages.push({ role: 'system', content: `RESULTADO DE LA HERRAMIENTA (${toolName}):\n${toolResult}\n\nAhora responde al usuario basándote en esta información.` });
+
+            // Continue loop to get final answer
+        } else {
+            // No tool used, final answer
+            return response;
+        }
+    }
+
+    return "Lo siento, me he liado un poco pensando. ¿Podrías reformular la pregunta?";
+};
+
+// --- OTROS SERVICIOS ---
+
+export const generarChatDocente = async (mensaje: string, historial: { role: string, content: string }[]) => {
+    const systemPrompt = "Eres un asistente pedagógico para docentes. Ayudas a diseñar actividades, rúbricas y evaluar situaciones educativas. Sé profesional y directo.";
+
+    const messages: Mensaje[] = [
+        { role: 'system', content: systemPrompt },
+        ...historial.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        { role: 'user', content: mensaje }
+    ];
+
+    return await callGroq(messages);
+};
+
+export const generarTareasDocente = async (contexto: string) => {
+    const prompt = `Genera una lista de 3 a 5 tareas sugeridas para un docente basadas en este contexto: "${contexto}".
+    Devuelve SOLO un JSON con este formato: [{"titulo": "...", "descripcion": "..."}]`;
+
+    const response = await callGroq([{ role: 'user', content: prompt }], true);
+    try {
+        return JSON.parse(response);
+    } catch (e) {
+        console.error("Error parsing JSON tasks:", e);
+        return [];
+    }
+};
+
+export const generarConfiguracionProyecto = async (historial: Mensaje[]) => {
+    const systemPrompt = `Eres un experto diseñador de proyectos educativos. 
+    Basado en la conversación, genera una configuración para un proyecto.
+    Devuelve SOLO un JSON con este formato:
+    {
+        "descripcion": "Resumen del proyecto",
+        "contexto_ia": "Instrucciones para la IA mentora",
+        "rubrica": {
+            "descripcion": "Descripción de la evaluación",
+            "criterios": [
+                {
+                    "nombre": "Criterio 1",
+                    "descripcion": "...",
+                    "niveles": [
+                        {"puntos": "0-4", "descripcion": "..."},
+                        {"puntos": "5-6", "descripcion": "..."},
+                        {"puntos": "7-8", "descripcion": "..."},
+                        {"puntos": "9-10", "descripcion": "..."}
+                    ]
+                }
+            ]
+        }
+    }`;
+
+    // Construimos los mensajes solo con el historial relevante para no exceder tokens si es muy largo
+    // Asumimos que historial ya viene con formato correcto
+    const messages: Mensaje[] = [
+        { role: 'system', content: systemPrompt },
+        ...historial
+    ];
+
+    const response = await callGroq(messages, true);
+    try {
+        return JSON.parse(response);
+    } catch (e) {
+        console.error("Error parsing Project Config:", e);
+        return { descripcion: "Error al generar", rubrica: { criterios: [] }, contexto_ia: "" };
+    }
+};
+
+export const generarNivelesRubrica = async (criterio: string): Promise<string[]> => {
+    const prompt = `Para un criterio de evaluación escolar titulado "${criterio}", genera 4 descripciones progresivas (Insuficiente, Suficiente, Notable, Sobresaliente).
+    Devuelve SOLO un JSON con un array de 4 strings: ["descripción insuficiente", "descripción suficiente", "descripción notable", "descripción sobresaliente"]`;
+
+    const response = await callGroq([{ role: 'user', content: prompt }], true);
+    try {
+        const parsed = JSON.parse(response);
+        if (Array.isArray(parsed)) return parsed;
+        if (parsed.niveles && Array.isArray(parsed.niveles)) return parsed.niveles;
+        return ["Error", "Error", "Error", "Error"];
+    } catch (e) {
+        console.error("Error parsing Rubric levels:", e);
+        return ["Error al generar", "Error al generar", "Error al generar", "Error al generar"];
+    }
+};
+
+export const transcribirAudio = async (audioBlob: Blob): Promise<string> => {
+    if (!GROQ_API_KEY) return "Error: API Key no configurada.";
+
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'recording.webm');
+    formData.append('model', 'whisper-large-v3'); // Modelo multilingüe optimizado
+    formData.append('response_format', 'json');
+
+    try {
+        const response = await fetch(GROQ_AUDIO_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Error Groq Audio API:", errorData);
+            throw new Error(`Groq Audio Error: ${response.status}`);
         }
 
-        return {
-            estado: respuestaRaw.toLowerCase().includes('bloqueado') ? 'Bloqueado' : 'OK',
-            resumen: 'Análisis automatizado completado.'
-        };
-
+        const data = await response.json();
+        return data.text || "";
     } catch (error) {
-        console.error("Error en análisis de backend:", error);
-        return { estado: 'OK', resumen: 'No se pudo analizar el estado actual.' };
+        console.error("Error transcribing audio:", error);
+        return "";
+    }
+};
+
+// =========================================================================
+//  MCP: Tico Power Tools (Superpoderes)
+// =========================================================================
+
+/**
+ * 🔍 MCP BÚSQUEDA WEB (Tavily Search)
+ * Coste: Gratis hasta 1000 búsquedas/mes.
+ * Limite: Optimizado para LLMs.
+ * Funcion: Busca en Internet información actualizada.
+ */
+export const searchWeb = async (query: string): Promise<string> => {
+    if (!TAVILY_API_KEY) {
+        console.warn("⚠️ Tavily API Key no configurada.");
+        return "No puedo buscar en internet porque falta la clave secreta de Tavily.";
+    }
+
+    try {
+        const response = await fetch('https://api.tavily.com/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                api_key: TAVILY_API_KEY,
+                query: query,
+                search_depth: "basic",
+                include_answer: true,
+                max_results: 3
+            })
+        });
+
+        if (!response.ok) {
+            console.error("Tavily Search Error", response.status);
+            throw new Error(`Error Tavily: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Tavily a veces devuelve una respuesta directa procesada por IA
+        let result = `Resultados para: "${query}"\n\n`;
+        if (data.answer) {
+            result += `Resumen directo: ${data.answer}\n\n`;
+        }
+
+        const results = data.results?.map((r: any) => `[${r.title}](${r.url}): ${r.content}`).join('\n\n') || "No se encontraron resultados.";
+        return result + results;
+    } catch (error) {
+        console.error("Error en Search MCP (Tavily):", error);
+        return "Error al buscar en la web.";
     }
 };
 
 /**
- * Asistente para el DOCENTE.
- * Actúa como un experto pedagógico en ABP.
+ * 🌐 MCP FETCH (Lector Web)
+ * Coste: Gratis (usando Jina Reader).
+ * Limite: No lee paywalls, SPAs complejos o contenido protegido.
+ * Funcion: Convierte una URL en Markdown limpio para que la IA lo lea.
  */
-export const generarChatDocente = async (mensajeUsuario: string, historial: Mensaje[] = []): Promise<string> => {
+export const fetchWebPage = async (url: string): Promise<string> => {
     try {
-        const promptSystem = `
-        Eres un ASISTENTE PEDAGÓGICO experto en ABP.
-        Tu usuario es un PROFESOR. Habla con él de tú a tú, como un compañero de trabajo de confianza.
-        
-        TUS REGLAS DE ORO (SÍGUELAS OBLIGATORIAMENTE):
-        1. SÉ MUY BREVE: Máximo 2 o 3 frases por respuesta. ¡Nada de parrafadas!
-        2. NATURALIDAD: Usa un tono cercano, directo y profesional.
-        3. CONVERSA: No des lecciones. Haz una pregunta corta al final para mantener el diálogo si es necesario.
-        4. MÉTODO:
-           - Si te piden ideas, da 1 o 2 clave, no una lista gigante.
-           - Si el profesor menciona algo técnico (ej: "Radio"), adáptate a eso.
-        
-        OBJETIVO: Ayudarle a definir tareas sin aburrirle con textos largos.
-        `.trim();
+        // Usamos r.jina.ai como proxy gratuito de lectura (LLM friendly)
+        const response = await fetch(`https://r.jina.ai/${url}`);
 
-        const messages: GroqMessage[] = [
-            { role: 'system', content: promptSystem },
-            ...historial.map(m => ({ role: m.role, content: m.content })),
-            { role: 'user', content: mensajeUsuario }
-        ];
+        if (!response.ok) throw new Error(`Error fetching ${url}`);
 
-        return await callGroq(messages);
+        const text = await response.text();
+        // Truncamos para no exceder tokens (aprox 20k caracteres)
+        return `Contenido de ${url}:\n\n${text.substring(0, 20000)}`;
     } catch (error) {
-        console.error("Error en Chat Docente:", error);
-        return "Disculpa, tengo problemas de conexión. ¿Podrías reformular la pregunta?";
+        console.error("Error en Fetch MCP:", error);
+        return "No pude leer el contenido de esa página. Puede que tenga protección contra bots.";
     }
 };
 
 /**
- * Genera tareas estructuradas en JSON.
+ * 🧠 MCP MEMORIA (Base de Datos)
+ * Coste: Incluido en Supabase (base).
+ * Limite: Depende del contexto de la LLM.
+ * Funcion: Guarda datos persistentes del usuario.
  */
-export const generarTareasDocente = async (descripcion: string): Promise<any[]> => {
+export const saveMemory = async (userId: string, fact: string, category: string = 'general') => {
     try {
-        const promptSystem = `
-        Eres un generador de tareas JSON para un gestor de proyectos educativos.
-        Tu salida debe ser ESTRICTAMENTE un array de objetos JSON válidos.
-        
-        FORMATO DE SALIDA:
-        [
-            { "titulo": "Título de la tarea (acción verbal)", "descripcion": "Descripción breve para el alumno (max 15 palabras)" },
-            ...
-        ]
-        
-        REGLAS:
-        - Genera entre 3 y 5 tareas.
-        - Solo JSON puro. Sin markdown, sin explicaciones previas.
-        - Tareas accionables y claras.
-        `.trim();
+        await supabase.from('memoria_usuarios').insert([{
+            user_id: userId,
+            fact: fact,
+            category: category
+        }]);
+        return "Recuerdo guardado.";
+    } catch (e) {
+        console.error("Error guardando memoria:", e);
+        return "Error al guardar memoria.";
+    }
+};
 
-        const messages: GroqMessage[] = [
-            { role: 'system', content: promptSystem },
-            { role: 'user', content: `Genera tareas para: ${descripcion}` }
-        ];
+export const getMemories = async (userId: string): Promise<string> => {
+    try {
+        const { data } = await supabase
+            .from('memoria_usuarios')
+            .select('fact, created_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(5); // Recuperamos los 5 más recientes por ahora
 
-        const respuesta = await callGroq(messages);
+        if (!data || data.length === 0) return "";
+        return data.map(m => `- ${m.fact}`).join('\n');
+    } catch (e) {
+        console.error("Error leyendo memoria:", e);
+        return "";
+    }
+};
 
-        // Limpieza básica por si el modelo es charlatán
-        const jsonMatch = respuesta.match(/\[.*\]/s);
-        if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]);
+/*
+ * 📚 MCP CONOCIMIENTO (RAG)
+ * Coste: Gratis (Embeddings locales con Xenova).
+ * Limite: Depende de la memoria del navegador.
+ * Funcion: Busca en los documentos PDF subidos por el profesor.
+ */
+export const consultKnowledge = async (query: string): Promise<string> => {
+    try {
+        const embedding = await embeddingService.generateEmbedding(query);
+
+        const { data, error } = await supabase.rpc('match_documents', {
+            query_embedding: embedding,
+            match_threshold: 0.5, // Similitud mínima
+            match_count: 3        // Top 3 fragmentos
+        });
+
+        if (error) {
+            console.error("Error en RAG:", error);
+            return "Error al consultar la base de conocimiento.";
         }
-        return JSON.parse(respuesta); // Intentar parsear directo
 
-    } catch (error) {
-        console.error("Error generando tareas JSON:", error);
-        return [
-            { titulo: "Revisar objetivos", descripcion: "Tarea generada por defecto tras error de IA." },
-            { titulo: "Planificar sesión", descripcion: "Definir los siguientes pasos manualmente." }
-        ];
+        if (!data || data.length === 0) return "No encontré información relevante en los documentos del profesor.";
+
+        return `Información del profesor:\n\n${data.map((d: any) => d.content).join('\n\n---\n\n')}`;
+    } catch (e) {
+        console.error("Error en Knowledge MCP:", e);
+        return "Error al procesar la consulta de conocimiento.";
     }
 };

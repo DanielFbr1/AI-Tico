@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { Recurso, Grupo } from '../types';
 import { RecursoCard } from './RecursoCard';
 
+
 interface RepositorioColaborativoProps {
   grupo: Grupo;
   todosLosGrupos: Grupo[];
@@ -13,6 +14,8 @@ interface RepositorioColaborativoProps {
   mostrarEjemplo?: boolean;
   className?: string; // Permitir estilos extra
   filterByGroupId?: string | number;
+  hideTitle?: boolean;
+  proyectoId?: string | number;
 }
 
 // Recursos de ejemplo
@@ -21,7 +24,6 @@ const recursosEjemplo: Recurso[] = [
     id: 'rec1',
     grupoId: 1,
     grupoNombre: 'Grupo 1 – Guion',
-    // departamento: removed
     tipo: 'texto',
     titulo: 'Plantilla de Escaleta Radiofónica',
     descripcion: 'Estructura básica para organizar los tiempos y secciones del programa de radio.',
@@ -32,7 +34,6 @@ const recursosEjemplo: Recurso[] = [
     id: 'rec2',
     grupoId: 2,
     grupoNombre: 'Grupo 2 – Locución',
-    // departamento: removed
     tipo: 'audio',
     titulo: 'Ejemplo de Entonación Noticiosa',
     descripcion: 'Grabación de prueba mostrando cómo enfatizar los verbos en una noticia de impacto.',
@@ -42,7 +43,6 @@ const recursosEjemplo: Recurso[] = [
     id: 'rec3',
     grupoId: 3,
     grupoNombre: 'Grupo 3 – Edición',
-    // departamento: removed
     tipo: 'video',
     titulo: 'Tutorial: Efecto de "Fading" en Audacity',
     descripcion: 'Videotutorial corto sobre cómo suavizar las entradas y salidas de música.',
@@ -50,15 +50,12 @@ const recursosEjemplo: Recurso[] = [
   }
 ];
 
-export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, className = '', esDocente = false, filterByGroupId }: RepositorioColaborativoProps) {
+// ...
+export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, className = '', esDocente = false, filterByGroupId, hideTitle = false, proyectoId }: RepositorioColaborativoProps) {
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [recursoSeleccionado, setRecursoSeleccionado] = useState<Recurso | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-
-  // Reset preview when selecting new resource
-  useEffect(() => {
-    if (recursoSeleccionado) setShowPreview(false);
-  }, [recursoSeleccionado]);
+  // ...
 
   useEffect(() => {
     if (mostrarEjemplo) {
@@ -72,6 +69,11 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
             .select('*')
             .order('created_at', { ascending: false });
 
+
+          if (proyectoId) {
+            query = query.eq('proyecto_id', proyectoId);
+          }
+
           if (filterByGroupId) {
             query = query.eq('grupo_id', filterByGroupId);
           }
@@ -84,14 +86,13 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
             id: r.id,
             grupoId: r.grupo_id,
             grupoNombre: r.grupo_nombre,
-            // departamento: removed
             tipo: r.tipo as any,
             titulo: r.titulo,
             descripcion: r.descripcion,
             fechaSubida: new Date(r.created_at),
             url: r.url,
             contenido: r.contenido,
-            usuario_id: r.usuario_id // Map usuario_id
+            usuario_id: r.usuario_id
           }));
 
           setRecursos(recursosMapeados);
@@ -105,26 +106,25 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
 
       // Suscripción a cambios en tiempo real
       const channel = supabase
-        .channel(`recursos_db_${filterByGroupId || 'all'}`)
+        .channel(`recursos_db_${filterByGroupId || proyectoId || 'all'}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'recursos',
-            filter: filterByGroupId ? `grupo_id=eq.${filterByGroupId}` : undefined
+            filter: filterByGroupId ? `grupo_id=eq.${filterByGroupId}` : (proyectoId ? `proyecto_id=eq.${proyectoId}` : undefined)
           },
           (payload) => {
             if (payload.eventType === 'INSERT') {
               const r = payload.new;
-              // Client-side filter redundant if server-side works, but safe to keep
               if (filterByGroupId && String(r.grupo_id) !== String(filterByGroupId)) return;
+              if (proyectoId && String(r.proyecto_id) !== String(proyectoId)) return;
 
               const nuevo: Recurso = {
                 id: r.id,
                 grupoId: r.grupo_id,
                 grupoNombre: r.grupo_nombre,
-                // departamento: removed
                 tipo: r.tipo as any,
                 titulo: r.titulo,
                 descripcion: r.descripcion,
@@ -161,14 +161,12 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
       toast.success('Descarga iniciada');
     } else if (recurso.url) {
       try {
-        // Fetch as blob to force download instead of open
         const response = await fetch(recurso.url);
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        // Try to guess extension or use generic
         const ext = recurso.url.split('.').pop() || 'dat';
         a.download = `${recurso.titulo}.${ext}`;
         document.body.appendChild(a);
@@ -178,14 +176,13 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
         toast.success('Descarga iniciada');
       } catch (e) {
         console.error("Download error", e);
-        // Fallback
         window.open(recurso.url, '_blank');
       }
     }
   };
 
   const handleBorrarRecurso = async (recurso: Recurso) => {
-    if (!mostrarEjemplo && !recurso.usuario_id) return; // Should not happen with new logic but safety check
+    if (!mostrarEjemplo && !recurso.usuario_id) return;
 
     if (confirm("¿Estás seguro de que quieres borrar este recurso? Esta acción no se puede deshacer.")) {
       try {
@@ -196,7 +193,6 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
           return;
         }
 
-        // 1. Borrar de Storage (Si tiene URL)
         if (recurso.url) {
           const urlObj = new URL(recurso.url);
           const pathParts = urlObj.pathname.split('/recursos/');
@@ -206,7 +202,6 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
           }
         }
 
-        // 2. Borrar de Base de Datos
         const { error } = await supabase
           .from('recursos')
           .delete()
@@ -214,7 +209,6 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
 
         if (error) throw error;
 
-        // Update local (Realtime also handles this but immediate feedback is good)
         setRecursos(prev => prev.filter(r => r.id !== recurso.id));
         if (recursoSeleccionado?.id === recurso.id) setRecursoSeleccionado(null);
         toast.success("Recurso eliminado correctamente");
@@ -247,8 +241,9 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
   return (
     <div className={`flex flex-col gap-6 ${className}`}>
       {/* Lista de recursos */}
-      <div className={`${filterByGroupId ? '' : 'bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200'}`}>
-        {!filterByGroupId && <h3 className="text-xl font-black text-slate-800 mb-6 tracking-tight uppercase">Recursos compartidos</h3>}
+      <div className={`${filterByGroupId || hideTitle ? '' : 'bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200'}`}>
+        {!filterByGroupId && !hideTitle && <h3 className="text-xl font-black text-slate-800 mb-6 tracking-tight uppercase">Recursos compartidos</h3>}
+
 
         {recursos.length > 0 ? (
           <div className={`${filterByGroupId ? 'flex flex-col gap-3' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}`}>

@@ -1,6 +1,7 @@
 import { ArrowLeft, CheckCircle2, Circle, Brain, Share2, MessageSquare, Users, Bot, Pencil, ClipboardList, ExternalLink, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Grupo, ProyectoFase } from '../types';
+import { Grupo, ProyectoFase, Criterio } from '../types';
+import { EvaluacionGrupalContent } from './EvaluacionGrupalContent';
 import { RepositorioColaborativo } from './RepositorioColaborativo';
 import { MentorChat } from './MentorChat';
 import { ChatGrupo } from './ChatGrupo';
@@ -18,10 +19,12 @@ interface DetalleGrupoProps {
   onAssignTask?: () => void;
   onEditGroup?: () => void;
   onViewStudent?: (alumno: string) => void;
+  onDeleteHito?: (faseId: string, hitoTitulo: string) => void;
+  rubrica?: Criterio[];
 }
 
-export function DetalleGrupo({ grupo, fases, onBack, onViewFeedback, onAssignTask, onEditGroup, onViewStudent }: DetalleGrupoProps) {
-  const [vistaActiva, setVistaActiva] = useState<'detalle' | 'compartir' | 'chat' | 'tareas'>('detalle');
+export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, onAssignTask, onEditGroup, onViewStudent, onDeleteHito }: DetalleGrupoProps) {
+  const [vistaActiva, setVistaActiva] = useState<'detalle' | 'compartir' | 'chat' | 'tareas' | 'evaluacion'>('detalle');
   const [showConfigModal, setShowConfigModal] = useState(false);
 
   // Asegurar que empezamos arriba al entrar al detalle
@@ -56,8 +59,9 @@ export function DetalleGrupo({ grupo, fases, onBack, onViewFeedback, onAssignTas
           {[
             { id: 'detalle', label: 'Detalles', icon: Circle },
             { id: 'tareas', label: 'Tareas', icon: CheckCircle2 },
+            { id: 'chat', label: 'Chats', icon: MessageSquare },
             { id: 'compartir', label: 'Recursos', icon: Share2 },
-            { id: 'chat', label: 'Comunicaciones', icon: MessageSquare },
+            { id: 'evaluacion', label: 'Evaluación', icon: ClipboardList },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -98,42 +102,27 @@ export function DetalleGrupo({ grupo, fases, onBack, onViewFeedback, onAssignTas
                       </h1>
                     </div>
                     <div>
-                      <span className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-full border-2 ${getEstadoColor(grupo.estado)} shadow-sm`}>
-                        {grupo.estado}
-                      </span>
+                      {onEditGroup && (
+                        <button
+                          onClick={onEditGroup}
+                          className="flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200 rounded-xl transition-all text-sm font-bold active:scale-95 shadow-sm"
+                          title="Editar configuración del grupo"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span>Editar</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
                   {/* Actions Buttons Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {/* Botón Configuración IA */}
-                    <button
-                      onClick={() => setShowConfigModal(true)}
-                      className="flex items-center gap-3 p-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:from-indigo-600 hover:to-purple-700 transition-all active:scale-95 group shadow-md shadow-indigo-200"
-                    >
-                      <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm group-hover:bg-white/30 transition-colors">
-                        <Bot className="w-5 h-5" />
-                      </div>
-                      <span className="font-bold text-sm">Configurar Mentor IA</span>
-                    </button>
 
-                    {onEditGroup && (
-                      <button onClick={onEditGroup} className="flex items-center gap-3 p-3 bg-amber-100 text-amber-700 rounded-xl hover:bg-amber-200 transition-all font-bold text-sm active:scale-95 border border-amber-200 shadow-sm group">
-                        <div className="p-2 bg-white/50 rounded-lg text-amber-600 group-hover:bg-white/80 transition-colors">
-                          <Pencil className="w-5 h-5" />
-                        </div>
-                        Editar Grupo
-                      </button>
-                    )}
 
-                    {onAssignTask && (
-                      <button onClick={onAssignTask} className="flex items-center gap-3 p-3 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 transition-all font-bold text-sm active:scale-95 border border-indigo-100 shadow-sm group">
-                        <div className="p-2 bg-white rounded-lg text-indigo-500 group-hover:bg-indigo-200 transition-colors">
-                          <ClipboardList className="w-5 h-5" />
-                        </div>
-                        Asignar Tarea
-                      </button>
-                    )}
+
+
+
                   </div>
 
                   {/* Miembros */}
@@ -161,16 +150,7 @@ export function DetalleGrupo({ grupo, fases, onBack, onViewFeedback, onAssignTas
                     </div>
                   </div>
 
-                  {/* Progress Bar */}
-                  <div className="flex flex-col gap-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <div className="flex justify-between text-xs uppercase tracking-wider font-bold text-slate-500">
-                      <span>Progreso de Tareas</span>
-                      <span className="text-slate-800">{grupo.progreso}%</span>
-                    </div>
-                    <div className="w-full h-3 bg-white border border-slate-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 transition-all" style={{ width: `${grupo.progreso}%` }} />
-                    </div>
-                  </div>
+
 
                 </div>
               </div>
@@ -198,13 +178,31 @@ export function DetalleGrupo({ grupo, fases, onBack, onViewFeedback, onAssignTas
           // Otros tabs
           vistaActiva === 'tareas' ? (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {onAssignTask && (
+                <div className="flex justify-end mb-6">
+                  <button onClick={onAssignTask} className="flex items-center gap-2 p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-bold text-sm shadow-md hover:shadow-lg active:scale-95">
+                    <ClipboardList className="w-5 h-5" />
+                    Asignar Nueva Tarea
+                  </button>
+                </div>
+              )}
               <RoadmapView
                 fases={fases}
                 hitosGrupo={grupo.hitos || []}
                 onToggleHito={() => { }}
-                readOnly={true}
+                readOnly={false}
                 layout="compact-grid"
+                onDeleteHito={onDeleteHito}
               />
+            </div>
+          ) : vistaActiva === 'evaluacion' ? (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
+              <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-200 overflow-hidden h-full">
+                <EvaluacionGrupalContent
+                  grupo={grupo}
+                  rubricaProyecto={rubrica}
+                />
+              </div>
             </div>
           ) : vistaActiva === 'chat' ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[calc(100vh-180px)] min-h-[600px] max-w-[1600px] mx-auto">
@@ -212,9 +210,18 @@ export function DetalleGrupo({ grupo, fases, onBack, onViewFeedback, onAssignTas
               {/* Left Column: AI Mentor (PURPLE) */}
               <div className="lg:col-span-1 bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col relative">
                 <div className="absolute top-0 left-0 w-full z-10 bg-white/95 backdrop-blur-sm pt-5 px-6 pb-2">
-                  <div className="flex items-center gap-2 border-b-2 border-indigo-500 pb-2">
-                    <Brain className="w-5 h-5 text-indigo-600" />
-                    <span className="text-sm font-black text-indigo-900 uppercase tracking-widest">Mentor IA</span>
+                  <div className="flex items-center justify-between border-b-2 border-indigo-500 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-indigo-600" />
+                      <span className="text-sm font-black text-indigo-900 uppercase tracking-widest">Mentor IA</span>
+                    </div>
+                    <button
+                      onClick={() => setShowConfigModal(true)}
+                      className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors"
+                      title="Configurar Mentor IA"
+                    >
+                      <Bot className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
                 <div className="pt-20 h-full flex flex-col">
@@ -245,7 +252,11 @@ export function DetalleGrupo({ grupo, fases, onBack, onViewFeedback, onAssignTas
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 animate-in fade-in">
-              <RepositorioColaborativo grupo={grupo} todosLosGrupos={[]} />
+              <RepositorioColaborativo
+                grupo={grupo}
+                todosLosGrupos={[]}
+                proyectoId={grupo.proyecto_id}
+              />
             </div>
           )
         )}

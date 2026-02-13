@@ -7,11 +7,12 @@ interface CardGrupoProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onAssignTasks?: () => void;
+  onRevisar?: () => void;
   mostrarBotonEditar?: boolean;
   mostrarBotonBorrar?: boolean;
 }
 
-export function Card_Grupo({ grupo, onClick, onEdit, onDelete, onAssignTasks, mostrarBotonEditar = false, mostrarBotonBorrar = false }: CardGrupoProps) {
+export function Card_Grupo({ grupo, onClick, onEdit, onDelete, onAssignTasks, onRevisar, mostrarBotonEditar = false, mostrarBotonBorrar = false }: CardGrupoProps) {
   const getEstadoStyles = (estado: Grupo['estado']) => {
     switch (estado) {
       case 'Completado':
@@ -94,14 +95,18 @@ export function Card_Grupo({ grupo, onClick, onEdit, onDelete, onAssignTasks, mo
         className="cursor-pointer relative z-10 h-full flex flex-col"
       >
         <div className="flex justify-between items-start mb-5">
-          <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border-2 ${getEstadoStyles(grupo.estado)}`}>
-            {grupo.estado}
-          </span>
-          {(grupo.hitos || []).some(h => h.estado === 'revision') && (
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-amber-200 animate-bounce">
+          {/* Status Badge Removed */}
+          {(grupo.hitos || []).some(h => h.estado === 'revision' || h.estado === 'propuesto') && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRevisar && onRevisar();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-amber-200 animate-bounce hover:scale-105 active:scale-95 transition-all z-20"
+            >
               <Clock className="w-3 h-3" />
-              <span>Pendiente</span>
-            </div>
+              <span>{(grupo.hitos || []).filter(h => h.estado === 'revision' || h.estado === 'propuesto').length} Pendiente{(grupo.hitos || []).filter(h => h.estado === 'revision' || h.estado === 'propuesto').length !== 1 ? 's' : ''}</span>
+            </button>
           )}
           {grupo.pedir_ayuda && (
             <div className="flex items-center gap-1.5 px-3 py-1 bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-rose-200 animate-pulse">

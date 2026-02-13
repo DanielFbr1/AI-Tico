@@ -25,6 +25,8 @@ export function MentorIA({ grupoId, proyectoId, departamento, miembro }: MentorI
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [hitos, setHitos] = useState<any[]>([]);
+    const [contextoIA, setContextoIA] = useState<string>('');
 
     // Estado para el efecto de escritura
     const [displayedContent, setDisplayedContent] = useState('');
@@ -95,7 +97,32 @@ export function MentorIA({ grupoId, proyectoId, departamento, miembro }: MentorI
 
     useEffect(() => {
         fetchMensajes();
-    }, [grupoId]);
+        fetchProyectoDetalles();
+    }, [grupoId, proyectoId]);
+
+    const fetchProyectoDetalles = async () => {
+        if (!proyectoId) return;
+        const { data } = await supabase
+            .from('proyectos')
+            .select('contexto_ia, fases')
+            .eq('id', proyectoId)
+            .single();
+
+        if (data) {
+            setContextoIA(data.contexto_ia || '');
+            // Extraer hitos de las fases si es necesario, o si hitos están en otra tabla
+            // Por ahora, si no hay tabla de hitos separada, intentamos sacar hitos del grupo
+            const { data: grupoData } = await supabase
+                .from('grupos')
+                .select('hitos')
+                .eq('id', grupoId)
+                .single();
+
+            if (grupoData?.hitos) {
+                setHitos(grupoData.hitos);
+            }
+        }
+    };
 
     // Efecto de escritura robusto
     useEffect(() => {
@@ -180,7 +207,7 @@ export function MentorIA({ grupoId, proyectoId, departamento, miembro }: MentorI
             // Safe AI Call
             let respuesta = '';
             try {
-                respuesta = await generarRespuestaIA(userMsg, departamento, "Proyecto ABP", historial);
+                respuesta = await generarRespuestaIA(userMsg, departamento, "Proyecto ABP", historial, hitos, contextoIA);
             } catch (aiErr) {
                 console.error("AI Error:", aiErr);
                 respuesta = "Lo siento, tuve un problema pensando. ¿Me lo repites?";
@@ -221,7 +248,7 @@ export function MentorIA({ grupoId, proyectoId, departamento, miembro }: MentorI
                         <Bot className="w-5 h-5 text-indigo-600" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-gray-800">Mentor IA <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded ml-1">v3.1 (Voz)</span></h3>
+                        <h3 className="font-semibold text-gray-800">Mentor IA <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded ml-1">v3.5 (Voz)</span></h3>
                         <p className="text-xs text-gray-500">Impulsado por Groq Llama 3</p>
                     </div>
                 </div>

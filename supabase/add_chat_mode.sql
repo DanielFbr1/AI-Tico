@@ -1,4 +1,4 @@
--- Add 'modo' column to distinguish AI chat from Group chat
+ -- Add 'modo' column to distinguish AI chat from Group chat
 ALTER TABLE public.mensajes_chat 
 ADD COLUMN IF NOT EXISTS modo text DEFAULT 'ia' CHECK (modo IN ('ia', 'equipo'));
 

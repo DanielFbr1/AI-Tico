@@ -5,6 +5,7 @@ import { generarRespuestaIA } from '../services/ai';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { voiceService } from '../services/voiceService';
 
 interface Mensaje {
   id: string;
@@ -20,6 +21,7 @@ interface ChatIAProps {
   readOnly?: boolean;
   mostrarEjemplo?: boolean;
   proyectoNombre?: string;
+  contextoIA?: string;
 }
 
 const mensajesEjemplo: Mensaje[] = [
@@ -60,7 +62,7 @@ const preguntasSugeridas = [
   { texto: "¿Qué nos falta para completar la tarea?", categoria: 'Metacognitiva' as const }
 ];
 
-export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, proyectoNombre }: ChatIAProps) {
+export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, proyectoNombre, contextoIA }: ChatIAProps) {
   const { user, perfil } = useAuth();
   const isReadOnly = readOnly || perfil?.rol === 'profesor';
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
@@ -73,74 +75,85 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
   // --- NUEVO: ESTADOS DE VOZ Y ESCRITURA MEJORADOS ---
   const [displayedContent, setDisplayedContent] = useState('');
   const [typingId, setTypingId] = useState<string | null>(null);
-  const [isListening, setIsListening] = useState(false);
+
 
   // CONFIGURACIÓN: Por defecto muteado (true) y chequeo de permisos de Admin (grupo.configuracion)
   // Si config es undefined, asumimos TRUE (permitido) por compatibilidad
   const vozPermitidaAdmin = grupo.configuracion?.voz_activada ?? true;
   const microPermitidoAdmin = grupo.configuracion?.microfono_activado ?? true;
 
-  const [isMuted, setIsMuted] = useState(true); // Solicitud usuario: desactivado por defecto
-  const [speechSupported, setSpeechSupported] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const [isMuted, setIsMuted] = useState(voiceService.isMuted());
+  /* --- MODIFICACIÓN: USO DE GROQ WHISPER (Grabación de Audio) --- */
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  // Inicializar reconocimiento de voz
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      setSpeechSupported(true);
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false; // Mejor precisión para comandos cortos
-      recognitionRef.current.lang = 'es-ES';
-      recognitionRef.current.interimResults = true; // Ver lo que escucha en tiempo real
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
-      recognitionRef.current.onresult = (event: any) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
 
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          } else {
-            interimTranscript += event.results[i][0].transcript;
+      mediaRecorder.onstop = async () => {
+        setIsTranscribing(true);
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+
+        try {
+          // Import dynamic to avoid circular dependency issues if any, though regular import is fine here
+          const { transcribirAudio } = await import('../services/ai');
+          const text = await transcribirAudio(audioBlob);
+          if (text) {
+            setInputMensaje((prev) => prev + (prev ? ' ' : '') + text);
           }
+        } catch (error) {
+          console.error("Error transcribing:", error);
+          toast.error("Error al transcribir audio");
+        } finally {
+          setIsTranscribing(false);
+          // Stop all tracks
+          stream.getTracks().forEach(track => track.stop());
         }
-
-        // Si hay resultado final, lo añadimos
-        if (finalTranscript) {
-          setInputMensaje((prev) => prev + (prev ? ' ' : '') + finalTranscript);
-          setIsListening(false);
-        }
-        // Podríamos mostrar interimTranscript en algún sitio, pero por ahora simplificamos
-        // Para feedback visual inmediato, podríamos usar un placeholder dinámico
       };
 
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Error de voz:', event.error);
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      toast.error("No se pudo acceder al micrófono");
     }
-  }, []);
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
 
   const toggleListening = () => {
-    if (!recognitionRef.current) return;
-    if (isListening) {
-      recognitionRef.current.stop();
+    if (isRecording) {
+      stopRecording();
     } else {
-      recognitionRef.current.start();
-      setIsListening(true);
+      startRecording();
     }
   };
 
   const toggleMute = () => {
-    if (!isMuted) {
-      window.speechSynthesis.cancel();
+    const newMutedState = voiceService.toggleMute();
+    setIsMuted(newMutedState);
+    if (!newMutedState) {
+      toast.info("Audio activado 🔊");
+    } else {
+      toast.info("Audio silenciado 🔇");
     }
-    setIsMuted(!isMuted);
   };
 
   const cleanTextForTTS = (text: string) => {
@@ -151,27 +164,7 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
   };
 
   const speakText = (text: string) => {
-    if (isMuted || !text) return;
-    window.speechSynthesis.cancel();
-
-    const cleanText = cleanTextForTTS(text);
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'es-ES';
-
-    // Intentar seleccionar una voz "Google" o "Microsoft" que suelen ser más naturales
-    const voices = window.speechSynthesis.getVoices();
-    const naturalVoice = voices.find(v =>
-      (v.name.includes('Google') || v.name.includes('Microsoft')) && v.lang.includes('es')
-    );
-
-    if (naturalVoice) {
-      utterance.voice = naturalVoice;
-      // Ajustes sutiles para sonar menos robótico
-      utterance.pitch = 1.0;
-      utterance.rate = 1.0;
-    }
-
-    window.speechSynthesis.speak(utterance);
+    voiceService.speak(text);
   };
 
   // Efecto de escritura robusto
@@ -186,8 +179,8 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
 
     setDisplayedContent('');
 
-    // --- CAMBIO: Hablar AL PRINCIPIO (Simultáneo) ---
-    speakText(text);
+    // --- CAMBIO: El audio ya se reproduce desde enviarMensaje (Sincronizado)
+    // speakText(text); // REMOVED to avoid double speech
 
     const typeChar = () => {
       setDisplayedContent(text.substring(0, i + 1));
@@ -310,10 +303,22 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
         grupo.nombre, // Nombre del Grupo
         mostrarEjemplo ? 'Proyecto Demo' : (proyectoNombre || 'Proyecto'), // Nombre del Proyecto
         historialParaIA,
-        grupo.hitos || [] // Tareas del grupo
+        grupo.hitos || [], // Tareas del grupo
+        proyectoNombre !== 'Proyecto Demo' ? (contextoIA || "") : "" // Contexto IA
       );
 
-      // 4. Guardar mensaje de IA en Base de Datos
+      // 4. PREPARAR AUDIO (Búfer de sincronización)
+      // No mostramos el mensaje todavía. Esperamos a que ElevenLabs nos dé el audio.
+      let audioReady: HTMLAudioElement | null = null;
+      try {
+        if (!voiceService.isMuted()) {
+          audioReady = await voiceService.prepareAudio(respuestaTexto);
+        }
+      } catch (err) {
+        console.error("Error pre-loading audio:", err);
+      }
+
+      // 5. Guardar mensaje de IA en Base de Datos
       const { error: errorIA } = await supabase.from('mensajes_chat').insert([{
         grupo_id: grupo.id,
         tipo: 'assistant',
@@ -338,6 +343,12 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
       };
 
       setMensajes((prev) => [...prev, mensajeIA]);
+
+      // 7. REPRODUCIR AUDIO (Sincronizado con el texto que aparece)
+      if (!voiceService.isMuted()) {
+        voiceService.playAudio(audioReady, respuestaTexto);
+      }
+
       // TRIGGER TYPEWRITER
       setTypingId(mensajeIA.id);
 
@@ -478,17 +489,31 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
           </div>
         ) : (
           <div className="flex gap-2">
-            {speechSupported && microPermitidoAdmin && (
+            <button
+              type="button"
+              onClick={toggleMute}
+              className={`p-3 rounded-xl transition-all ${!isMuted
+                ? 'bg-blue-100 text-blue-600'
+                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                }`}
+              title={isMuted ? "Activar voz" : "Silenciar voz"}
+            >
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
+            {microPermitidoAdmin && (
               <button
                 type="button"
                 onClick={toggleListening}
-                className={`p-3 rounded-xl transition-all ${isListening
+                className={`p-3 rounded-xl transition-all ${isRecording
                   ? 'bg-red-100 text-red-600 animate-pulse'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  : isTranscribing
+                    ? 'bg-yellow-100 text-yellow-600 animate-pulse'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                   }`}
-                title="Dictar pregunta"
+                title={isRecording ? "Detener grabación" : "Dictar respuesta"}
+                disabled={isTranscribing}
               >
-                {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                {isRecording ? <MicOff className="w-5 h-5" /> : isTranscribing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5" />}
               </button>
             )}
             <input
@@ -496,7 +521,7 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
               value={inputMensaje}
               onChange={(e) => setInputMensaje(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && enviarMensaje()}
-              placeholder={isListening ? "Escuchando..." : "Escribe una pregunta al mentor..."}
+              placeholder={isRecording ? "Grabando audio..." : isTranscribing ? "Transcribiendo..." : "Escribe una pregunta al mentor..."}
               className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
               disabled={escribiendo}
             />

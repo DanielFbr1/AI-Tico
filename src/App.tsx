@@ -158,6 +158,7 @@ function AppContent() {
         <GroupDetail
           grupo={selectedGrupo}
           fases={selectedProject?.fases || []}
+          rubrica={selectedProject?.rubrica && selectedProject.rubrica.criterios ? selectedProject.rubrica.criterios : []}
           onBack={handleBackToProjectDetail}
         />
       )}
@@ -165,12 +166,19 @@ function AppContent() {
   );
 }
 
+
+
 export default function App() {
+
+
   return (
     <ErrorBoundary>
       <AuthProvider>
         <AppContent />
         <Toaster position="top-right" richColors />
+        <div className="fixed bottom-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded-full pointer-events-none z-50 backdrop-blur-sm">
+          v0.1.4 (Original Design Restored)
+        </div>
       </AuthProvider>
     </ErrorBoundary>
   );
