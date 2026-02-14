@@ -43,6 +43,10 @@ class VoiceService {
             this.speak(text);
         }
     }
+
+    stop() {
+        this.synthesis.cancel();
+    }
 }
 
 export const voiceService = new VoiceService();

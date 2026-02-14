@@ -18,12 +18,13 @@ export interface Mensaje {
 }
 
 // Helper para llamadas a Groq
-async function callGroq(messages: Mensaje[], jsonMode: boolean = false): Promise<string> {
+async function callGroq(messages: Mensaje[], jsonMode: boolean = false, signal?: AbortSignal): Promise<string> {
     if (!GROQ_API_KEY) return "Error: API Key no configurada.";
 
     try {
         const response = await fetch(GROQ_API_URL, {
             method: 'POST',
+            signal: signal,
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${GROQ_API_KEY}`
@@ -60,7 +61,8 @@ export const generarRespuestaIA = async (
     historial: any[],
     hitos: any[],
     contextoIA: string,
-    configuracion?: Grupo['configuracion']
+    configuracion?: Grupo['configuracion'],
+    signal?: AbortSignal
 ) => {
     // 1. Definición de Herramientas
     const availableToolsDescription = `
@@ -116,7 +118,7 @@ REGLAS:
     // 3. BUCLE AGÉNTICO (Max 3 iteraciones para evitar bucles infinitos)
     for (let i = 0; i < 3; i++) {
         // A. Llamar a la IA
-        const response = await callGroq(messages);
+        const response = await callGroq(messages, false, signal);
 
         // B. Detectar uso de herramientas
         const toolMatch = response.match(/TOOL:\s*(\w+)\((.*)\)/);

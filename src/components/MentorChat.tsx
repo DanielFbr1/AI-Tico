@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Loader2, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Loader2, Mic, MicOff, Volume2, VolumeX, Square } from 'lucide-react';
 import { Grupo } from '../types';
 import { generarRespuestaIA } from '../services/ai';
 import { supabase } from '../lib/supabase';
@@ -76,6 +76,8 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
   // --- NUEVO: ESTADOS DE VOZ Y ESCRITURA MEJORADOS ---
   const [displayedContent, setDisplayedContent] = useState('');
   const [typingId, setTypingId] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
 
   // CONFIGURACIÓN: Por defecto muteado (true) y chequeo de permisos de Admin (grupo.configuracion)
@@ -176,29 +178,31 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
     if (!messageToType || !messageToType.contenido) return;
 
     const text = messageToType.contenido;
-    let i = 0;
-
     setDisplayedContent('');
 
-    // --- CAMBIO: El audio ya se reproduce desde enviarMensaje (Sincronizado)
-    // speakText(text); // REMOVED to avoid double speech
-
     const typeChar = () => {
-      setDisplayedContent(text.substring(0, i + 1));
-      i++;
-      scrollToBottom();
+      // Si ya no estamos escribiendo este mensaje (ej: pulsado Stop), salimos
+      setDisplayedContent(prev => {
+        if (!typingId) return prev;
 
-      if (i < text.length) {
-        const randomSpeed = Math.floor(Math.random() * 15) + 20; // 20-35ms (Rápido para igualar voz fluida)
-        setTimeout(typeChar, randomSpeed);
-      } else {
-        setTypingId(null);
-        // Ya no hablamos al final
-      }
+        const nextIndex = prev.length + 1;
+        if (nextIndex <= text.length) {
+          const randomSpeed = Math.floor(Math.random() * 15) + 20;
+          typingTimerRef.current = setTimeout(typeChar, randomSpeed);
+          return text.substring(0, nextIndex);
+        } else {
+          setTypingId(null);
+          return text;
+        }
+      });
+      scrollToBottom();
     };
 
-    setTimeout(typeChar, 100);
+    typingTimerRef.current = setTimeout(typeChar, 100);
 
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    };
   }, [typingId]);
   // ----------------------------------------
 
@@ -285,6 +289,10 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
     setInputMensaje('');
     setEscribiendo(true);
 
+    // Inicializar AbortController para permitir detener
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       // 2. Guardar en Base de Datos (Alumno)
       const { error: errorAlumno } = await supabase.from('mensajes_chat').insert([{
@@ -310,7 +318,9 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
         mostrarEjemplo ? 'Proyecto Demo' : (proyectoNombre || 'Proyecto'), // Nombre del Proyecto
         historialParaIA,
         grupo.hitos || [], // Tareas del grupo
-        proyectoNombre !== 'Proyecto Demo' ? (contextoIA || "") : "" // Contexto IA
+        proyectoNombre !== 'Proyecto Demo' ? (contextoIA || "") : "", // Contexto IA
+        undefined, // configuracion
+        controller.signal
       );
 
       // 4. PREPARAR AUDIO (Búfer de sincronización)
@@ -367,7 +377,26 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
       // Podríamos mostrar un error visual al usuario aquí
     } finally {
       setEscribiendo(false);
+      abortControllerRef.current = null;
     }
+  };
+
+  const detenerIA = () => {
+    // 1. Cancelar petición API
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    // 2. Detener efecto de escritura
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
+    setTypingId(null);
+    // 3. Detener voz
+    voiceService.stop();
+    // 4. Quitar estado cargando
+    setEscribiendo(false);
   };
 
 
@@ -526,18 +555,28 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
               type="text"
               value={inputMensaje}
               onChange={(e) => setInputMensaje(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && enviarMensaje()}
+              onKeyPress={(e) => e.key === 'Enter' && !escribiendo && !typingId && enviarMensaje()}
               placeholder={isRecording ? "Grabando audio..." : isTranscribing ? "Transcribiendo..." : "Escribe una pregunta al mentor..."}
               className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
-              disabled={escribiendo}
+              disabled={escribiendo || !!typingId}
             />
-            <button
-              onClick={() => enviarMensaje()}
-              disabled={!inputMensaje.trim() || escribiendo}
-              className="w-12 h-12 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center disabled:opacity-50"
-            >
-              <Send className="w-5 h-5" />
-            </button>
+            {escribiendo || typingId ? (
+              <button
+                onClick={detenerIA}
+                className="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl hover:bg-rose-200 transition-all flex items-center justify-center border-2 border-rose-200"
+                title="Detener respuesta"
+              >
+                <Square className="w-5 h-5 fill-current" />
+              </button>
+            ) : (
+              <button
+                onClick={() => enviarMensaje()}
+                disabled={!inputMensaje.trim()}
+                className="w-12 h-12 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center disabled:opacity-50"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            )}
           </div>
         )}
       </div>
