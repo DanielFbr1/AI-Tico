@@ -68,17 +68,22 @@ export function InteraccionesIA({ grupos, onSelectGrupo }: InteraccionesIAProps)
     <>
       {grupoChat && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-800">Chat con Mentor IA - {grupoChat.nombre}</h3>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full h-[85vh] flex flex-col overflow-hidden border border-slate-200">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <h3 className="font-black text-slate-800 uppercase tracking-tight text-sm">Chat con Mentor IA - <span className="text-indigo-600">{grupoChat.nombre}</span></h3>
+              </div>
               <button
                 onClick={() => setGrupoChat(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors"
+                className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-xl transition-all"
               >
                 <Plus className="rotate-45 w-6 h-6" />
               </button>
             </div>
-            <div className="p-4 bg-white">
+            <div className="flex-1 overflow-hidden">
               <MentorChat grupo={grupoChat} />
             </div>
           </div>
@@ -146,7 +151,6 @@ export function InteraccionesIA({ grupos, onSelectGrupo }: InteraccionesIAProps)
                 </div>
                 <div className="flex-1">
                   <div className="font-bold text-slate-900 leading-tight">{grupo.nombre}</div>
-                  <div className="text-xs font-medium text-slate-500 mt-0.5">{grupo.departamento}</div>
                 </div>
                 <div className="flex-1 max-w-xs hidden sm:block">
                   <div className="flex items-center gap-3">

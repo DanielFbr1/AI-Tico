@@ -78,6 +78,7 @@ export function DashboardDocente({
     // Project Renaming State
     const [isEditingProjectName, setIsEditingProjectName] = useState(false);
     const [editingProjectName, setEditingProjectName] = useState('');
+    const [refreshRecursos, setRefreshRecursos] = useState(0);
 
     const { signOut, perfil, user } = useAuth();
 
@@ -212,7 +213,7 @@ export function DashboardDocente({
                         >
                             <X className="w-8 h-8" />
                         </button>
-                        <TicoGameWidget />
+                        <TicoGameWidget projectId={proyectoActual?.id} />
                     </div>
                 </div>
             )}
@@ -764,6 +765,7 @@ export function DashboardDocente({
                                     esDocente={true}
                                     proyectoId={proyectoActual?.id || ''}
                                     mostrarEjemplo={mostrandoEjemplo}
+                                    refreshTrigger={refreshRecursos}
                                 />
 
                                 {modalSubirRecursoAbierto && (
@@ -773,7 +775,7 @@ export function DashboardDocente({
                                         onClose={() => setModalSubirRecursoAbierto(false)}
                                         onSuccess={() => {
                                             setModalSubirRecursoAbierto(false);
-                                            // Opcional: refrescar datos si fuera necesario, pero RepositorioColaborativo escucha realtime
+                                            setRefreshRecursos(prev => prev + 1);
                                         }}
                                     />
                                 )}

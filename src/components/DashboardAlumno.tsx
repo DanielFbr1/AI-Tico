@@ -58,6 +58,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [modalSubirRecursoOpen, setModalSubirRecursoOpen] = useState(false);
   const [modalProponerOpen, setModalProponerOpen] = useState(false);
   const [faseParaProponer, setFaseParaProponer] = useState<any>(null);
+  const [refreshRecursos, setRefreshRecursos] = useState(0);
 
   // Estado del tutorial para Alumnos
   const [tutorialActivo, setTutorialActivo] = useState(() => {
@@ -560,7 +561,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#fcfdff]">
+    <div className={`min-h-screen bg-[#fcfdff] flex flex-col ${vistaActiva === 'chat' ? 'h-screen overflow-hidden' : ''}`}>
       {/* Header */}
       <header className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
@@ -751,7 +752,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       </div>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className={`max-w-7xl mx-auto px-6 w-full ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden py-4' : 'py-8 flex-none'}`}>
         {showExample && (
           <div className="bg-indigo-600 rounded-3xl p-6 mb-8 text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
             {/* ... Demo Banner styles ... */}
@@ -1033,6 +1034,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       mostrarEjemplo={showExample}
                       className="!gap-4 !grid-cols-1"
                       hideTitle={true}
+                      refreshTrigger={refreshRecursos}
                     />
                   </div>
                 </div>
@@ -1044,7 +1046,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         {/* VISTA MENTOR IA / EQUIPO */}
         {
           vistaActiva === 'chat' && grupoDisplay && (
-            <div className="bg-white rounded-[2.5rem] p-4 md:p-6 shadow-sm border border-slate-200 h-[calc(100vh-180px)] min-h-[500px] flex flex-col overflow-hidden">
+            <div className="bg-white rounded-[2.5rem] p-4 md:p-6 shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
               {/* Header Toggles - Better visual separation */}
               <div className="flex bg-slate-50 p-1.5 rounded-3xl mb-4 shrink-0 shadow-inner">
                 <button
@@ -1221,7 +1223,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
             onClose={() => setModalSubirRecursoOpen(false)}
             onSuccess={() => {
               toast.success("Recurso subido correctamente");
-              // El repositorio usa suscripción realtime, así que se actualizará solo.
+              setRefreshRecursos(prev => prev + 1);
             }}
           />
         )

@@ -16,6 +16,7 @@ interface RepositorioColaborativoProps {
   filterByGroupId?: string | number;
   hideTitle?: boolean;
   proyectoId?: string | number;
+  refreshTrigger?: any;
 }
 
 // Recursos de ejemplo
@@ -51,7 +52,7 @@ const recursosEjemplo: Recurso[] = [
 ];
 
 // ...
-export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, className = '', esDocente = false, filterByGroupId, hideTitle = false, proyectoId }: RepositorioColaborativoProps) {
+export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, className = '', esDocente = false, filterByGroupId, hideTitle = false, proyectoId, refreshTrigger }: RepositorioColaborativoProps) {
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [recursoSeleccionado, setRecursoSeleccionado] = useState<Recurso | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -68,7 +69,6 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
             .from('recursos')
             .select('*')
             .order('created_at', { ascending: false });
-
 
           if (proyectoId) {
             query = query.eq('proyecto_id', proyectoId);
@@ -147,7 +147,7 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
         supabase.removeChannel(channel);
       };
     }
-  }, [mostrarEjemplo, filterByGroupId]);
+  }, [mostrarEjemplo, filterByGroupId, proyectoId, refreshTrigger]);
 
   const handleDescargar = async (recurso: Recurso) => {
     if (recurso.tipo === 'texto' && recurso.contenido) {

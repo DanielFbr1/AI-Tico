@@ -3,8 +3,8 @@ import { useTicoGame } from '../../hooks/useTicoGame'; // Adjust path if needed
 import { TicoVisuals } from './TicoVisuals';
 import { Heart, Play, BookOpen, RefreshCw } from 'lucide-react';
 
-export function TicoGameWidget() {
-    const { state, feed, play, educate, reset } = useTicoGame();
+export function TicoGameWidget({ projectId }: { projectId?: string | number }) {
+    const { state, feed, play, educate, reset } = useTicoGame(String(projectId || 'default'));
 
     const progressPercentage = Math.min((state.experience / state.maxExperience) * 100, 100);
 
@@ -12,7 +12,7 @@ export function TicoGameWidget() {
         <div className="w-full bg-white rounded-[2rem] p-6 shadow-lg border border-slate-100 flex flex-col items-center gap-6 relative overflow-hidden">
             {/* Version Tag */}
             <div className="absolute top-4 left-4 text-[10px] text-slate-300 font-mono select-none">
-                v1.0.1 (Game Logic)
+                v1.1.0 (Persistent per Project)
             </div>
 
             <div className="w-full flex justify-between items-center mb-2">

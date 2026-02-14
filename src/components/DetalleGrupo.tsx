@@ -43,8 +43,8 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 sticky top-0 z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm transition-all">
+    <div className={`min-h-screen bg-gray-50 flex flex-col ${vistaActiva === 'chat' ? 'h-screen overflow-hidden' : ''}`}>
+      <header className={`bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 sticky top-0 z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm transition-all ${vistaActiva === 'chat' ? 'shrink-0' : ''}`}>
         <button
           onClick={onBack}
           className="group flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-bold text-sm"
@@ -78,7 +78,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
         </nav>
       </header>
 
-      <main className="flex-1 p-4 md:p-8 w-full max-w-7xl mx-auto overflow-hidden">
+      <main className={`w-full max-w-7xl mx-auto ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden p-4' : 'flex-none p-4 md:p-8'}`}>
         {vistaActiva === 'detalle' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -205,7 +205,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
               </div>
             </div>
           ) : vistaActiva === 'chat' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[calc(100vh-180px)] min-h-[600px] max-w-[1600px] mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full max-w-[1600px] mx-auto">
 
               {/* Left Column: AI Mentor (PURPLE) */}
               <div className="lg:col-span-1 bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col relative">

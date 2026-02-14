@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Brain, User, GraduationCap, ArrowRight, Key, Check } from 'lucide-react';
+import { Brain, User, GraduationCap, ArrowRight, Key, Check, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function LoginPage() {
@@ -179,55 +179,77 @@ export function LoginPage() {
 
     if (view === 'selection') {
         return (
-            <div className="min-h-screen bg-[#4f39f6] flex items-center justify-center p-4 selection:bg-white selection:text-[#4f39f6]">
-                <div className="max-w-6xl w-full">
-                    {/* Header y Botones de Selección */}
-                    <div className="text-center mb-16">
-                        <h1 className="text-8xl font-black text-white mb-6 tracking-tight drop-shadow-[0_4px_0_rgba(0,0,0,0.2)]">
+            <div className="min-h-screen bg-gradient-to-br from-[#4f39f6] via-[#7c3aed] to-[#db2777] flex items-center justify-center p-6 relative overflow-hidden selection:bg-white selection:text-purple-600">
+
+                {/* Decorative background elements */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                    <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-white/10 rounded-full blur-[120px] mix-blend-overlay animate-pulse" />
+                    <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-purple-500/30 rounded-full blur-[100px] mix-blend-overlay animate-pulse animation-delay-1000" />
+                </div>
+
+                <div className="max-w-6xl w-full relative z-10">
+                    {/* Header */}
+                    <div className="text-center mb-12 transform hover:scale-[1.01] transition-transform duration-500">
+                        <div className="inline-flex items-center justify-center mb-6">
+                            <div className="p-5 bg-white/20 backdrop-blur-xl rounded-[2rem] shadow-2xl ring-1 ring-white/40">
+                                <Sparkles className="w-16 h-16 text-white drop-shadow-md" />
+                            </div>
+                        </div>
+                        <h1 className="text-7xl md:text-9xl font-black text-white mb-6 tracking-tighter drop-shadow-xl filter">
                             AI Tico
                         </h1>
-                        <p className="text-2xl text-white/90 font-bold tracking-wide">Plataforma de Innovación ABP</p>
+                        <p className="text-2xl md:text-3xl text-white/95 font-bold tracking-tight max-w-2xl mx-auto drop-shadow-md leading-tight">
+                            Tu compañero inteligente para proyectos increíbles
+                        </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                        {/* Profesor */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-5xl mx-auto px-4">
+                        {/* Profesor Card */}
                         <button
                             onClick={() => {
                                 setView('teacher-auth');
                                 setIsSignUp(false);
                             }}
-                            className="group relative bg-white rounded-3xl p-8 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all duration-100 hover:bg-gray-50 overflow-hidden text-left"
+                            className="group relative bg-white rounded-[2.5rem] p-8 md:p-10 border-b-[12px] border-slate-200 active:border-b-0 active:translate-y-3 transition-all duration-200 hover:bg-slate-50 text-left shadow-2xl shadow-blue-900/30 transform hover:-translate-y-2 overflow-hidden"
                         >
-                            <div className="relative z-10">
-                                <div className="w-20 h-20 bg-[#00d4ff] rounded-2xl flex items-center justify-center mb-6 shadow-[0_4px_0_#009ac2]">
-                                    <GraduationCap className="w-10 h-10 text-white" />
+                            <div className="relative z-10 flex flex-col h-full">
+                                <div className="w-24 h-24 bg-blue-500 rounded-3xl flex items-center justify-center mb-8 shadow-[0_8px_0_#1e40af] group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                    <GraduationCap className="w-12 h-12 text-white" />
                                 </div>
-                                <h2 className="text-3xl font-black text-slate-700 mb-3 tracking-tight">Soy Profesor/a</h2>
-                                <p className="text-slate-500 mb-6 font-bold leading-relaxed">Gestiona proyectos, evalúa y configura a Tico.</p>
-                                <div className="flex items-center justify-end gap-2 text-[#00d4ff] font-black uppercase tracking-widest group-hover:gap-4 transition-all">
-                                    <span>Acceso Docente</span>
-                                    <ArrowRight className="w-5 h-5" />
+                                <h2 className="text-4xl font-black text-slate-800 mb-4 tracking-tight group-hover:text-blue-600 transition-colors">Soy Docente</h2>
+                                <p className="text-xl text-slate-500 font-medium leading-relaxed mb-8 flex-grow">
+                                    Crea experiencias de aprendizaje, gestiona equipos y evalúa el progreso.
+                                </p>
+                                <div className="flex items-center justify-between mt-auto pt-6 border-t-2 border-slate-100">
+                                    <span className="text-blue-600 font-black uppercase tracking-widest text-sm group-hover:underline decoration-2 underline-offset-4">Entrar como Profesor</span>
+                                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 transform group-hover:rotate-[-45deg]">
+                                        <ArrowRight className="w-6 h-6" />
+                                    </div>
                                 </div>
                             </div>
                         </button>
 
-                        {/* Alumno */}
+                        {/* Alumno Card */}
                         <button
                             onClick={() => {
                                 setView('student-auth'); // DIRECT TO AUTH, SKIP VERIFY
                                 setIsSignUp(false);
                             }}
-                            className="group relative bg-white rounded-3xl p-8 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all duration-100 hover:bg-gray-50 overflow-hidden text-left"
+                            className="group relative bg-white rounded-[2.5rem] p-8 md:p-10 border-b-[12px] border-slate-200 active:border-b-0 active:translate-y-3 transition-all duration-200 hover:bg-slate-50 text-left shadow-2xl shadow-pink-900/30 transform hover:-translate-y-2 overflow-hidden"
                         >
-                            <div className="relative z-10">
-                                <div className="w-20 h-20 bg-[#ff007a] rounded-2xl flex items-center justify-center mb-6 shadow-[0_4px_0_#b30055]">
-                                    <User className="w-10 h-10 text-white" />
+                            <div className="relative z-10 flex flex-col h-full">
+                                <div className="w-24 h-24 bg-rose-500 rounded-3xl flex items-center justify-center mb-8 shadow-[0_8px_0_#9f1239] group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
+                                    <User className="w-12 h-12 text-white" />
                                 </div>
-                                <h2 className="text-3xl font-black text-slate-700 mb-3 tracking-tight">Soy Alumno/a</h2>
-                                <p className="text-slate-500 mb-6 font-bold leading-relaxed">Únete a tu clase, habla con Tico y mira tu progreso.</p>
-                                <div className="flex items-center justify-end gap-2 text-[#ff007a] font-black uppercase tracking-widest group-hover:gap-4 transition-all">
-                                    <span>Acceso Alumno</span>
-                                    <ArrowRight className="w-5 h-5" />
+                                <h2 className="text-4xl font-black text-slate-800 mb-4 tracking-tight group-hover:text-rose-600 transition-colors">Soy Alumno</h2>
+                                <p className="text-xl text-slate-500 font-medium leading-relaxed mb-8 flex-grow">
+                                    Únete a tu equipo, realiza las misiones y recibe feedback instantáneo.
+                                </p>
+                                <div className="flex items-center justify-between mt-auto pt-6 border-t-2 border-slate-100">
+                                    <span className="text-rose-600 font-black uppercase tracking-widest text-sm group-hover:underline decoration-2 underline-offset-4">Entrar como Alumno</span>
+                                    <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition-all duration-300 transform group-hover:rotate-[-45deg]">
+                                        <ArrowRight className="w-6 h-6" />
+                                    </div>
                                 </div>
                             </div>
                         </button>

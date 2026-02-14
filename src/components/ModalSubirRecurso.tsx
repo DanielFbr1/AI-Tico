@@ -158,21 +158,21 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
                     <div>
                         <h3 className="text-xl font-black text-slate-800 tracking-tight">Subir Aportación</h3>
-                        <p className="text-sm text-slate-500 font-medium">{grupo.id === 0 ? 'Compartir con toda la clase' : 'Compartir con el equipo'}</p>
+                        <p className="text-xs text-slate-500 font-medium">{grupo.id === 0 ? 'Compartir con toda la clase' : 'Compartir con el equipo'}</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="p-8 space-y-6 overflow-y-auto">
+                <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
 
                     {/* ZONE 1: SMART UPLOAD (Dynamic Icons) */}
-                    <div className="mb-6">
+                    <div>
                         <div
                             className={`border-3 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer group relative overflow-hidden ${archivo ? 'border-emerald-400 bg-emerald-50/30' : 'border-indigo-100 bg-indigo-50/30 hover:border-indigo-400 hover:bg-indigo-50'}`}
                             onClick={() => fileInputRef.current?.click()}
@@ -186,15 +186,15 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
                             />
 
                             {/* Dynamic Icon */}
-                            <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-110 ${archivo ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-indigo-500'}`}>
-                                {archivo ? <Icon className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
+                            <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-110 ${archivo ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-indigo-500'}`}>
+                                {archivo ? <Icon className="w-7 h-7" /> : <Upload className="w-7 h-7" />}
                             </div>
 
                             <h4 className="text-lg font-black text-slate-700 mb-1">
                                 {archivo ? archivo.name : 'Haz clic o arrastra tu archivo'}
                             </h4>
-                            <p className="text-sm text-slate-400 font-medium max-w-xs mx-auto">
-                                {archivo ? `Tipo detectado: ${TiposDisponibles.find(t => t.id === tipoSeleccionado)?.label}` : 'Detectamos el tipo automáticamente (Audio, Video, Imagen, Doc)'}
+                            <p className="text-xs text-slate-400 font-medium max-w-xs mx-auto">
+                                {archivo ? `Tipo detectado: ${TiposDisponibles.find(t => t.id === tipoSeleccionado)?.label}` : 'Detectamos el tipo automáticamente'}
                             </p>
                         </div>
                     </div>
@@ -202,33 +202,31 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
                     {/* ZONE 2: Metadata (Optional) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Título (Opcional)</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Título (Opcional)</label>
                             <input
                                 type="text"
                                 value={titulo}
                                 onChange={(e) => setTitulo(e.target.value)}
                                 placeholder={archivo ? archivo.name : "Título del recurso"}
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-medium text-slate-700"
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-medium text-sm text-slate-700"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Descripción (Opcional)</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Descripción (Opcional)</label>
                             <input
                                 type="text"
                                 value={descripcion}
                                 onChange={(e) => setDescripcion(e.target.value)}
                                 placeholder="..."
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-medium text-slate-700"
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-medium text-sm text-slate-700"
                             />
                         </div>
                     </div>
 
                     {/* ZONE 3: Extra Content (Only for Text type or specific need) */}
-                    {/* User requested removing redundant inputs. We only show Text Area if NO file is selected, or if user wants to add text content alongside file (optional) */}
-
                     {!archivo && (
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Contenido de Texto (Opcional si subes archivo)</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Contenido de Texto (Opcional si subes archivo)</label>
                             <textarea
                                 value={contenidoTexto}
                                 onChange={(e) => setContenidoTexto(e.target.value)}
@@ -239,7 +237,7 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
                         </div>
                     )}
 
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-3 pt-2">
                         <button
                             onClick={onClose}
                             disabled={uploading}

@@ -18,17 +18,39 @@ const INITIAL_STATE: TicoState = {
     lastInteraction: Date.now(),
 };
 
-export function useTicoGame() {
+export function useTicoGame(contextId: string = 'default') {
+    const storageKey = `tico-game-state-${contextId}`;
+
     // Load state from local storage or use initial state
     const [state, setState] = useState<TicoState>(() => {
-        const saved = localStorage.getItem('tico-game-state');
-        return saved ? JSON.parse(saved) : INITIAL_STATE;
+        try {
+            const saved = localStorage.getItem(storageKey);
+            return saved ? JSON.parse(saved) : INITIAL_STATE;
+        } catch (e) {
+            console.error("Error loading Tico state:", e);
+            return INITIAL_STATE;
+        }
     });
 
-    // Persist state to local storage
+    // Save state on change
     useEffect(() => {
-        localStorage.setItem('tico-game-state', JSON.stringify(state));
-    }, [state]);
+        localStorage.setItem(storageKey, JSON.stringify(state));
+    }, [state, storageKey]);
+
+    // Reload state if contextId changes (in case component is not re-mounted)
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                setState(JSON.parse(saved));
+            } else {
+                setState(INITIAL_STATE);
+            }
+        } catch (e) {
+            console.error("Error reloading Tico state:", e);
+            setState(INITIAL_STATE);
+        }
+    }, [contextId, storageKey]);
 
     // Mood decay logic (simplified for demo)
     useEffect(() => {
