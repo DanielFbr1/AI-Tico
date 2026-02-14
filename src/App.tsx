@@ -55,6 +55,8 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 function AppContent() {
   const { user, perfil, loading, signOut } = useAuth();
 
+  console.log("📱 AppContent render:", { loading, hasUser: !!user, hasPerfil: !!perfil });
+
   // Efecto para "Limpieza de Emergencia" si la pantalla se queda en blanco
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

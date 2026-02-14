@@ -1,16 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Tico</title>
+  <title>Ai-Tico</title>
+
+  <!-- Iconos -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-title" content="Ai-Tico" />
   <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#4f39f6" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap"
@@ -19,6 +23,15 @@
 
 <body>
   <div id="root"></div>
+  <script>
+    window.onerror = function (msg, url, line, col, error) {
+      console.error("❌ ERROR GLOBAL:", msg, "en", url, ":", line);
+      return false;
+    };
+    window.onunhandledrejection = function (event) {
+      console.error("❌ RECHAZO NO MANEJADO:", event.reason);
+    };
+  </script>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

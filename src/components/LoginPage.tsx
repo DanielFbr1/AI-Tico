@@ -16,6 +16,8 @@ export function LoginPage() {
     const [isSignUp, setIsSignUp] = useState(false);
     const [foundProject, setFoundProject] = useState<any>(null);
 
+    console.log("🔑 LoginPage mount. View:", view);
+
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
