@@ -71,6 +71,7 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
   const [escribiendo, setEscribiendo] = useState(false);
   const [loading, setLoading] = useState(true);
   const mensajesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // --- NUEVO: ESTADOS DE VOZ Y ESCRITURA MEJORADOS ---
   const [displayedContent, setDisplayedContent] = useState('');
@@ -244,7 +245,12 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
   };
 
   const scrollToBottom = () => {
-    mensajesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   };
 
   const detectarCategoria = (texto: string): Mensaje['categoria'] => {
@@ -390,7 +396,7 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
 
 
       {/* Mensajes */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+      <div ref={containerRef} className="flex-1 overflow-y-auto no-scrollbar p-4 bg-gray-50">
         {mensajes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-4">
@@ -446,12 +452,12 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
                         : 'bg-white border border-gray-200 text-gray-900 rounded-tl-none shadow-sm'
                         }`}
                     >
-                      <p className="text-sm leading-relaxed">
+                      <div className="text-sm leading-relaxed whitespace-pre-wrap">
                         {contentToShow}
                         {isTypingThis && (
                           <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-blue-500 animate-pulse"></span>
                         )}
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices, Gamepad2 } from 'lucide-react';
 import { useState } from 'react';
 import { Card_Metrica } from './Card_Metrica';
 import { Card_Grupo } from './Card_Grupo';
@@ -9,6 +9,7 @@ import { ModalSubirRecurso } from './ModalSubirRecurso';
 import { SistemaCodigoSala } from './SistemaCodigoSala';
 import { ListaAlumnosEnLinea } from './ListaAlumnosEnLinea';
 import { RuletaModal } from './RuletaModal';
+import { TicoGameWidget } from './TicoGame/TicoGameWidget';
 
 import { PerfilAlumno } from './PerfilAlumno';
 import { RepositorioColaborativo } from './RepositorioColaborativo';
@@ -71,6 +72,7 @@ export function DashboardDocente({
     const [modalAsistenciaOpen, setModalAsistenciaOpen] = useState(false);
     const [modalSubirRecursoAbierto, setModalSubirRecursoAbierto] = useState(false);
     const [modalRuletaAbierta, setModalRuletaAbierta] = useState(false);
+    const [modalTicoAbierto, setModalTicoAbierto] = useState(false);
     const [alumnoParaEvaluar, setAlumnoParaEvaluar] = useState<{ nombre: string, grupo: Grupo } | null>(null);
 
     // Project Renaming State
@@ -198,6 +200,21 @@ export function DashboardDocente({
                     proyectoId={proyectoActual?.id}
                     codigoSala={proyectoActual?.codigo_sala}
                 />
+            )}
+
+            {/* Modal Tico Game */}
+            {modalTicoAbierto && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+                    <div className="relative w-full max-w-md">
+                        <button
+                            onClick={() => setModalTicoAbierto(false)}
+                            className="absolute -top-12 right-0 text-white hover:text-gray-200 transition-colors"
+                        >
+                            <X className="w-8 h-8" />
+                        </button>
+                        <TicoGameWidget />
+                    </div>
+                </div>
             )}
 
             {/* Modal crear grupo */}
@@ -494,6 +511,16 @@ export function DashboardDocente({
                             >
                                 <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
                                 <span className="hidden lg:inline">Ajustar IA</span>
+                            </button>
+
+                            {/* Botón Mascota Tico */}
+                            <button
+                                onClick={() => setModalTicoAbierto(true)}
+                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-50 text-emerald-600 border-2 border-emerald-100 hover:border-emerald-300 rounded-xl font-bold transition-all text-xs"
+                                title="Mascota de Clase"
+                            >
+                                <Gamepad2 className="w-4 h-4 md:w-5 md:h-5" />
+                                <span className="hidden lg:inline">Mascota</span>
                             </button>
 
                             {/* Botón Sorteo/Ruleta */}

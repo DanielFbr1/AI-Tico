@@ -275,7 +275,7 @@ export function MentorIA({ grupoId, proyectoId, departamento, miembro }: MentorI
                                     <Sparkles size={14} />
                                 </div>
                             )}
-                            <div className={`p-5 rounded-[1.5rem] max-w-[85%] text-sm leading-relaxed shadow-sm
+                            <div className={`p-5 rounded-[1.5rem] max-w-[85%] text-sm leading-relaxed shadow-sm whitespace-pre-wrap
                                 ${!isIA
                                     ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-500/20'
                                     : 'bg-white border boundary-slate-100 text-slate-600 rounded-tl-none font-medium'

@@ -224,7 +224,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
                     </button>
                   </div>
                 </div>
-                <div className="pt-20 h-full flex flex-col">
+                <div className="pt-14 h-full flex flex-col">
                   <MentorChat
                     grupo={grupo}
                     readOnly={true}
@@ -240,7 +240,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
                     <span className="text-sm font-black text-green-900 uppercase tracking-widest">Chat del Equipo</span>
                   </div>
                 </div>
-                <div className="pt-20 h-full flex flex-col">
+                <div className="pt-14 h-full flex flex-col">
                   <ChatGrupo
                     grupoId={String(grupo.id)}
                     miembroActual="Profesor"

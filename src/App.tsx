@@ -177,7 +177,7 @@ export default function App() {
         <AppContent />
         <Toaster position="top-right" richColors />
         <div className="fixed bottom-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded-full pointer-events-none z-50 backdrop-blur-sm">
-          v0.1.4 (Original Design Restored)
+          v0.1.8 (Mora Palette Design)
         </div>
       </AuthProvider>
     </ErrorBoundary>

@@ -1,31 +1,78 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a; /* Slate 900 */
-  --primary: #2563EB; /* Tech Blue (Blue 600) */
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9; /* Slate 100 */
-  --secondary-foreground: #0f172a;
-  --accent: #E11D48; /* Woodpecker Red (Rose 600) */
-  --accent-foreground: #ffffff;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
+  --background: #F8FAFC;
+  /* Slate 50 - Warmer/Softer than pure white */
+  --foreground: #0f172a;
+  /* Slate 900 */
+
+  --primary: 8 146 193;
+  /* Tico Blue #0892c1 converted to RGB channels for opacity support */
+  --primary-foreground: 255 255 255;
+
+  --secondary: 226 232 240;
+  /* Slate 200 */
+  --secondary-foreground: 30 41 59;
+
+  --accent: 235 133 35;
+  /* Tico Orange #eb8523 */
+  --accent-foreground: 255 255 255;
+
+  --success: 87 166 74;
+  /* Tico Green #57a64a */
+  --success-foreground: 255 255 255;
+
+  --muted: 241 245 249;
+  --muted-foreground: 100 116 139;
+
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
+
+  --popover: 255 255 255;
+  --popover-foreground: 15 23 42;
+
+  --border: 203 213 225;
+  /* Slate 300 */
+  --input: 203 213 225;
+
+  --ring: 8 146 193;
+
+  --radius: 1rem;
 }
 
 .dark {
-  --background: #020617; /* Slate 950 */
-  --foreground: #f8fafc; /* Slate 50 */
-  --primary: #3b82f6; /* Blue 500 for dark mode */
-  --primary-foreground: #ffffff;
-  --secondary: #1e293b; /* Slate 800 */
-  --secondary-foreground: #f8fafc;
-  --accent: #f43f5e; /* Rose 500 */
-  --accent-foreground: #ffffff;
+  --background: 2 6 23;
+  --foreground: 248 250 252;
+
+  --primary: 14 165 233;
+  /* Sky 500 */
+  --primary-foreground: 255 255 255;
+
+  --secondary: 30 41 59;
+  --secondary-foreground: 248 250 252;
+
+  --accent: 249 115 22;
+  /* Orange 500 */
+  --accent-foreground: 255 255 255;
+
+  --success: 74 222 128;
+  /* Green 400 */
+  --success-foreground: 2 6 23;
+
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
+
+  --card: #0f172a;
+  /* Slate 900 */
+  --card-foreground: #f8fafc;
+
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+
   --border: #1e293b;
+  --input: #1e293b;
+
+  --ring: #0ea5e9;
 }
 
 @theme inline {

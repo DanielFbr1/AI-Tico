@@ -25,6 +25,7 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // Audio Recording States
     const [isRecording, setIsRecording] = useState(false);
@@ -32,7 +33,12 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
     const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (containerRef.current) {
+            containerRef.current.scrollTo({
+                top: containerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
     };
 
     useEffect(() => {
@@ -269,7 +275,7 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
 
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30">
+            <div ref={containerRef} className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-4 bg-slate-50/30">
                 {loading && mensajes.length === 0 ? (
                     <div className="flex justify-center p-8">
                         <Loader2 className="w-8 h-8 text-slate-300 animate-spin" />

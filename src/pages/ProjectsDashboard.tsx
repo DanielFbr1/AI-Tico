@@ -233,6 +233,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                 </div>
             </header>
 
+
             <div className="max-w-7xl mx-auto space-y-12 md:space-y-20">
                 {proyectos.length > 0 ? (
                     Object.entries(proyectosPorClase).map(([clase, proyectosClase]) => (
@@ -332,6 +333,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                 <ModalCrearProyecto
                     onClose={() => setShowModalProyecto(false)}
                     onCrear={handleCrearProyecto}
+                    nombreUsuario={session?.user?.email || 'Docente'}
                 />
             )}
         </div>
