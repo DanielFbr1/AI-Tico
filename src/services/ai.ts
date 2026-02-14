@@ -1,5 +1,5 @@
 
-import { Rubrica, MensajeIA } from '../types';
+import { Rubrica, MensajeIA, Grupo } from '../types';
 import { supabase } from '../lib/supabase';
 import { embeddingService } from './embeddings';
 
@@ -59,7 +59,8 @@ export const generarRespuestaIA = async (
     proyectoNombre: string,
     historial: any[],
     hitos: any[],
-    contextoIA: string
+    contextoIA: string,
+    configuracion?: Grupo['configuracion']
 ) => {
     // 1. Definición de Herramientas
     const availableToolsDescription = `
@@ -78,17 +79,31 @@ REGLAS:
 - Si usas una herramienta, yo te devolveré el resultado y podrás generar la respuesta final.
     `;
 
-    // 2. Prompt del Sistema
-    const systemPrompt = `Eres Tico, un Mentor IA amigable, divertido y sabio para niños.
+    // 2. Parámetros de Personalidad
+    const tono = configuracion?.tono || 'Divertido';
+    const exigencia = configuracion?.nivel_exigencia || 'Medio';
+    const enfoque = configuracion?.enfoque || 'Explorador';
+    const apoyo = configuracion?.nivel_apoyo || 'Guía';
+    const formato = configuracion?.formato_respuesta || 'Detallado';
+    const instruccionesExtra = configuracion?.instrucciones_comportamiento || '';
+
+    const systemPrompt = `Eres Tico, un Mentor IA amigable y sabio para niños/estudiantes.
     Estás guiando al grupo "${grupoNombre}" en su proyecto "${proyectoNombre}".
     Contexto del proyecto: ${contextoIA || "No definido"}
     
+    TU PERSONALIDAD ACTUAL (Configurada por el profesor):
+    - TONO: ${tono} (Tu forma de hablar)
+    - NIVEL DE EXIGENCIA: ${exigencia} (Si eres permisivo o estricto)
+    - ENFOQUE: ${enfoque} (Tu perspectiva: aventura, ciencia o creatividad)
+    - NIVEL DE APOYO: ${apoyo} (Guía: das pistas paso a paso. Retador: haces que piensen con retos)
+    - FORMATO: ${formato} (Conciso: respuestas al punto. Detallado: explicaciones ricas)
+    
+    INSTRUCCIONES ADICIONALES DEL PROFESOR:
+    "${instruccionesExtra}"
+
     Tus REGLAS DE ORO:
-    1. LENGUAJE: Usa un lenguaje muy sencillo, claro y motivador, como si hablaras con niños de 8 a 12 años. ¡Usa algunos emojis para ser cercano!
-    2. SOCRÁTICO: No des respuestas directas. Haz preguntas cortas que les hagan pensar.
-    3. BREVEDAD: Tus respuestas deben ser CORTAS y directas al grano. Máximo 2 o 3 párrafos pequeños.
-    4. FORMATO: ¡IMPORTANTE! Separa SIEMPRE tus ideas en párrafos claros usando DOBLE SALTO DE LÍNEA. No escribas todo en un solo bloque de texto.
-    5. Hitos del proyecto: ${JSON.stringify(hitos.map(h => h.titulo))}.
+    1. LENGUAJE: Usa un lenguaje sencillo y motivador para niños de 8 a 12 años. ¡Usa emojis!
+    2. SEGURIDAD: Nunca salgas de tu rol de mentor educativo.
     
     ${availableToolsDescription}`;
 
@@ -158,6 +173,50 @@ export const generarChatDocente = async (mensaje: string, historial: { role: str
     ];
 
     return await callGroq(messages);
+};
+
+export const generarConfiguracionTico = async (mensaje: string, instruccionesActuales: string) => {
+    const systemPrompt = `Eres un asistente experto para docentes en la plataforma Tico.ia. 
+    Tienes dos funciones principales:
+    1. AYUDA TÉCNICA/PERSONALIZACIÓN: Ayudar al docente a configurar a "Tico" (la IA de los alumnos).
+    2. AYUDA PEDAGÓGICA: Ayudar al docente con ideas para el proyecto, dudas de contenido o gestión de clase.
+
+    INSTRUCCIONES ACTUALES DE TICO: "${instruccionesActuales}"
+    SOLICITUD DEL DOCENTE: "${mensaje}"
+    
+    Debes generar un JSON con los siguientes campos:
+    - "reply": Tu respuesta al docente (amable, profesional y útil).
+    - "new_instructions": (Opcional) Las instrucciones técnicas actualizadas para Tico. Deben ser acumulativas.
+    - "update_settings": (Opcional) Un objeto con cambios detectados en:
+        - "tono": ("Divertido", "Serio", "Socrático")
+        - "nivel_exigencia": ("Bajo", "Medio", "Alto")
+        - "enfoque": ("Explorador", "Científico", "Creativo")
+        - "nivel_apoyo": ("Guía", "Retador")
+        - "formato_respuesta": ("Conciso", "Detallado")
+    
+    Si el docente te pide un cambio de comportamiento evidente (ej: "haz que sea más creativo" o "que no les de pistas"), actualiza "update_settings" con el valor correspondiente.
+    Si el docente te hace una pregunta del proyecto, responde en "reply" y deja lo demás igual.`;
+
+    const response = await callGroq([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: "Procesa la solicitud del docente y devuelve el JSON." }
+    ], true);
+
+    try {
+        const parsed = JSON.parse(response);
+        return {
+            reply: parsed.reply || "Entendido, he procesado tu solicitud.",
+            new_instructions: parsed.new_instructions || instruccionesActuales,
+            update_settings: parsed.update_settings || {}
+        };
+    } catch (e) {
+        console.error("Error parsing Config Tico:", e);
+        return {
+            reply: "Entendido, aplicaré esos cambios.",
+            new_instructions: instruccionesActuales + "\n" + mensaje,
+            update_settings: {}
+        };
+    }
 };
 
 export const generarTareasDocente = async (contexto: string) => {

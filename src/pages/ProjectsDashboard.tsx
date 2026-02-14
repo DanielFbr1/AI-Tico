@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Proyecto } from '../types';
-import { Layout, ArrowRight, Users, Key, Plus, Loader2, Sparkles, LogOut, RefreshCw, Trash2, Folder, BookOpen, GraduationCap, School } from 'lucide-react';
+import { Layout, ArrowRight, Users, Key, Plus, Loader2, Sparkles, LogOut, RefreshCw, Trash2, Folder, BookOpen, GraduationCap, School, Search, X } from 'lucide-react';
 import { PROYECTOS_MOCK } from '../data/mockData';
 import { ModalCrearProyecto } from '../components/ModalCrearProyecto';
 
@@ -17,6 +17,15 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
     const [loading, setLoading] = useState(true);
     const [isSeeding, setIsSeeding] = useState(false);
     const [showModalProyecto, setShowModalProyecto] = useState(false);
+    const [filtroBusqueda, setFiltroBusqueda] = useState('');
+
+    const proyectosFiltrados = proyectos.filter(p =>
+        p.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
+        (p.clase || '').toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
+        p.tipo.toLowerCase().includes(filtroBusqueda.toLowerCase())
+    );
+
+    const clasesExistentes = Array.from(new Set(proyectos.map(p => p.clase).filter(Boolean))) as string[];
 
     useEffect(() => {
         fetchProyectos();
@@ -146,23 +155,32 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
         return acc;
     }, {} as Record<string, Proyecto[]>);
 
+    const normalizeClassName = (name: string) => {
+        if (!name) return 'Sin Clase';
+        // Normalize: "1.º Primaria", "1º", "1" -> "1º"
+        const match = name.match(/(\d+)/);
+        if (match) return `${match[1]}º`;
+        return name.trim().toUpperCase();
+    };
+
     const getClaseStyles = (clase: string) => {
-        if (clase.includes('1.º') || clase.includes('2.º')) return {
+        const normalized = normalizeClassName(clase);
+        if (normalized.startsWith('1º') || normalized.startsWith('2º')) return {
             header: 'bg-emerald-50 border-emerald-200 text-emerald-700',
             bg: 'bg-emerald-500',
             light: 'bg-emerald-50'
         };
-        if (clase.includes('3.º') || clase.includes('4.º')) return {
+        if (normalized.startsWith('3º') || normalized.startsWith('4º')) return {
             header: 'bg-orange-50 border-orange-200 text-orange-700',
             bg: 'bg-orange-500',
             light: 'bg-orange-50'
         };
-        if (clase.includes('5.º')) return {
+        if (normalized.startsWith('5º')) return {
             header: 'bg-blue-50 border-blue-200 text-blue-700',
             bg: 'bg-blue-500',
             light: 'bg-blue-50'
         };
-        if (clase.includes('6.º')) return {
+        if (normalized.startsWith('6º')) return {
             header: 'bg-purple-50 border-purple-200 text-purple-700',
             bg: 'bg-purple-500',
             light: 'bg-purple-50'
@@ -175,10 +193,11 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
     };
 
     const getClaseIcon = (clase: string) => {
-        if (clase.includes('1.º') || clase.includes('2.º')) return <School className="w-5 h-5" />;
-        if (clase.includes('3.º') || clase.includes('4.º')) return <School className="w-5 h-5" />;
-        if (clase.includes('5.º')) return <School className="w-5 h-5" />;
-        if (clase.includes('6.º')) return <GraduationCap className="w-5 h-5" />;
+        const normalized = normalizeClassName(clase);
+        if (normalized.startsWith('1º') || normalized.startsWith('2º')) return <School className="w-5 h-5" />;
+        if (normalized.startsWith('3º') || normalized.startsWith('4º')) return <School className="w-5 h-5" />;
+        if (normalized.startsWith('5º')) return <School className="w-5 h-5" />;
+        if (normalized.startsWith('6º')) return <GraduationCap className="w-5 h-5" />;
         return <Folder className="w-5 h-5" />;
     };
 
@@ -211,12 +230,6 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                     </div>
                     <div className="flex flex-wrap items-center justify-center gap-3 w-full md:w-auto">
                         <button
-                            onClick={fetchProyectos}
-                            className="p-3.5 bg-slate-50 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-2xl transition-all border border-transparent active:scale-95"
-                        >
-                            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                        </button>
-                        <button
                             onClick={() => setShowModalProyecto(true)}
                             className="flex-1 md:flex-none flex items-center justify-center gap-3 px-7 py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all text-sm uppercase tracking-widest min-w-[120px]"
                         >
@@ -231,12 +244,43 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                         </button>
                     </div>
                 </div>
+
+                {/* Barra de Búsqueda / Filtro */}
+                <div className="mt-6 max-w-2xl mx-auto">
+                    <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Search className="h-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Filtrar por clase, nombre o metodología..."
+                            value={filtroBusqueda}
+                            onChange={(e) => setFiltroBusqueda(e.target.value)}
+                            className="block w-full pl-11 pr-4 py-3.5 bg-white border-2 border-slate-100 rounded-2xl text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                        />
+                        {filtroBusqueda && (
+                            <button
+                                onClick={() => setFiltroBusqueda('')}
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
             </header>
 
 
             <div className="max-w-7xl mx-auto space-y-12 md:space-y-20">
-                {proyectos.length > 0 ? (
-                    Object.entries(proyectosPorClase).map(([clase, proyectosClase]) => (
+                {proyectosFiltrados.length > 0 ? (
+                    Object.entries(
+                        proyectosFiltrados.reduce((acc, p) => {
+                            const normalized = normalizeClassName(p.clase || '');
+                            if (!acc[normalized]) acc[normalized] = [];
+                            acc[normalized].push(p);
+                            return acc;
+                        }, {} as Record<string, Proyecto[]>)
+                    ).map(([clase, proyectosClase]) => (
                         <section key={clase} className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-4">
                                 <div className="flex items-center gap-4">
@@ -334,6 +378,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                     onClose={() => setShowModalProyecto(false)}
                     onCrear={handleCrearProyecto}
                     nombreUsuario={session?.user?.email || 'Docente'}
+                    clasesExistentes={clasesExistentes}
                 />
             )}
         </div>

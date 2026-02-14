@@ -1,4 +1,4 @@
-import { Radio, Mic, Video, Newspaper, BookOpen, Plus, ArrowRight } from 'lucide-react';
+import { BookOpen, Target, Heart, Search, Plus, ArrowRight, Brain } from 'lucide-react';
 
 interface TipoProyecto {
   id: string;
@@ -16,40 +16,49 @@ interface SeleccionProyectoProps {
 
 const proyectosDisponibles: TipoProyecto[] = [
   {
-    id: 'radio-podcast',
-    nombre: 'Radio/Podcast Educativo',
-    descripcion: 'Creación de programas de radio o podcast sobre temas educativos',
-    icon: Radio,
-    color: 'from-blue-600 to-purple-600',
-    departamentos: ['Guion', 'Locución', 'Edición', 'Diseño Gráfico', 'Vestuario/Arte'],
-    ejemplo: 'Podcast sobre cambio climático, historia, ciencia...'
+    id: 'abp-proyectos',
+    nombre: 'Aprendizaje Basado en Proyectos',
+    descripcion: 'Los alumnos desarrollan un producto final para resolver un reto o pregunta compleja.',
+    icon: BookOpen,
+    color: 'from-blue-600 to-indigo-600',
+    departamentos: ['Investigación', 'Planificación', 'Ejecución', 'Comunicación', 'Evaluación'],
+    ejemplo: 'Crear un refugio de biodiversidad en el patio del colegio.'
   },
   {
-    id: 'canal-youtube',
-    nombre: 'Canal Educativo YouTube',
-    descripcion: 'Producción de videos educativos para YouTube',
-    icon: Video,
-    color: 'from-red-600 to-pink-600',
-    departamentos: ['Guion', 'Presentación', 'Grabación', 'Edición', 'Diseño'],
-    ejemplo: 'Videos sobre experimentos, tutoriales, documentales...'
+    id: 'abp-problemas',
+    nombre: 'Aprendizaje Basado en Problemas',
+    descripcion: 'Los alumnos adquieren conocimientos resolviendo un problema abierto y real.',
+    icon: Brain,
+    color: 'from-purple-600 to-pink-600',
+    departamentos: ['Análisis', 'Hipótesis', 'Investigación', 'Propuesta', 'Reflexión'],
+    ejemplo: '¿Cómo podríamos reducir el ruido en los pasillos de forma creativa?'
   },
   {
-    id: 'periodico-digital',
-    nombre: 'Periódico Digital Escolar',
-    descripcion: 'Creación de un periódico digital con noticias escolares',
-    icon: Newspaper,
+    id: 'aprendizaje-servicio',
+    nombre: 'Aprendizaje Servicio (ApS)',
+    descripcion: 'Los alumnos aprenden mientras realizan un servicio real a su comunidad.',
+    icon: Heart,
+    color: 'from-red-600 to-orange-600',
+    departamentos: ['Detección', 'Planificación', 'Acción Social', 'Evaluación', 'Difusión'],
+    ejemplo: 'Organizar una campaña de donación de libros para un hospital local.'
+  },
+  {
+    id: 'indagacion',
+    nombre: 'Indagación',
+    descripcion: 'Los alumnos exploran, preguntan y descubren conceptos a través de la investigación activa.',
+    icon: Search,
     color: 'from-green-600 to-teal-600',
-    departamentos: ['Redacción', 'Fotografía', 'Diseño', 'Redes Sociales', 'Coordinación'],
-    ejemplo: 'Noticias del colegio, entrevistas, reportajes...'
+    departamentos: ['Pregunta', 'Exploración', 'Análisis', 'Descubrimiento', 'Reflexión'],
+    ejemplo: 'Investigar cómo viven las hormigas o por qué los imanes se atraen.'
   },
   {
     id: 'proyecto-personalizado',
     nombre: 'Proyecto Personalizado',
-    descripcion: 'Define tu propio proyecto ABP con departamentos personalizados',
+    descripcion: 'Define tu propia metodología y departamentos desde cero.',
     icon: Plus,
-    color: 'from-purple-600 to-indigo-600',
+    color: 'from-slate-600 to-slate-800',
     departamentos: [],
-    ejemplo: 'Crea tu proyecto desde cero con tus propias reglas'
+    ejemplo: 'Cualquier otro formato que encaje con tu visión educativa.'
   }
 ];
 
@@ -64,9 +73,9 @@ export function SeleccionProyecto({ onSeleccionar }: SeleccionProyectoProps) {
               <BookOpen className="w-12 h-12 text-purple-600" />
             </div>
           </div>
-          <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-lg">Elige tu Proyecto ABP</h1>
+          <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-lg">Elige la Metodología</h1>
           <p className="text-2xl text-white font-medium drop-shadow-md">
-            Selecciona el tipo de proyecto que quieres realizar con tu clase
+            Selecciona cómo quieres trabajar con tu clase
           </p>
         </div>
 
@@ -81,15 +90,15 @@ export function SeleccionProyecto({ onSeleccionar }: SeleccionProyectoProps) {
                 className="group relative bg-white rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105 text-left overflow-hidden"
               >
                 <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${proyecto.color} opacity-10 rounded-bl-full`}></div>
-                
+
                 <div className="relative z-10">
                   <div className={`w-16 h-16 bg-gradient-to-br ${proyecto.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
                     <Icon className="w-9 h-9 text-white" />
                   </div>
-                  
+
                   <h2 className="text-2xl font-bold text-gray-900 mb-3">{proyecto.nombre}</h2>
                   <p className="text-gray-700 mb-4 font-medium">{proyecto.descripcion}</p>
-                  
+
                   {proyecto.departamentos.length > 0 && (
                     <div className="mb-4">
                       <p className="text-sm font-semibold text-gray-600 mb-2">Departamentos:</p>
@@ -102,7 +111,7 @@ export function SeleccionProyecto({ onSeleccionar }: SeleccionProyectoProps) {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="bg-blue-50 rounded-xl p-3 mb-4">
                     <p className="text-sm text-gray-700">
                       <span className="font-semibold">Ejemplo:</span> {proyecto.ejemplo}

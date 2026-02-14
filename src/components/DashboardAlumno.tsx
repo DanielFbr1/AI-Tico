@@ -571,7 +571,10 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 {(alumno.nombre || 'A').charAt(0).toUpperCase()}
               </div>
               <div>
-                <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
+                  <span className="text-[9px] text-slate-300 font-bold uppercase tracking-wider bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">v0.3.6</span>
+                </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {alumno.clase || 'Clase'} • {grupoDisplay?.nombre || 'Mi grupo'}
                 </p>

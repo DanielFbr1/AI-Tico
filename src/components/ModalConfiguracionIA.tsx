@@ -1,8 +1,9 @@
-import { X, Sparkles, MessageSquare, Brain, Mic, Volume2, Globe } from 'lucide-react';
+import { X, Sparkles, MessageSquare, Brain, Mic, Volume2, Globe, Bot } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 import { Grupo } from '../types';
+import { MentorConfigChat } from './MentorConfigChat';
 
 interface ModalConfiguracionIAProps {
     onClose: () => void;
@@ -12,39 +13,39 @@ interface ModalConfiguracionIAProps {
 
 export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfiguracionIAProps) {
     // Estados iniciales basados en el grupo (o defaults)
-    const [nivelExigencia, setNivelExigencia] = useState<'Bajo' | 'Medio' | 'Alto'>('Medio');
-    const [tono, setTono] = useState<'Divertido' | 'Serio' | 'Socrático'>('Divertido');
+    const [nivelExigencia, setNivelExigencia] = useState<'Bajo' | 'Medio' | 'Alto'>(grupo?.configuracion?.nivel_exigencia || 'Medio');
+    const [tono, setTono] = useState<'Divertido' | 'Serio' | 'Socrático'>(grupo?.configuracion?.tono || 'Divertido');
+    const [enfoque, setEnfoque] = useState<'Explorador' | 'Científico' | 'Creativo'>(grupo?.configuracion?.enfoque || 'Explorador');
+    const [nivelApoyo, setNivelApoyo] = useState<'Guía' | 'Retador'>(grupo?.configuracion?.nivel_apoyo || 'Guía');
+    const [formatoRespuesta, setFormatoRespuesta] = useState<'Conciso' | 'Detallado'>(grupo?.configuracion?.formato_respuesta || 'Detallado');
     const [frecuenciaEmojis, setFrecuenciaEmojis] = useState(true);
 
     // NUEVOS ESTADOS para Voz y Micro
     const [vozActivada, setVozActivada] = useState(grupo?.configuracion?.voz_activada ?? true);
     const [microfonoActivado, setMicrofonoActivado] = useState(grupo?.configuracion?.microfono_activado ?? true);
+
+    // NUEVO ESTADO para Instrucciones
+    const [instrucciones, setInstrucciones] = useState(grupo?.configuracion?.instrucciones_comportamiento || '');
+
     const [guardando, setGuardando] = useState(false);
 
     const isGlobal = !grupo && !!proyectoId;
 
     const handleGuardar = async () => {
         setGuardando(true);
-        // Toast optimista
-        // toast.loading('Guardando ajustes...');
 
         try {
             const newConfig = {
-                // Si es global, usamos valores por defecto para lo que no tenemos, o conservamos (en batch es díficil conservar sin leer antes, asi que sobrescribimos lo común)
-                // Para simplificar, asumimos que 'configuracion' es un JSONB y queremos hacer merge o overwrite.
-                // Supabase update hace merge parcial a nivel de columna, pero jsonb se reemplaza entero si pasamos el objeto.
-                // PERO, en SQL podemos hacer jsonb_set o similar. 
-                // Por simplicidad y seguridad: Sobrescribiremos estos flags manteniendo el resto si es posible, 
-                // pero como no tenemos el estado actual de todos, asumimos una config estandar para los nuevos flags.
+                ...(grupo ? grupo.configuracion : {}),
                 voz_activada: vozActivada,
                 microfono_activado: microfonoActivado,
-                // Mantener otros si existieran en el grupo individual
-                ...(grupo ? grupo.configuracion : {})
+                instrucciones_comportamiento: instrucciones,
+                tono: tono,
+                nivel_exigencia: nivelExigencia,
+                enfoque: enfoque,
+                nivel_apoyo: nivelApoyo,
+                formato_respuesta: formatoRespuesta
             };
-
-            // Asegurar que voz y micro son los del estado
-            newConfig.voz_activada = vozActivada;
-            newConfig.microfono_activado = microfonoActivado;
 
             if (grupo) {
                 // Actualizar UN grupo
@@ -78,7 +79,7 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-[2rem] shadow-2xl max-w-xl w-full flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-[2rem] shadow-2xl max-w-5xl w-full flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh]">
                 {/* Header */}
                 <div className={`p-8 text-white flex items-center justify-between shrink-0 ${isGlobal ? 'bg-gradient-to-r from-slate-800 to-slate-900' : 'bg-gradient-to-r from-purple-600 to-pink-600'}`}>
                     <div className="flex items-center gap-4">
@@ -101,123 +102,128 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                 </div>
 
                 {/* Content */}
-                <div className="p-8 space-y-6 bg-gray-50 flex-1 overflow-y-auto">
+                <div className="p-4 md:p-6 bg-gray-50 flex-1 overflow-y-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                    {isGlobal && (
-                        <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 items-start">
-                            <Globe className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm font-bold text-blue-800">Has abierto la configuración global</p>
-                                <p className="text-xs text-blue-600 mt-1">Los cambios que hagas aquí se aplicarán a <strong>todos los grupos</strong> de la clase.</p>
+                        {/* COLUMNA IZQUIERDA: CHAT (ASISTENTE) */}
+                        <div className="lg:col-span-7 space-y-4">
+                            <div className="bg-white p-5 rounded-3xl shadow-sm border border-indigo-100 ring-4 ring-indigo-50/50">
+                                <label className="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-wide mb-2">
+                                    <Bot className="w-5 h-5 text-indigo-600" />
+                                    Tu Asistente Tico
+                                </label>
+                                <p className="text-xs text-indigo-500 font-medium mb-4">
+                                    Configura el comportamiento o pídeme ayuda pedagógica.
+                                </p>
+                                <MentorConfigChat
+                                    currentInstructions={instrucciones}
+                                    onUpdateInstructions={(newInst) => setInstrucciones(newInst)}
+                                    onUpdateSettings={(settings) => {
+                                        if (settings.tono) setTono(settings.tono as any);
+                                        if (settings.nivel_exigencia) setNivelExigencia(settings.nivel_exigencia as any);
+                                        if (settings.enfoque) setEnfoque(settings.enfoque as any);
+                                        if (settings.nivel_apoyo) setNivelApoyo(settings.nivel_apoyo as any);
+                                        if (settings.formato_respuesta) setFormatoRespuesta(settings.formato_respuesta as any);
+                                        toast.success("Configuración actualizada por IA");
+                                    }}
+                                    currentTone={tono}
+                                />
                             </div>
                         </div>
-                    )}
 
-                    {/* Nivel de Exigencia */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <label className="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-wide mb-4">
-                            <Brain className="w-4 h-4 text-purple-600" />
-                            Nivel de Exigencia
-                        </label>
-                        <div className="flex gap-2">
-                            {['Bajo', 'Medio', 'Alto'].map((nivel) => (
-                                <button
-                                    key={nivel}
-                                    onClick={() => setNivelExigencia(nivel as any)}
-                                    className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${nivelExigencia === nivel
-                                        ? 'bg-purple-600 text-white shadow-lg'
-                                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                        }`}
-                                >
-                                    {nivel}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Tono */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <label className="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-wide mb-4">
-                            <MessageSquare className="w-4 h-4 text-pink-600" />
-                            Estilo de Comunicación
-                        </label>
-                        <select
-                            value={tono}
-                            onChange={(e) => setTono(e.target.value as any)}
-                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl font-bold text-gray-700 outline-none focus:border-purple-500 transition-all"
-                        >
-                            <option value="Divertido">Divertido y Dinámico 🌟</option>
-                            <option value="Serio">Directo y Formal 👨‍🏫</option>
-                            <option value="Socrático">Solo hace preguntas 🤔</option>
-                        </select>
-                    </div>
-
-                    {/* PERMISOS DE VOZ (NUEVO BLOQUE) */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-wide mb-2 flex items-center gap-2">
-                            <Volume2 className="w-4 h-4 text-indigo-600" />
-                            Capacidades de Audio
-                        </h4>
-
-                        {/* Toggle Microfono */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${microfonoActivado ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
-                                    <Mic className="w-5 h-5" />
+                        {/* COLUMNA DERECHA: CONFIGURACIÓN RÁPIDA */}
+                        <div className="lg:col-span-5 space-y-6">
+                            {/* Resumen de Ajustes Detectados */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
+                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Tono</span>
+                                    <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[11px] font-black uppercase tracking-tight">{tono}</span>
                                 </div>
-                                <div>
-                                    <span className="font-bold text-gray-900 block">Permitir Micrófono</span>
-                                    <span className="text-xs text-gray-500 font-medium">Los alumnos pueden hablar con la IA</span>
+                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
+                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Exigencia</span>
+                                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-[11px] font-black uppercase tracking-tight">{nivelExigencia}</span>
+                                </div>
+                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
+                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Enfoque</span>
+                                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-[11px] font-black uppercase tracking-tight">{enfoque}</span>
+                                </div>
+                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
+                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Apoyo</span>
+                                    <span className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-[11px] font-black uppercase tracking-tight">{nivelApoyo}</span>
+                                </div>
+                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm col-span-2">
+                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Formato de Respuesta</span>
+                                    <span className="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-[11px] font-black uppercase tracking-tight">{formatoRespuesta}</span>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setMicrofonoActivado(!microfonoActivado)}
-                                className={`w-14 h-8 rounded-full transition-colors relative ${microfonoActivado ? 'bg-indigo-600' : 'bg-gray-300'}`}
-                            >
-                                <div className={`absolute top-1 left-1 bg-white w-6 h-6 rounded-full shadow-sm transition-transform ${microfonoActivado ? 'translate-x-6' : 'translate-x-0'}`} />
-                            </button>
-                        </div>
 
-                        {/* Toggle Altavoz */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${vozActivada ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-400'}`}>
-                                    <Volume2 className="w-5 h-5" />
+                            {/* Toggles de Hardware/UI */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${vozActivada ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <Volume2 className="w-5 h-5" />
+                                        </div>
+                                        <span className="font-bold text-gray-700 text-sm">Voz de Tico</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setVozActivada(!vozActivada)}
+                                        className={`w-12 h-6 rounded-full transition-colors relative ${vozActivada ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-transform ${vozActivada ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
                                 </div>
-                                <div>
-                                    <span className="font-bold text-gray-900 block">Voz de la IA</span>
-                                    <span className="text-xs text-gray-500 font-medium">La IA puede leer sus respuestas</span>
+
+                                <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${microfonoActivado ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <Mic className="w-5 h-5" />
+                                        </div>
+                                        <span className="font-bold text-gray-700 text-sm">Micrófono</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setMicrofonoActivado(!microfonoActivado)}
+                                        className={`w-12 h-6 rounded-full transition-colors relative ${microfonoActivado ? 'bg-purple-600' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-transform ${microfonoActivado ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${frecuenciaEmojis ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <Sparkles className="w-5 h-5" />
+                                        </div>
+                                        <span className="font-bold text-gray-700 text-sm">Usar Emojis</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setFrecuenciaEmojis(!frecuenciaEmojis)}
+                                        className={`w-12 h-6 rounded-full transition-colors relative ${frecuenciaEmojis ? 'bg-green-500' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-transform ${frecuenciaEmojis ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setVozActivada(!vozActivada)}
-                                className={`w-14 h-8 rounded-full transition-colors relative ${vozActivada ? 'bg-pink-600' : 'bg-gray-300'}`}
-                            >
-                                <div className={`absolute top-1 left-1 bg-white w-6 h-6 rounded-full shadow-sm transition-transform ${vozActivada ? 'translate-x-6' : 'translate-x-0'}`} />
-                            </button>
-                        </div>
-                    </div>
 
-                    {/* Toggle Emojis */}
-                    <div className="flex items-center justify-between bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                        <span className="font-bold text-gray-900">Uso de Emojis</span>
-                        <button
-                            onClick={() => setFrecuenciaEmojis(!frecuenciaEmojis)}
-                            className={`w-14 h-8 rounded-full transition-colors relative ${frecuenciaEmojis ? 'bg-green-500' : 'bg-gray-300'}`}
-                        >
-                            <div className={`absolute top-1 left-1 bg-white w-6 h-6 rounded-full shadow-sm transition-transform ${frecuenciaEmojis ? 'translate-x-6' : 'translate-x-0'}`} />
-                        </button>
+
+                        </div>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 bg-white border-t border-gray-100 flex justify-end shrink-0">
+                <div className="p-6 bg-white border-t border-gray-100 flex items-center justify-between shrink-0">
+                    <button
+                        onClick={onClose}
+                        className="px-6 py-3 text-gray-400 font-bold hover:text-gray-600 transition-colors uppercase tracking-widest text-xs"
+                    >
+                        Cancelar
+                    </button>
                     <button
                         onClick={handleGuardar}
                         disabled={guardando}
-                        className={`px-8 py-3 text-white rounded-xl font-bold shadow-lg hover:translate-y-[-2px] transition-all disabled:opacity-50 disabled:hover:translate-y-0 ${isGlobal ? 'bg-slate-900' : 'bg-slate-900'}`}
+                        className={`px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 flex items-center gap-3 ${guardando ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        {guardando ? 'Guardando...' : isGlobal ? 'Aplicar a Todos' : 'Guardar Cambios'}
+                        {guardando ? 'Guardando...' : 'Aplicar Cambios'}
                     </button>
                 </div>
             </div>

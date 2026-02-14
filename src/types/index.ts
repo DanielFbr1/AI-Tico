@@ -34,6 +34,12 @@ export interface Grupo {
     configuracion?: {
         voz_activada?: boolean;
         microfono_activado?: boolean;
+        instrucciones_comportamiento?: string;
+        tono?: 'Divertido' | 'Serio' | 'Socrático';
+        nivel_exigencia?: 'Bajo' | 'Medio' | 'Alto';
+        enfoque?: 'Explorador' | 'Científico' | 'Creativo';
+        nivel_apoyo?: 'Guía' | 'Retador';
+        formato_respuesta?: 'Conciso' | 'Detallado';
     };
     tiempo_uso_minutos?: number;
     miembros: string[];

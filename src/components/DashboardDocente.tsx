@@ -379,6 +379,9 @@ export function DashboardDocente({
                         <CircleHelp className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
                         <span>Tutorial interactivo</span>
                     </button>
+                    <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
+                        Versión 0.3.6
+                    </div>
                 </div>
             </aside>
 
@@ -474,20 +477,7 @@ export function DashboardDocente({
 
                         {/* Acciones en Cuadrícula 2x2 en móvil */}
                         <div className="grid grid-cols-2 md:flex items-center gap-2 w-full md:w-auto">
-
-                            <button
-                                onClick={() => setModalAsistenciaOpen(true)}
-                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-white text-blue-600 border-2 border-blue-100 hover:border-blue-300 rounded-xl font-bold transition-all text-xs"
-                            >
-                                <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
-                                <span>Lista</span>
-                            </button>
-
-
-
-
-
-                            {numPendientes > 0 ? (
+                            {numPendientes > 0 && (
                                 <button
                                     onClick={() => setModalRevisionAbierto(true)}
                                     className="relative flex items-center justify-center gap-2 px-3 py-2.5 bg-amber-50 text-amber-600 border-2 border-amber-200 rounded-xl font-black text-[10px] uppercase tracking-tighter"
@@ -498,40 +488,45 @@ export function DashboardDocente({
                                     </span>
                                     <span>{numPendientes} {numPendientes === 1 ? 'Pendiente' : 'Pendientes'}</span>
                                 </button>
-                            ) : (
-                                <div className="flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-50 text-slate-400 border border-slate-200 rounded-xl font-bold text-[10px] uppercase">
-                                    Todo al día
-                                </div>
                             )}
 
                             {/* Botón Ajustes IA Directo */}
                             <button
                                 onClick={handleAjustesIA}
-                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-50 text-indigo-600 border-2 border-indigo-100 hover:border-indigo-300 rounded-xl font-bold transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-purple-100 text-purple-700 border-2 border-purple-200 hover:border-purple-400 rounded-xl font-bold transition-all text-xs"
                                 title="Configurar Mentor IA"
                             >
-                                <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
-                                <span className="hidden lg:inline">Ajustar IA</span>
+                                <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
+                                <span className="hidden lg:inline">IA</span>
+                            </button>
+
+                            <button
+                                onClick={() => setModalAsistenciaOpen(true)}
+                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-50 text-indigo-600 border-2 border-indigo-100 hover:border-indigo-300 rounded-xl font-bold transition-all text-xs"
+                                title="Pasar lista"
+                            >
+                                <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
+                                <span className="hidden lg:inline">Lista</span>
                             </button>
 
                             {/* Botón Mascota Tico */}
                             <button
                                 onClick={() => setModalTicoAbierto(true)}
                                 className="flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-50 text-emerald-600 border-2 border-emerald-100 hover:border-emerald-300 rounded-xl font-bold transition-all text-xs"
-                                title="Mascota de Clase"
+                                title="Ver Mascota de clase"
                             >
                                 <Gamepad2 className="w-4 h-4 md:w-5 md:h-5" />
-                                <span className="hidden lg:inline">Mascota</span>
+                                <span className="hidden lg:inline">Tico</span>
                             </button>
 
                             {/* Botón Sorteo/Ruleta */}
                             <button
                                 onClick={() => setModalRuletaAbierta(true)}
-                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-yellow-50 text-yellow-600 border-2 border-yellow-100 hover:border-yellow-300 rounded-xl font-bold transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-amber-50 text-amber-600 border-2 border-amber-100 hover:border-amber-300 rounded-xl font-bold transition-all text-xs"
                                 title="Sorteo y Grupos"
                             >
                                 <Dices className="w-4 h-4 md:w-5 md:h-5" />
-                                <span className="hidden lg:inline">Sorteo</span>
+                                <span className="hidden lg:inline">Ruleta</span>
                             </button>
 
                             {/* Botón Cerrar Sesión Directo */}

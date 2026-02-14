@@ -7,13 +7,14 @@ interface ModalCrearProyectoProps {
     onClose: () => void;
     onCrear: (proyecto: Omit<Proyecto, 'id'>) => void;
     nombreUsuario: string;
+    clasesExistentes?: string[];
 }
 
-export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario }: ModalCrearProyectoProps) {
+export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExistentes = [] }: ModalCrearProyectoProps) {
     const [modo, setModo] = useState<'manual' | 'ia'>('manual');
     const [nombre, setNombre] = useState('');
     const [descripcion, setDescripcion] = useState('');
-    const [tipo, setTipo] = useState('Radio/Podcast');
+    const [tipo, setTipo] = useState('Aprendizaje Basado en Proyectos');
     const [clase, setClase] = useState('');
     const [contextoIA, setContextoIA] = useState('');
     const [rubricaIA, setRubricaIA] = useState<any>(null);
@@ -29,9 +30,9 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario }: ModalCre
                 estado: 'En preparación' as ProyectoEstado,
                 codigo_sala: Math.random().toString(36).substring(2, 8).toUpperCase(),
                 fases: [
-                    { id: 'f1', nombre: 'Investigación', estado: 'actual' },
-                    { id: 'f2', nombre: 'Desarrollo', estado: 'pendiente' },
-                    { id: 'f3', nombre: 'Producto Final', estado: 'pendiente' },
+                    { id: 'f1', nombre: 'Investigación / Pregunta', estado: 'actual' },
+                    { id: 'f2', nombre: 'Acción / Desarrollo', estado: 'pendiente' },
+                    { id: 'f3', nombre: 'Reflexión / Producto', estado: 'pendiente' },
                 ],
                 contexto_ia: contextoIA,
                 rubrica: rubricaIA
@@ -83,23 +84,44 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario }: ModalCre
                     /* MODO MANUAL (Formulario clásico + Botón IA) */
                     <form onSubmit={handleSubmit} className="p-6 space-y-6">
 
-                        {/* Banner Promocional IA */}
+                        {/* Iteración 4: Violet Magic - Premium, Claro y Vibrante */}
                         {!contextoIA && (
                             <div
+                                className="relative overflow-hidden bg-white border-2 border-indigo-50 rounded-2xl p-6 group cursor-pointer transition-all duration-500 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/10 active:scale-[0.98]"
                                 onClick={() => setModo('ia')}
-                                className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-4 text-white cursor-pointer hover:shadow-lg transition-all transform hover:scale-[1.01] flex items-center justify-between group"
                             >
-                                <div className="flex items-center gap-4">
-                                    <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                                        <Bot className="w-6 h-6" />
+                                {/* Shimmer Effect Animado (Sutil para fondo claro) */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
+
+                                <div className="relative flex items-center justify-between">
+                                    <div className="flex items-center gap-5">
+                                        <div className="relative">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:rotate-6 transition-all duration-300">
+                                                <Sparkles className="w-8 h-8 text-white" />
+                                            </div>
+                                            <div className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-xl shadow-md border border-indigo-50 animate-bounce-slow">
+                                                <Bot className="w-4 h-4 text-indigo-600" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="text-lg font-black text-slate-800 tracking-tight">
+                                                    Asistente Pedagógico
+                                                </h3>
+                                                <span className="bg-indigo-600 text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm">
+                                                    IA ✨
+                                                </span>
+                                            </div>
+                                            <p className="text-slate-500 text-sm font-medium">
+                                                ¿Sin tiempo? Deja que Tico diseñe el mapa del proyecto por ti.
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold">¿Necesitas ayuda para empezar?</h3>
-                                        <p className="text-indigo-100 text-sm">Nuestro asistente pedagógico puede diseñar el proyecto y las rúbricas por ti.</p>
+                                    <div className="hidden md:flex items-center gap-3 bg-indigo-600 px-6 py-3 rounded-2xl group-hover:bg-indigo-700 transition-all duration-300 shadow-md shadow-indigo-600/20 group-hover:shadow-indigo-600/40">
+                                        <div className="text-center">
+                                            <div className="text-white font-black text-sm tracking-tight">Definir con IA</div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="bg-white text-indigo-600 px-4 py-2 rounded-lg font-bold text-sm group-hover:bg-indigo-50 transition-colors">
-                                    Probar IA ✨
                                 </div>
                             </div>
                         )}
@@ -125,9 +147,10 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario }: ModalCre
                                         onChange={(e) => setTipo(e.target.value)}
                                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                                     >
-                                        <option>Radio/Podcast</option>
-                                        <option>Canal de YouTube</option>
-                                        <option>Periódico Digital</option>
+                                        <option>Aprendizaje Basado en Proyectos</option>
+                                        <option>Aprendizaje Basado en Problemas</option>
+                                        <option>Aprendizaje Servicio</option>
+                                        <option>Indagación</option>
                                         <option>Proyecto Personalizado</option>
                                     </select>
                                 </div>
@@ -135,11 +158,17 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario }: ModalCre
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Clase / Grupo</label>
                                     <input
                                         type="text"
+                                        list="clases-list"
                                         value={clase}
                                         onChange={(e) => setClase(e.target.value)}
                                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                         placeholder="Ej: 4ºA"
                                     />
+                                    <datalist id="clases-list">
+                                        {clasesExistentes.map(c => (
+                                            <option key={c} value={c} />
+                                        ))}
+                                    </datalist>
                                 </div>
                             </div>
 

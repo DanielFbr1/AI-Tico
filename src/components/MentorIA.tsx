@@ -95,6 +95,8 @@ export function MentorIA({ grupoId, proyectoId, departamento, miembro }: MentorI
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
+    const [configuracionGrupo, setConfiguracionGrupo] = useState<any>(null);
+
     useEffect(() => {
         fetchMensajes();
         fetchProyectoDetalles();
@@ -114,12 +116,13 @@ export function MentorIA({ grupoId, proyectoId, departamento, miembro }: MentorI
             // Por ahora, si no hay tabla de hitos separada, intentamos sacar hitos del grupo
             const { data: grupoData } = await supabase
                 .from('grupos')
-                .select('hitos')
+                .select('hitos, configuracion')
                 .eq('id', grupoId)
                 .single();
 
-            if (grupoData?.hitos) {
-                setHitos(grupoData.hitos);
+            if (grupoData) {
+                if (grupoData.hitos) setHitos(grupoData.hitos);
+                if (grupoData.configuracion) setConfiguracionGrupo(grupoData.configuracion);
             }
         }
     };
@@ -207,7 +210,7 @@ export function MentorIA({ grupoId, proyectoId, departamento, miembro }: MentorI
             // Safe AI Call
             let respuesta = '';
             try {
-                respuesta = await generarRespuestaIA(userMsg, departamento, "Proyecto ABP", historial, hitos, contextoIA);
+                respuesta = await generarRespuestaIA(userMsg, departamento, "Proyecto ABP", historial, hitos, contextoIA, configuracionGrupo);
             } catch (aiErr) {
                 console.error("AI Error:", aiErr);
                 respuesta = "Lo siento, tuve un problema pensando. ¿Me lo repites?";
