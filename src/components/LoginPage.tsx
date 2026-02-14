@@ -190,11 +190,7 @@ export function LoginPage() {
                 <div className="max-w-6xl w-full relative z-10">
                     {/* Header */}
                     <div className="text-center mb-12 transform hover:scale-[1.01] transition-transform duration-500">
-                        <div className="inline-flex items-center justify-center mb-6">
-                            <div className="p-5 bg-white/20 backdrop-blur-xl rounded-[2rem] shadow-2xl ring-1 ring-white/40">
-                                <Sparkles className="w-16 h-16 text-white drop-shadow-md" />
-                            </div>
-                        </div>
+
                         <h1 className="text-7xl md:text-9xl font-black text-white mb-6 tracking-tighter drop-shadow-xl filter">
                             AI Tico
                         </h1>

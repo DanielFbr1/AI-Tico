@@ -71,9 +71,7 @@ export function InteraccionesIA({ grupos, onSelectGrupo }: InteraccionesIAProps)
           <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full h-[85vh] flex flex-col overflow-hidden border border-slate-200">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
-                  <Sparkles className="w-5 h-5" />
-                </div>
+
                 <h3 className="font-black text-slate-800 uppercase tracking-tight text-sm">Chat con Mentor IA - <span className="text-indigo-600">{grupoChat.nombre}</span></h3>
               </div>
               <button
