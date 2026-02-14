@@ -46,7 +46,8 @@ async function callGroq(messages: Mensaje[], jsonMode: boolean = false, signal?:
 
         const data = await response.json();
         return data.choices[0]?.message?.content || "";
-    } catch (error) {
+    } catch (error: any) {
+        if (error.name === 'AbortError') throw error;
         console.error("Error calling Groq:", error);
         return "Lo siento, hubo un error al procesar tu solicitud.";
     }

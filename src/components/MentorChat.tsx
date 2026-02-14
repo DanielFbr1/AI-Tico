@@ -372,9 +372,12 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
         onNuevoMensaje(mensajeAlumno);
         onNuevoMensaje(mensajeIA);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log("🤖 IA detenida por el usuario");
+        return;
+      }
       console.error("❌ Error grave en backend de Chat:", error);
-      // Podríamos mostrar un error visual al usuario aquí
     } finally {
       setEscribiendo(false);
       abortControllerRef.current = null;
