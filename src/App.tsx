@@ -7,6 +7,7 @@ import { ProjectDetail } from './pages/ProjectDetail';
 import { GroupDetail } from './pages/GroupDetail';
 import { DashboardAlumno } from './components/DashboardAlumno';
 import { Proyecto, Grupo } from './types';
+import { TicoFullScreenPage } from './pages/TicoGame/TicoFullScreenPage';
 import { supabase } from './lib/supabase';
 import { Toaster } from 'sonner';
 
@@ -67,9 +68,17 @@ function AppContent() {
     }
   }, []);
 
-  const [currentScreen, setCurrentScreen] = useState<'projects' | 'project-detail' | 'group-detail'>('projects');
+  const [currentScreen, setCurrentScreen] = useState<'projects' | 'project-detail' | 'group-detail' | 'tico-full'>('projects');
   const [selectedProject, setSelectedProject] = useState<Proyecto | null>(null);
   const [selectedGrupo, setSelectedGrupo] = useState<Grupo | null>(null);
+
+  const handleOpenTicoFull = () => {
+    setCurrentScreen('tico-full');
+  };
+
+  const handleCloseTicoFull = () => {
+    setCurrentScreen('project-detail');
+  };
 
   // RESET STATE ON LOGOUT
   useEffect(() => {
@@ -151,6 +160,14 @@ function AppContent() {
           onSelectGrupo={handleSelectGrupo}
           onBack={handleBackToProjects}
           onSwitchProject={setSelectedProject}
+          onOpenTicoFull={handleOpenTicoFull}
+        />
+      )}
+
+      {currentScreen === 'tico-full' && selectedProject && (
+        <TicoFullScreenPage
+          projectId={selectedProject.id}
+          onBack={handleCloseTicoFull}
         />
       )}
 
@@ -177,7 +194,7 @@ export default function App() {
         <AppContent />
         <Toaster position="top-right" richColors />
         <div className="fixed bottom-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded-full pointer-events-none z-50 backdrop-blur-sm">
-          v0.3.6 (Favicon Update)
+          v0.3.7 (Vercel Deployment Preview)
         </div>
       </AuthProvider>
     </ErrorBoundary>

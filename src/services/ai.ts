@@ -18,7 +18,7 @@ export interface Mensaje {
 }
 
 // Helper para llamadas a Groq
-async function callGroq(messages: Mensaje[], jsonMode: boolean = false, signal?: AbortSignal): Promise<string> {
+export async function callGroq(messages: Mensaje[], jsonMode: boolean = false, signal?: AbortSignal): Promise<string> {
     if (!GROQ_API_KEY) return "Error: API Key no configurada.";
 
     try {

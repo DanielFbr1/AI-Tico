@@ -126,3 +126,40 @@ export interface ProyectoActivo {
     grupos?: Grupo[];
     rubrica?: Rubrica;
 }
+
+// --- TICO-AI TYPES ---
+
+export type TicoCategory = 'VisualArts' | 'Entertainment' | 'Letters' | 'Analysis' | 'Uncategorized';
+
+export interface TicoOutfit {
+    id: string;
+    name: string;
+    description: string;
+    category: TicoCategory;
+    prompt_modifier: string; // "Actúa como un científico loco..."
+    visual_asset_url?: string; // URL a la imagen/SVG
+    required_level: number; // Nivel de la categoría necesario para desbloquear
+}
+
+export interface TicoState {
+    group_id: string | number;
+    current_outfit_id: string | null; // Null = Default Tico
+    unlocked_outfits: string[]; // IDs of unlocked outfits
+    experience: {
+        [key in TicoCategory]: number; // 0 - 100
+    };
+    resource_stats?: {
+        [key: string]: number; // "Libro", "Película", "Revista", etc.
+    };
+    shown_facts?: string[]; // To avoid repeats
+    total_resources_ingested: number;
+    last_interaction?: string; // ISO Date
+}
+
+export interface TicoResourceAnalysis {
+    title: string;
+    category: TicoCategory;
+    confidence: number;
+    reasoning: string;
+    suggested_outfit_unlock?: string; // ID of outfit if applicable
+}

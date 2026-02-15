@@ -41,6 +41,7 @@ interface DashboardDocenteProps {
     onCambiarProyecto?: () => void;
     onClaseChange: (clase: string) => void;
     onUpdateProjectName: (newName: string) => Promise<void>;
+    onOpenTicoFull?: () => void;
 }
 
 export function DashboardDocente({
@@ -58,7 +59,8 @@ export function DashboardDocente({
     proyectoActual,
     onCambiarProyecto,
     onClaseChange,
-    onUpdateProjectName
+    onUpdateProjectName,
+    onOpenTicoFull
 }: DashboardDocenteProps) {
     const [modalCrearGrupoAbierto, setModalCrearGrupoAbierto] = useState(false);
     const [menuAlumnosAbierto, setMenuAlumnosAbierto] = useState(false); // New state for dropdown
@@ -511,9 +513,9 @@ export function DashboardDocente({
 
                             {/* Botón Mascota Tico */}
                             <button
-                                onClick={() => setModalTicoAbierto(true)}
+                                onClick={onOpenTicoFull}
                                 className="flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-50 text-emerald-600 border-2 border-emerald-100 hover:border-emerald-300 rounded-xl font-bold transition-all text-xs"
-                                title="Ver Mascota de clase"
+                                title="Ver Mascota de clase (Pantalla Completa)"
                             >
                                 <Gamepad2 className="w-4 h-4 md:w-5 md:h-5" />
                                 <span className="hidden lg:inline">Tico</span>

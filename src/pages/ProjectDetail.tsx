@@ -12,9 +12,10 @@ interface ProjectDetailProps {
     onBack: () => void;
     onSwitchProject: (proyecto: Proyecto) => void;
     onUpdateProjectValues?: (updatedProject: Proyecto) => void;
+    onOpenTicoFull?: () => void;
 }
 
-export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject }: ProjectDetailProps) {
+export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject, onOpenTicoFull }: ProjectDetailProps) {
     const [localGrupos, setLocalGrupos] = useState<Grupo[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentSection, setCurrentSection] = useState<import('../types').DashboardSection>('grupos');
@@ -328,6 +329,7 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
                     rubrica: proyecto.rubrica
                 }}
                 onUpdateProjectName={handleUpdateProjectName}
+                onOpenTicoFull={onOpenTicoFull}
             />
 
             {showTutorial && (
