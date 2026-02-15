@@ -86,7 +86,7 @@ export const TicoAvatar: React.FC<TicoAvatarProps> = ({ ticoState, isProcessing,
                         loop
                         muted
                         playsInline
-                        className="w-80 h-80 object-cover drop-shadow-[0_25px_50px_rgba(0,0,0,0.2)]"
+                        className={`w-80 h-80 object-cover drop-shadow-[0_25px_50px_rgba(0,0,0,0.2)] transition-all duration-500 ${isActiveMode ? 'animate-float scale-110 brightness-110' : ''}`}
                     />
                 ) : (
                     <img

@@ -9,6 +9,7 @@ import { RefreshCw, Utensils, Shirt, Cookie, Sparkles, X, ChevronLeft, StickyNot
 import { generateTicoResponse } from '../../services/ticoLogic';
 import { generateAndSaveSticker, Sticker } from '../../services/stickerService';
 import { TicoBackground } from './TicoBackground';
+import { ticoAudio } from '../../lib/audio/TicoAudioEngine';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -106,6 +107,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
 
             if (res.success && res.sticker) {
                 setHasNewSticker(true);
+                ticoAudio.playStickerSFX(); // Trigger Sticker SFX
 
                 // REVEAL ANIMATION START
                 setRevealedSticker(res.sticker);
@@ -132,6 +134,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
 
             // 6. Unlocks? Confetti!
             if (newUnlocks.length > 0) {
+                ticoAudio.playUnlockSFX(); // Trigger Unlock SFX
                 confetti({
                     particleCount: 150,
                     spread: 100,
@@ -199,7 +202,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
 
                 {/* LEFT AREA: TICO AVATAR */}
                 <div className={`flex-1 flex flex-col items-center justify-center p-8 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeTab !== 'none' ? 'scale-75 opacity-30 -translate-x-20 blur-[2px]' : 'scale-100'}`}>
-                    <div className="relative hover:scale-105 transition-transform duration-500 cursor-pointer" onClick={handleAction}>
+                    <div className="relative hover:scale-105 transition-transform duration-500 cursor-pointer" onClick={() => { ticoAudio.playCuriositySFX(); handleAction(); }}>
                         <TicoAvatar
                             ticoState={state}
                             isProcessing={isTicoBusy}
@@ -213,7 +216,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                                     "{activeResponse}"
                                 </p>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); setActiveResponse(null); }}
+                                    onClick={(e) => { e.stopPropagation(); ticoAudio.playClickSFX(); setActiveResponse(null); }}
                                     className="absolute -top-3 -right-3 bg-slate-900 text-white p-2 rounded-full hover:bg-rose-500 transition-all shadow-lg active:scale-90"
                                 >
                                     <X className="w-4 h-4" />
@@ -307,7 +310,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                                     {activeTab === 'album' && <><StickyNote className="text-yellow-500 w-12 h-12 animate-bounce-slow" /> Álbum</>}
                                 </h3>
                                 <button
-                                    onClick={() => setActiveTab('none')}
+                                    onClick={() => { ticoAudio.playClickSFX(); setActiveTab('none'); }}
                                     className="p-4 bg-slate-100 rounded-[2rem] hover:bg-rose-100 hover:text-rose-600 transition-all active:scale-90 hover:rotate-90"
                                 >
                                     <X className="w-8 h-8" />
@@ -343,7 +346,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                     <div className="p-5 pb-2 shrink-0">
                         {onBack && (
                             <button
-                                onClick={onBack}
+                                onClick={() => { ticoAudio.playClickSFX(); onBack && onBack(); }}
                                 className="w-full flex items-center justify-center gap-2 py-4 px-4 rounded-2xl bg-slate-800 text-white font-bold uppercase text-sm tracking-widest hover:bg-rose-500 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 group"
                             >
                                 <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -359,7 +362,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                             label="Alimentar"
                             description="Dar datos y comida a Tico"
                             active={activeTab === 'ingestion'}
-                            onClick={() => setActiveTab(activeTab === 'ingestion' ? 'none' : 'ingestion')}
+                            onClick={() => { ticoAudio.playClickSFX(); setActiveTab(activeTab === 'ingestion' ? 'none' : 'ingestion'); }}
                             color="rose"
                         />
                         <BigMenuButton
@@ -367,7 +370,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                             label="Armario"
                             description="Personalizar su apariencia"
                             active={activeTab === 'wardrobe'}
-                            onClick={() => setActiveTab(activeTab === 'wardrobe' ? 'none' : 'wardrobe')}
+                            onClick={() => { ticoAudio.playClickSFX(); setActiveTab(activeTab === 'wardrobe' ? 'none' : 'wardrobe'); }}
                             color="blue"
                         />
                         <BigMenuButton
@@ -375,7 +378,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                             label="Ticoteca"
                             description="Registro de datos picoteados"
                             active={activeTab === 'brain'}
-                            onClick={() => setActiveTab(activeTab === 'brain' ? 'none' : 'brain')}
+                            onClick={() => { ticoAudio.playClickSFX(); setActiveTab(activeTab === 'brain' ? 'none' : 'brain'); }}
                             color="emerald"
                         />
                         <BigMenuButton
@@ -384,6 +387,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                             description="Colección de pegatinas"
                             active={activeTab === 'album'}
                             onClick={() => {
+                                ticoAudio.playClickSFX();
                                 setActiveTab(activeTab === 'album' ? 'none' : 'album');
                                 if (activeTab !== 'album') setHasNewSticker(false);
                             }}

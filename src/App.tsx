@@ -194,7 +194,7 @@ export default function App() {
         <AppContent />
         <Toaster position="top-right" richColors />
         <div className="fixed bottom-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded-full pointer-events-none z-50 backdrop-blur-sm">
-          v0.3.7 (Vercel Deployment Preview)
+          v0.4.8 (Curiosity Feedback)
         </div>
       </AuthProvider>
     </ErrorBoundary>
