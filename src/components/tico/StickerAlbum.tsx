@@ -5,6 +5,7 @@ import { Loader2, Sparkles, Image as ImageIcon, Printer } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
+import { ticoAudio } from '../../lib/audio/TicoAudioEngine';
 
 interface StickerAlbumProps {
     groupId: string;
@@ -228,7 +229,7 @@ export const StickerAlbum: React.FC<StickerAlbumProps & { isActive?: boolean }> 
                 </div>
 
                 <button
-                    onClick={handleDownloadPDF}
+                    onClick={() => { ticoAudio.playClickSFX(); handleDownloadPDF(); }}
                     disabled={isGenerating}
                     className="flex items-center gap-3 px-6 py-2.5 bg-slate-800 text-white rounded-2xl font-bold uppercase text-xs tracking-widest hover:bg-slate-700 hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
                 >

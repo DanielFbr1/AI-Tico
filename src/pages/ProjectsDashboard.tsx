@@ -214,54 +214,54 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
 
     return (
         <div className="min-h-screen bg-[#fcfdff] p-4 md:p-8 font-sans overflow-x-hidden">
-            <header className="mb-8 md:mb-12 max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 md:p-6 rounded-[2.5rem] shadow-sm border-2 border-slate-100/50 gap-6 md:gap-0">
-                    <div className="flex flex-col md:flex-row items-center gap-3 md:gap-5 text-center md:text-left">
-                        <div className="w-12 h-12 md:w-14 md:h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 border-2 border-blue-100 shrink-0">
-                            <Layout className="w-6 h-6 md:w-7 md:h-7" />
+            <header className="mb-6 md:mb-12 max-w-7xl mx-auto">
+                <div className="flex items-center justify-between bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100/50 sticky top-0 z-50">
+                    <div className="flex items-center gap-3 md:gap-5">
+                        <div className="w-10 h-10 md:w-14 md:h-14 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center text-blue-600 border-2 border-blue-100 shrink-0">
+                            <Layout className="w-5 h-5 md:w-7 md:h-7" />
                         </div>
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Mis Proyectos</h1>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 justify-center md:justify-start">
+                        <div className="overflow-hidden">
+                            <h1 className="text-lg md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1 truncate">Proyectos</h1>
+                            <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                Dashboard Activo • {proyectos.length} proyectos
+                                {proyectos.length} total
                             </p>
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-center justify-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-2">
                         <button
                             onClick={() => setShowModalProyecto(true)}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-7 py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all text-sm uppercase tracking-widest min-w-[120px]"
+                            className="flex items-center justify-center gap-2 px-4 md:px-7 py-2.5 md:py-3.5 bg-blue-600 text-white rounded-xl md:rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all text-[10px] md:text-sm uppercase tracking-widest"
                         >
-                            <Plus className="w-5 h-5" />
-                            <span>Nuevo</span>
+                            <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                            <span className="hidden sm:inline">Nuevo</span>
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="p-3.5 bg-rose-50 text-rose-400 hover:text-rose-600 hover:bg-rose-100 rounded-2xl transition-all border border-transparent active:scale-95"
+                            className="p-2.5 md:p-3.5 bg-rose-50 text-rose-400 hover:text-rose-600 rounded-xl md:rounded-2xl transition-all border border-transparent"
                         >
-                            <LogOut className="w-5 h-5" />
+                            <LogOut className="w-4 h-4 md:w-5 md:h-5" />
                         </button>
                     </div>
                 </div>
 
                 {/* Barra de Búsqueda / Filtro */}
-                <div className="mt-6 max-w-2xl mx-auto">
+                <div className="mt-4 md:mt-6 max-w-2xl mx-auto px-1">
                     <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <Search className="h-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                            <Search className="h-4 w-4 md:h-5 md:w-5 text-slate-400" />
                         </div>
                         <input
                             type="text"
-                            placeholder="Filtrar por clase, nombre o metodología..."
+                            placeholder="Buscar clase o proyecto..."
                             value={filtroBusqueda}
                             onChange={(e) => setFiltroBusqueda(e.target.value)}
-                            className="block w-full pl-11 pr-4 py-3.5 bg-white border-2 border-slate-100 rounded-2xl text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                            className="block w-full pl-10 pr-4 py-3 md:py-3.5 bg-white border border-slate-200 rounded-xl md:rounded-2xl text-[13px] md:text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
                         />
                         {filtroBusqueda && (
                             <button
                                 onClick={() => setFiltroBusqueda('')}
-                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400"
                             >
                                 <X className="w-4 h-4" />
                             </button>

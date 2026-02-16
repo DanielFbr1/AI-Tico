@@ -85,7 +85,6 @@ REGLAS:
     // 2. Parámetros de Personalidad
     const tono = configuracion?.tono || 'Divertido';
     const exigencia = configuracion?.nivel_exigencia || 'Medio';
-    const enfoque = configuracion?.enfoque || 'Explorador';
     const apoyo = configuracion?.nivel_apoyo || 'Guía';
     const formato = configuracion?.formato_respuesta || 'Detallado';
     const instruccionesExtra = configuracion?.instrucciones_comportamiento || '';
@@ -97,7 +96,6 @@ REGLAS:
     TU PERSONALIDAD ACTUAL (Configurada por el profesor):
     - TONO: ${tono} (Tu forma de hablar)
     - NIVEL DE EXIGENCIA: ${exigencia} (Si eres permisivo o estricto)
-    - ENFOQUE: ${enfoque} (Tu perspectiva: aventura, ciencia o creatividad)
     - NIVEL DE APOYO: ${apoyo} (Guía: das pistas paso a paso. Retador: haces que piensen con retos)
     - FORMATO: ${formato} (Conciso: respuestas al punto. Detallado: explicaciones ricas)
     
@@ -193,7 +191,6 @@ export const generarConfiguracionTico = async (mensaje: string, instruccionesAct
     - "update_settings": (Opcional) Un objeto con cambios detectados en:
         - "tono": ("Divertido", "Serio", "Socrático")
         - "nivel_exigencia": ("Bajo", "Medio", "Alto")
-        - "enfoque": ("Explorador", "Científico", "Creativo")
         - "nivel_apoyo": ("Guía", "Retador")
         - "formato_respuesta": ("Conciso", "Detallado")
     

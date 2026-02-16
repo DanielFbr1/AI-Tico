@@ -1,13 +1,20 @@
 import React from 'react';
 
-export const TicoBackground: React.FC = () => {
+interface TicoBackgroundProps {
+    outfitId?: string | null;
+}
+
+export const TicoBackground: React.FC<TicoBackgroundProps> = ({ outfitId }) => {
+    const isTech = outfitId === 'ana_tech';
+    const backgroundImage = isTech ? '/tico/bg_nido_server.jpg' : '/tico/bg_nido_digital.jpg';
+
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10 bg-slate-100">
             {/* Main Digital Nest Background */}
             <div
-                className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+                className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
                 style={{
-                    backgroundImage: 'url("/tico/bg_nido_digital.jpg")',
+                    backgroundImage: `url("${backgroundImage}")`,
                     backgroundRepeat: 'no-repeat'
                 }}
             />

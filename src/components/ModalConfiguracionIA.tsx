@@ -1,5 +1,5 @@
 import { X, Sparkles, MessageSquare, Brain, Mic, Volume2, Globe, Bot } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 import { Grupo } from '../types';
@@ -28,8 +28,64 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
     const [instrucciones, setInstrucciones] = useState(grupo?.configuracion?.instrucciones_comportamiento || '');
 
     const [guardando, setGuardando] = useState(false);
+    const [cargando, setCargando] = useState(false);
 
     const isGlobal = !grupo && !!proyectoId;
+
+    useEffect(() => {
+        const fetchIAConfig = async () => {
+            if (!proyectoId) return;
+            setCargando(true);
+            try {
+                if (isGlobal) {
+                    const { data, error } = await supabase
+                        .from('proyectos')
+                        .select('config_ia_global, instrucciones_ia_global')
+                        .eq('id', proyectoId)
+                        .single();
+
+                    if (error) throw error;
+                    if (data) {
+                        const config = data.config_ia_global || {};
+                        setNivelExigencia(config.nivel_exigencia || 'Medio');
+                        setTono(config.tono || 'Divertido');
+                        setEnfoque(config.enfoque || 'Explorador');
+                        setNivelApoyo(config.nivel_apoyo || 'Guía');
+                        setFormatoRespuesta(config.formato_respuesta || 'Detallado');
+                        setVozActivada(config.voz_activada ?? true);
+                        setMicrofonoActivado(config.microfono_activado ?? true);
+                        setInstrucciones(data.instrucciones_ia_global || '');
+                    }
+                } else if (grupo) {
+                    // Si ya tenemos el grupo con su configuración, no hace falta fetch
+                    // Pero si queremos asegurar datos frescos:
+                    const { data, error } = await supabase
+                        .from('grupos')
+                        .select('configuracion')
+                        .eq('id', grupo.id)
+                        .single();
+                    if (!error && data?.configuracion) {
+                        const config = data.configuracion;
+                        setNivelExigencia(config.nivel_exigencia || 'Medio');
+                        setTono(config.tono || 'Divertido');
+                        setEnfoque(config.enfoque || 'Explorador');
+                        setNivelApoyo(config.nivel_apoyo || 'Guía');
+                        setFormatoRespuesta(config.formato_respuesta || 'Detallado');
+                        setVozActivada(config.voz_activada ?? true);
+                        setMicrofonoActivado(config.microfono_activado ?? true);
+                        setInstrucciones(config.instrucciones_comportamiento || '');
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching IA config:', error);
+                // toast.error('Error al cargar configuración actual');
+            } finally {
+                setCargando(false);
+            }
+        };
+
+        fetchIAConfig();
+    }, [proyectoId, grupo, isGlobal]);
 
     const handleGuardar = async () => {
         setGuardando(true);
@@ -57,20 +113,32 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                 if (error) throw error;
                 toast.success('Ajustes del grupo actualizados');
             } else if (proyectoId) {
-                // Actualizar TODOS
-                const { error } = await supabase
+                // 1. Actualizar TODOS los grupos de este proyecto
+                const { error: errorGrupos } = await supabase
                     .from('grupos')
                     .update({ configuracion: newConfig })
                     .eq('proyecto_id', proyectoId);
 
-                if (error) throw error;
-                toast.success('Ajustes aplicados a TODOS los grupos');
+                if (errorGrupos) throw errorGrupos;
+
+                // 2. Actualizar la configuración GLOBAL en la tabla proyectos
+                const { error: errorProyecto } = await supabase
+                    .from('proyectos')
+                    .update({
+                        config_ia_global: newConfig,
+                        instrucciones_ia_global: instrucciones
+                    })
+                    .eq('id', proyectoId);
+
+                if (errorProyecto) throw errorProyecto;
+
+                toast.success('Ajustes aplicados globalmente');
             } else {
                 toast.error('Error: No se pudo identificar el proyecto activo');
             }
             onClose();
         } catch (error) {
-            console.error(error);
+            console.error('Error saving config:', error);
             toast.error('Error al guardar configuración');
         } finally {
             setGuardando(false);

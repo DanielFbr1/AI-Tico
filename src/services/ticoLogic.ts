@@ -3,6 +3,11 @@ import { callGroq } from './ai';
 
 // --- CONFIGURACIÓN DE OUTFITS ---
 // Based on New Game Design: 1 Resource = 50% XP. 2 Resources = Level Up + Unlock.
+// --- CONFIGURACIÓN DE OUTFITS ---
+// New Game Design: Non-linear progression.
+// Tier 1: 1 resource (100 pts)
+// Tier 2: 3 resources (300 pts)
+// Tier 3: 7 resources (700 pts)
 export const TICO_OUTFITS: TicoOutfit[] = [
     // CLUSTER A: Artes Visuales
     {
@@ -11,7 +16,7 @@ export const TICO_OUTFITS: TicoOutfit[] = [
         description: 'La inspiración visual es tu mayor aliada.',
         category: 'VisualArts',
         prompt_modifier: 'Eres Tico Artista Visual. Habla sobre colores, lienzos y la belleza de lo que vemos.',
-        required_level: 100 // 2 Resources
+        required_level: 100
     },
     {
         id: 'vis_designer',
@@ -19,7 +24,15 @@ export const TICO_OUTFITS: TicoOutfit[] = [
         description: 'Todo tiene una forma y un estilo único.',
         category: 'VisualArts',
         prompt_modifier: 'Eres Tico Diseñador. Habla sobre composición, formas y estética moderna.',
-        required_level: 200 // 4 Resources
+        required_level: 300
+    },
+    {
+        id: 'vis_curator',
+        name: 'Guantes de Seda',
+        description: 'Custidiando la belleza del mundo.',
+        category: 'VisualArts',
+        prompt_modifier: 'Eres Tico Curador. Habla con elegancia sobre el valor histórico y artístico.',
+        required_level: 700
     },
     // CLUSTER B: Espectáculo
     {
@@ -28,7 +41,7 @@ export const TICO_OUTFITS: TicoOutfit[] = [
         description: '¡El ritmo corre por tus plumas!',
         category: 'Entertainment',
         prompt_modifier: 'Eres Tico Músico. Habla con mucho ritmo y energía musical. ¡Que ruede la nota!',
-        required_level: 100 // 2 Resources
+        required_level: 100
     },
     {
         id: 'ent_director',
@@ -36,7 +49,15 @@ export const TICO_OUTFITS: TicoOutfit[] = [
         description: '¡Luces, cámara y acción!',
         category: 'Entertainment',
         prompt_modifier: 'Eres Tico Director de Cine. Habla sobre escenas, guiones y grandes finales.',
-        required_level: 200 // 4 Resources
+        required_level: 300
+    },
+    {
+        id: 'ent_magician',
+        name: 'Chistera Mágica',
+        description: '¡Nada por aquí, todo por allá!',
+        category: 'Entertainment',
+        prompt_modifier: 'Eres Tico Mago. Habla con misterio y asombro, haciendo que cada dato parezca un truco.',
+        required_level: 700
     },
     // CLUSTER C: Letras y Narrativa
     {
@@ -45,7 +66,7 @@ export const TICO_OUTFITS: TicoOutfit[] = [
         description: 'Tu voz es una historia esperando ser contada.',
         category: 'Letters',
         prompt_modifier: 'Eres Tico Escritor. Habla de forma narrativa y elegante. Cada palabra cuenta.',
-        required_level: 100 // 2 Resources
+        required_level: 100
     },
     {
         id: 'let_novelist',
@@ -53,7 +74,15 @@ export const TICO_OUTFITS: TicoOutfit[] = [
         description: 'Creando mundos enteros, página a página.',
         category: 'Letters',
         prompt_modifier: 'Eres Tico Novelista. Habla sobre tramas complejas y personajes memorables.',
-        required_level: 200 // 4 Resources
+        required_level: 300
+    },
+    {
+        id: 'let_philosopher',
+        name: 'Laurel de Sabio',
+        description: 'Pensando en el porqué de todas las cosas.',
+        category: 'Letters',
+        prompt_modifier: 'Eres Tico Filósofo. Habla con profundidad y reflexión sobre la existencia y el lenguaje.',
+        required_level: 700
     },
     // CLUSTER D: Análisis y Verdad
     {
@@ -62,7 +91,7 @@ export const TICO_OUTFITS: TicoOutfit[] = [
         description: 'No hay misterio que se te resista.',
         category: 'Analysis',
         prompt_modifier: 'Eres Tico Detective. Analiza cada pista con lógica y precisión.',
-        required_level: 100 // 2 Resources
+        required_level: 100
     },
     {
         id: 'ana_journalist',
@@ -70,7 +99,23 @@ export const TICO_OUTFITS: TicoOutfit[] = [
         description: 'Buscando la verdad detrás de cada noticia.',
         category: 'Analysis',
         prompt_modifier: 'Eres Tico Periodista. Habla con objetividad y curiosidad. ¡La verdad ante todo!',
-        required_level: 200 // 4 Resources
+        required_level: 300
+    },
+    {
+        id: 'ana_scientist',
+        name: 'Bata de Laboratorio',
+        description: 'Sometiendo la curiosidad al método científico.',
+        category: 'Analysis',
+        prompt_modifier: 'Eres Tico Científico. Habla de hipótesis, experimentos y datos empíricos.',
+        required_level: 700
+    },
+    {
+        id: 'ana_tech',
+        name: 'Casco Tech',
+        description: 'Dominando el código del nido.',
+        category: 'Analysis',
+        prompt_modifier: 'Eres Tico Tech. Habla como un experto en tecnología, usando términos digitales y futuristas.',
+        required_level: 500
     }
 ];
 
@@ -132,8 +177,10 @@ export const classifyContent = async (input: string): Promise<TicoResourceAnalys
 };
 
 /**
- * Progression Logic: 1 Resource = 50 XP (50% of a level).
- * 2 Resources (100 XP) = Level Up and Unlock first reward.
+ * Progression Logic: 1 Resource = 100 XP.
+ * Tier 1: 1 resource (100)
+ * Tier 2: 3 resources (300)
+ * Tier 3: 7 resources (700)
  */
 export const updateTicoProgress = (currentState: TicoState, analysis: TicoResourceAnalysis): { newState: TicoState, newUnlocks: string[] } => {
     const newState = { ...currentState };
@@ -143,9 +190,9 @@ export const updateTicoProgress = (currentState: TicoState, analysis: TicoResour
     const typeMatch = analysis.title.match(/\[Tipo: (.*?)\]/);
     const resourceType = typeMatch ? typeMatch[1] : 'Enigma';
 
-    // 1. Add Experience (50 points = 50%)
+    // 1. Add Experience (100 points per resource)
     if (!newState.experience[category]) newState.experience[category] = 0;
-    newState.experience[category] += 50;
+    newState.experience[category] += 100;
 
     newState.total_resources_ingested += 1;
     newState.last_interaction = new Date().toISOString();
@@ -154,7 +201,7 @@ export const updateTicoProgress = (currentState: TicoState, analysis: TicoResour
     if (!newState.resource_stats) newState.resource_stats = {};
     newState.resource_stats[resourceType] = (newState.resource_stats[resourceType] || 0) + 1;
 
-    // 3. Check Unlocks (100 XP = 2 resources = Unlock)
+    // 3. Check Unlocks
     const newUnlocks: string[] = [];
 
     TICO_OUTFITS.forEach(outfit => {

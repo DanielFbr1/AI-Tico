@@ -3,7 +3,7 @@ import { TicoState } from '../types';
 import { INITIAL_TICO_STATE } from '../services/ticoLogic';
 
 export function useTicoGame(contextId: string = 'default') {
-    const storageKey = `tico-game-state-v2-${contextId}`;
+    const storageKey = `tico-game-state-v3-${contextId}`;
 
     // Load state from local storage or use initial state
     const [state, setState] = useState<TicoState>(() => {

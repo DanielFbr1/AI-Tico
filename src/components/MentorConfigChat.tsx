@@ -84,16 +84,16 @@ export function MentorConfigChat({ currentInstructions, onUpdateInstructions, on
                 {messages.map((msg) => (
                     <div
                         key={msg.id}
-                        className={`flex gap - 3 ${msg.role === 'user' ? 'flex-row-reverse' : ''} `}
+                        className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
                     >
-                        <div className={`w - 8 h - 8 rounded - full flex items - center justify - center shrink - 0 ${msg.role === 'user' ? 'bg-indigo-100 text-indigo-600' : 'bg-green-100 text-green-600'
-                            } `}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-indigo-100 text-indigo-600' : 'bg-green-100 text-green-600'
+                            }`}>
                             {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                         </div>
-                        <div className={`p - 3 rounded - 2xl max - w - [80 %] text - sm ${msg.role === 'user'
+                        <div className={`p-3 rounded-2xl max-w-[80%] text-sm ${msg.role === 'user'
                             ? 'bg-indigo-600 text-white rounded-tr-none'
                             : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'
-                            } `}>
+                            }`}>
                             {msg.content}
                         </div>
                     </div>

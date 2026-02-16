@@ -36,11 +36,14 @@ export interface Grupo {
         microfono_activado?: boolean;
         instrucciones_comportamiento?: string;
         tono?: 'Divertido' | 'Serio' | 'Socrático';
-        nivel_exigencia?: 'Bajo' | 'Medio' | 'Alto';
         enfoque?: 'Explorador' | 'Científico' | 'Creativo';
+        nivel_exigencia?: 'Bajo' | 'Medio' | 'Alto';
         nivel_apoyo?: 'Guía' | 'Retador';
         formato_respuesta?: 'Conciso' | 'Detallado';
     };
+    nombre_ia?: string;
+    personalidad_ia?: string;
+    instrucciones_ia?: string;
     tiempo_uso_minutos?: number;
     miembros: string[];
     proyecto_id?: string;
@@ -89,6 +92,8 @@ export interface Proyecto {
     grupos?: Grupo[];
     created_by?: string;
     contexto_ia?: string;
+    config_ia_global?: any;
+    instrucciones_ia_global?: string;
     rubrica?: Rubrica;
 }
 

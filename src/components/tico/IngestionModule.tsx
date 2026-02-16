@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Sparkles, BookOpen, Film, Palette, Music, Newspaper, Video, FileText, Monitor, ArrowLeft, Send, Podcast, Mic, MicOff, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
+import { ticoAudio } from '../../lib/audio/TicoAudioEngine';
 
 interface IngestionModuleProps {
     onFeed: (fullInput: string) => void;
@@ -37,6 +38,8 @@ export const IngestionModule: React.FC<IngestionModuleProps> = ({ onFeed }) => {
 
     const handleSubmit = () => {
         if (!input.trim() || !selectedType) return;
+
+        ticoAudio.playClickSFX();
 
         // Stop listening if active
         if (isListening) stopListening();
@@ -134,7 +137,7 @@ export const IngestionModule: React.FC<IngestionModuleProps> = ({ onFeed }) => {
                         {RESOURCE_TYPES.map((type) => (
                             <button
                                 key={type.id}
-                                onClick={() => setSelectedType(type)}
+                                onClick={() => { ticoAudio.playClickSFX(); setSelectedType(type); }}
                                 className={`flex flex-col items-center justify-center gap-2 p-4 bg-white border-4 border-slate-100 rounded-[2rem] transition-all hover:-translate-y-1 hover:shadow-xl group ${type.bg} ${type.border}`}
                             >
                                 <div className={`text-slate-400 group-hover:${type.color} transition-colors group-hover:scale-110 duration-300`}>
@@ -202,6 +205,7 @@ export const IngestionModule: React.FC<IngestionModuleProps> = ({ onFeed }) => {
                         <div className="flex gap-4 w-full justify-center">
                             <Button
                                 onClick={() => {
+                                    ticoAudio.playClickSFX();
                                     if (isListening) stopListening();
                                     setSelectedType(null);
                                 }}

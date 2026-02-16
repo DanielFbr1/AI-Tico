@@ -382,7 +382,7 @@ export function DashboardDocente({
                         <span>Tutorial interactivo</span>
                     </button>
                     <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                        Versión 0.3.6
+                        v1.1.0 (Restauración UI & AI Edge)
                     </div>
                 </div>
             </aside>
@@ -458,7 +458,8 @@ export function DashboardDocente({
                                                 </div>
 
                                                 <div className="flex items-center gap-2">
-                                                    <span className="bg-blue-600 text-white text-sm font-black px-3 py-1 rounded-lg shadow-sm tracking-wider">
+                                                    <span className="bg-blue-600 text-white text-sm font-black px-4 py-1.5 rounded-xl shadow-lg shadow-blue-200 tracking-wider flex items-center gap-2">
+                                                        <Key className="w-4 h-4" />
                                                         CÓDIGO: <span className="text-lg">{proyectoActual.codigo_sala}</span>
                                                     </span>
                                                 </div>
@@ -478,11 +479,11 @@ export function DashboardDocente({
                         </div>
 
                         {/* Acciones en Cuadrícula 2x2 en móvil */}
-                        <div className="grid grid-cols-2 md:flex items-center gap-2 w-full md:w-auto">
+                        <div className="grid grid-cols-2 lg:flex items-center gap-2 w-full md:w-auto">
                             {numPendientes > 0 && (
                                 <button
                                     onClick={() => setModalRevisionAbierto(true)}
-                                    className="relative flex items-center justify-center gap-2 px-3 py-2.5 bg-amber-50 text-amber-600 border-2 border-amber-200 rounded-xl font-black text-[10px] uppercase tracking-tighter"
+                                    className="relative flex items-center justify-center gap-2 px-3 py-3 bg-amber-50 text-amber-600 border-2 border-amber-200 rounded-2xl font-black text-[10px] uppercase tracking-tighter"
                                 >
                                     <span className="relative flex h-2 w-2">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -495,49 +496,49 @@ export function DashboardDocente({
                             {/* Botón Ajustes IA Directo */}
                             <button
                                 onClick={handleAjustesIA}
-                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-purple-100 text-purple-700 border-2 border-purple-200 hover:border-purple-400 rounded-xl font-bold transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-100 text-purple-700 border-2 border-purple-200 hover:border-purple-400 rounded-2xl font-black transition-all text-xs"
                                 title="Configurar Mentor IA"
                             >
-                                <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
-                                <span className="hidden lg:inline">IA</span>
+                                <Sparkles className="w-5 h-5" />
+                                <span className="hidden md:inline">IA MENTOR</span>
                             </button>
 
                             <button
                                 onClick={() => setModalAsistenciaOpen(true)}
-                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-50 text-indigo-600 border-2 border-indigo-100 hover:border-indigo-300 rounded-xl font-bold transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-50 text-indigo-600 border-2 border-indigo-100 hover:border-indigo-300 rounded-2xl font-black transition-all text-xs"
                                 title="Pasar lista"
                             >
-                                <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
-                                <span className="hidden lg:inline">Lista</span>
+                                <UserCheck className="w-5 h-5" />
+                                <span className="hidden md:inline">LISTA</span>
                             </button>
 
                             {/* Botón Mascota Tico */}
                             <button
                                 onClick={onOpenTicoFull}
-                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-50 text-emerald-600 border-2 border-emerald-100 hover:border-emerald-300 rounded-xl font-bold transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-50 text-emerald-600 border-2 border-emerald-100 hover:border-emerald-300 rounded-2xl font-black transition-all text-xs"
                                 title="Ver Mascota de clase (Pantalla Completa)"
                             >
-                                <Gamepad2 className="w-4 h-4 md:w-5 md:h-5" />
-                                <span className="hidden lg:inline">Tico</span>
+                                <Gamepad2 className="w-5 h-5" />
+                                <span className="hidden md:inline">TICO</span>
                             </button>
 
                             {/* Botón Sorteo/Ruleta */}
                             <button
                                 onClick={() => setModalRuletaAbierta(true)}
-                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-amber-50 text-amber-600 border-2 border-amber-100 hover:border-amber-300 rounded-xl font-bold transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-4 py-3 bg-amber-50 text-amber-600 border-2 border-amber-100 hover:border-amber-300 rounded-2xl font-black transition-all text-xs"
                                 title="Sorteo y Grupos"
                             >
-                                <Dices className="w-4 h-4 md:w-5 md:h-5" />
-                                <span className="hidden lg:inline">Ruleta</span>
+                                <Dices className="w-5 h-5" />
+                                <span className="hidden md:inline">RULETA</span>
                             </button>
 
                             {/* Botón Cerrar Sesión Directo */}
                             <button
                                 onClick={handleLogout}
-                                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-rose-50 text-rose-600 border-2 border-rose-100 hover:border-rose-300 rounded-xl font-bold transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-4 py-3 bg-rose-50 text-rose-600 border-2 border-rose-100 hover:border-rose-300 rounded-2xl font-black transition-all text-xs"
                             >
-                                <LogOut className="w-4 h-4 md:w-5 md:h-5" />
-                                <span className="hidden lg:inline">Salir</span>
+                                <LogOut className="w-5 h-5" />
+                                <span className="hidden md:inline">SALIR</span>
                             </button>
                         </div>
                     </div>

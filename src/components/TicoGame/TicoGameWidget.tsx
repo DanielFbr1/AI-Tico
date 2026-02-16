@@ -159,7 +159,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
 
     return (
         <div className="w-full h-full relative overflow-hidden font-lexend text-slate-800">
-            <TicoBackground />
+            <TicoBackground outfitId={state.current_outfit_id} />
 
             {/* STICKER REVEAL OVERLAY */}
             {revealedSticker && (

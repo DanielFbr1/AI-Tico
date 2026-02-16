@@ -13,9 +13,14 @@ export const TicoAvatar: React.FC<TicoAvatarProps> = ({ ticoState, isProcessing,
     const currentOutfit = TICO_OUTFITS.find(o => o.id === ticoState.current_outfit_id);
 
     // Video Paths
-    const IDLE_VIDEO = "/tico/videos/tico_idle_animation.webm";
-    const PECKING_VIDEO = "/tico/videos/tico_pecking_action.webm";
+    const isTech = ticoState.current_outfit_id === 'ana_tech';
+
+    // Video Paths - Dynamic based on outfit
+    const IDLE_VIDEO = isTech ? "/tico/tico_tech_idle.webm" : "/tico/videos/tico_idle_animation.webm";
+    const PECKING_VIDEO = isTech ? "/tico/tico_tech_pecking.webm" : "/tico/videos/tico_pecking_action.webm";
+
     const isBaseOutfit = !ticoState.current_outfit_id || ticoState.current_outfit_id === 'default';
+    const showIdleVideo = (isBaseOutfit || isTech);
 
     // Sprite Mapping (Fallback/Specific Outfits)
     const getSprite = () => {
@@ -23,6 +28,7 @@ export const TicoAvatar: React.FC<TicoAvatarProps> = ({ ticoState, isProcessing,
             case 'sci_astronaut': return "/tico/tico_astronauta_idle.png";
             case 'cre_painter': return "/tico/tico_artista_idle.png";
             case 'nat_explorer': return "/tico/Explorador.png";
+            case 'ana_tech': return "/tico/tico_tech_base.png";
             default: return "/tico/tico_base_idle.png";
         }
     };
@@ -79,7 +85,7 @@ export const TicoAvatar: React.FC<TicoAvatarProps> = ({ ticoState, isProcessing,
                         onEnded={() => setIsPecking(false)}
                         className="w-80 h-80 object-cover drop-shadow-[0_25px_50px_rgba(0,0,0,0.2)]"
                     />
-                ) : (isBaseOutfit && hasInteracted) ? (
+                ) : (showIdleVideo && hasInteracted) ? (
                     <video
                         src={IDLE_VIDEO}
                         autoPlay
@@ -103,7 +109,8 @@ export const TicoAvatar: React.FC<TicoAvatarProps> = ({ ticoState, isProcessing,
                         {currentOutfit.id.includes('sci') ? '🧪' :
                             currentOutfit.id.includes('cre') ? '🎨' :
                                 currentOutfit.id.includes('hum') ? '📜' :
-                                    currentOutfit.id.includes('nat') ? '🌿' : '✨'}
+                                    currentOutfit.id.includes('nat') ? '🌿' :
+                                        currentOutfit.id.includes('tech') ? '💻' : '✨'}
                     </div>
                 )}
             </div>
