@@ -190,7 +190,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
                 fases={fases}
                 hitosGrupo={grupo.hitos || []}
                 onToggleHito={() => { }}
-                readOnly={false}
+                readOnly={true}
                 layout="compact-grid"
                 onDeleteHito={onDeleteHito}
               />

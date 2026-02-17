@@ -59,7 +59,7 @@ export function RoadmapView({ fases = [], hitosGrupo, onToggleHito, currentPhase
                                 <div className="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">{task.faseNombre}</div>
                                 <div className="text-sm font-bold text-slate-700 mb-2 leading-snug">{task.titulo}</div>
 
-                                {task.status === 'pendiente' && (
+                                {task.status === 'pendiente' && !readOnly && (
                                     <button
                                         onClick={() => onToggleHito(task.faseId, task.titulo, task.status)}
                                         className="w-full py-1.5 bg-slate-50 hover:bg-indigo-50 text-indigo-500 rounded-lg text-xs font-bold border border-slate-100 hover:border-indigo-100 transition-colors"
@@ -74,16 +74,18 @@ export function RoadmapView({ fases = [], hitosGrupo, onToggleHito, currentPhase
                                             <AlertCircle className="w-3 h-3" />
                                             Tarea Devuelta
                                         </div>
-                                        <button
-                                            onClick={() => onToggleHito(task.faseId, task.titulo, task.status)}
-                                            className="w-full py-1.5 bg-white hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold border border-rose-200 hover:border-rose-300 transition-colors flex items-center justify-center gap-1 shadow-sm"
-                                        >
-                                            Corregir y Reenviar
-                                        </button>
+                                        {!readOnly && (
+                                            <button
+                                                onClick={() => onToggleHito(task.faseId, task.titulo, task.status)}
+                                                className="w-full py-1.5 bg-white hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold border border-rose-200 hover:border-rose-300 transition-colors flex items-center justify-center gap-1 shadow-sm"
+                                            >
+                                                Corregir y Reenviar
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
-                                {task.status === 'en_progreso' && (
+                                {task.status === 'en_progreso' && !readOnly && (
                                     <button
                                         onClick={() => onToggleHito(task.faseId, task.titulo, task.status)}
                                         className="w-full py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg text-xs font-bold border border-amber-100 hover:border-amber-200 transition-colors flex items-center justify-center gap-1"
@@ -106,7 +108,7 @@ export function RoadmapView({ fases = [], hitosGrupo, onToggleHito, currentPhase
                                     </div>
                                 )}
 
-                                {onDeleteHito && !readOnly && (
+                                {onDeleteHito && (
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
