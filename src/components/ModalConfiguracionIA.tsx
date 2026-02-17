@@ -15,7 +15,6 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
     // Estados iniciales basados en el grupo (o defaults)
     const [nivelExigencia, setNivelExigencia] = useState<'Bajo' | 'Medio' | 'Alto'>(grupo?.configuracion?.nivel_exigencia || 'Medio');
     const [tono, setTono] = useState<'Divertido' | 'Serio' | 'Socrático'>(grupo?.configuracion?.tono || 'Divertido');
-    const [enfoque, setEnfoque] = useState<'Explorador' | 'Científico' | 'Creativo'>(grupo?.configuracion?.enfoque || 'Explorador');
     const [nivelApoyo, setNivelApoyo] = useState<'Guía' | 'Retador'>(grupo?.configuracion?.nivel_apoyo || 'Guía');
     const [formatoRespuesta, setFormatoRespuesta] = useState<'Conciso' | 'Detallado'>(grupo?.configuracion?.formato_respuesta || 'Detallado');
     const [frecuenciaEmojis, setFrecuenciaEmojis] = useState(true);
@@ -49,7 +48,6 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                         const config = data.config_ia_global || {};
                         setNivelExigencia(config.nivel_exigencia || 'Medio');
                         setTono(config.tono || 'Divertido');
-                        setEnfoque(config.enfoque || 'Explorador');
                         setNivelApoyo(config.nivel_apoyo || 'Guía');
                         setFormatoRespuesta(config.formato_respuesta || 'Detallado');
                         setVozActivada(config.voz_activada ?? true);
@@ -68,7 +66,6 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                         const config = data.configuracion;
                         setNivelExigencia(config.nivel_exigencia || 'Medio');
                         setTono(config.tono || 'Divertido');
-                        setEnfoque(config.enfoque || 'Explorador');
                         setNivelApoyo(config.nivel_apoyo || 'Guía');
                         setFormatoRespuesta(config.formato_respuesta || 'Detallado');
                         setVozActivada(config.voz_activada ?? true);
@@ -98,7 +95,6 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                 instrucciones_comportamiento: instrucciones,
                 tono: tono,
                 nivel_exigencia: nivelExigencia,
-                enfoque: enfoque,
                 nivel_apoyo: nivelApoyo,
                 formato_respuesta: formatoRespuesta
             };
@@ -189,7 +185,6 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                                     onUpdateSettings={(settings) => {
                                         if (settings.tono) setTono(settings.tono as any);
                                         if (settings.nivel_exigencia) setNivelExigencia(settings.nivel_exigencia as any);
-                                        if (settings.enfoque) setEnfoque(settings.enfoque as any);
                                         if (settings.nivel_apoyo) setNivelApoyo(settings.nivel_apoyo as any);
                                         if (settings.formato_respuesta) setFormatoRespuesta(settings.formato_respuesta as any);
                                         toast.success("Configuración actualizada por IA");
@@ -204,6 +199,10 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                             {/* Resumen de Ajustes Detectados */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
+                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Formato</span>
+                                    <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[11px] font-black uppercase tracking-tight">{formatoRespuesta}</span>
+                                </div>
+                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
                                     <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Tono</span>
                                     <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[11px] font-black uppercase tracking-tight">{tono}</span>
                                 </div>
@@ -212,16 +211,8 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                                     <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-[11px] font-black uppercase tracking-tight">{nivelExigencia}</span>
                                 </div>
                                 <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
-                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Enfoque</span>
-                                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-[11px] font-black uppercase tracking-tight">{enfoque}</span>
-                                </div>
-                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
                                     <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Apoyo</span>
                                     <span className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-[11px] font-black uppercase tracking-tight">{nivelApoyo}</span>
-                                </div>
-                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm col-span-2">
-                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Formato de Respuesta</span>
-                                    <span className="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-[11px] font-black uppercase tracking-tight">{formatoRespuesta}</span>
                                 </div>
                             </div>
 

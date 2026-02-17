@@ -36,7 +36,6 @@ export interface Grupo {
         microfono_activado?: boolean;
         instrucciones_comportamiento?: string;
         tono?: 'Divertido' | 'Serio' | 'Socrático';
-        enfoque?: 'Explorador' | 'Científico' | 'Creativo';
         nivel_exigencia?: 'Bajo' | 'Medio' | 'Alto';
         nivel_apoyo?: 'Guía' | 'Retador';
         formato_respuesta?: 'Conciso' | 'Detallado';
