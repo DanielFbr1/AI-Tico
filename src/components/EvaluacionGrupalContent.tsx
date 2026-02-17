@@ -140,7 +140,15 @@ export function EvaluacionGrupalContent({ grupo, onSave, onCancel, rubricaProyec
             }
 
             toast.success(`Evaluación grupal guardada y sincronizada con ${inheritanceCount} alumnos.`);
-            if (onSave) onSave();
+
+            // Llamar a onSave y onCancel de forma segura para asegurar el cierre del panel
+            try {
+                if (onSave) onSave();
+            } catch (e) {
+                console.error("Error en onSave callback:", e);
+            }
+
+            if (onCancel) onCancel();
 
         } catch (err: any) {
             console.error('Error saving group evaluation:', err);
