@@ -177,10 +177,11 @@ export function EvaluacionRubricas({ rubrica, grupos = [], proyectoId }: Evaluac
   const handleGlobalAiGeneration = async () => {
     setIsGlobalAiGenerating(true);
     try {
-      const promises = localCriterios.map(async (crit) => {
+      const newCriterios = [];
+      for (const crit of localCriterios) {
         const nivelesGenerados = await generarNivelesRubrica(crit.nombre);
         const safeNiveles = nivelesGenerados.length === 4 ? nivelesGenerados : ["", "", "", ""];
-        return {
+        newCriterios.push({
           ...crit,
           niveles: [
             { puntos: '0-4', descripcion: safeNiveles[0] },
@@ -188,9 +189,10 @@ export function EvaluacionRubricas({ rubrica, grupos = [], proyectoId }: Evaluac
             { puntos: '7-8', descripcion: safeNiveles[2] },
             { puntos: '9-10', descripcion: safeNiveles[3] }
           ]
-        };
-      });
-      const newCriterios = await Promise.all(promises);
+        });
+        // Esperar 2 segundos entre peticiones para evitar 429 Rate Limit
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
       setLocalCriterios(newCriterios);
       toast.success("Rúbrica completada con inteligencia artificial ✨");
     } catch (e) {

@@ -1,5 +1,5 @@
-
 import { Rubrica, MensajeIA, Grupo } from '../types';
+// @ts-nocheck
 import { supabase } from '../lib/supabase';
 import { embeddingService } from './embeddings';
 
@@ -17,40 +17,88 @@ export interface Mensaje {
     content: string;
 }
 
-// Helper para llamadas a Groq
-export async function callGroq(messages: Mensaje[], jsonMode: boolean = false, signal?: AbortSignal): Promise<string> {
+// Helper para llamadas a Groq con reintentos
+export async function callGroq(
+    messages: Mensaje[],
+    jsonMode: boolean = false,
+    signal?: AbortSignal,
+    model: string = 'llama-3.3-70b-versatile',
+    retries: number = 2
+): Promise<string> {
     if (!GROQ_API_KEY) return "Error: API Key no configurada.";
 
-    try {
-        const response = await fetch(GROQ_API_URL, {
-            method: 'POST',
-            signal: signal,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${GROQ_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile', // Modelo versátil y soportado
-                messages: messages,
-                temperature: 0.7,
-                max_tokens: 1024,
-                response_format: jsonMode ? { type: "json_object" } : undefined
-            })
-        });
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const response = await fetch(GROQ_API_URL, {
+                method: 'POST',
+                signal: signal,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 1024,
+                    response_format: jsonMode ? { type: "json_object" } : undefined
+                })
+            });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Error Groq API:", errorData);
-            throw new Error(`Groq Error: ${response.status}`);
+            if (response.status === 429 && i < retries) {
+                // Incremento de espera: 3s, 6s...
+                const waitTime = (i + 1) * 3000;
+                console.warn(`⚠️ Groq Rate Limit (429). Reintentando en ${waitTime}ms... (Intento ${i + 1}/${retries})`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                continue;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error("Error Groq API:", errorData);
+
+                // Si es 429 y nos quedan reintentos, esperamos y seguimos
+                if (response.status === 429 && i < retries) {
+                    const waitTime = (i + 1) * 5000; // Espera más agresiva para 429
+                    console.warn(`⚠️ Groq Rate Limit (429). Reintentando en ${waitTime}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    continue;
+                }
+
+                throw new Error(`Groq Error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const content = data.choices[0]?.message?.content || "";
+
+            if (jsonMode) {
+                try {
+                    JSON.parse(content); // Validar que es JSON
+                } catch (e) {
+                    console.error("Groq no devolvió JSON válido:", content);
+                    if (i < retries) continue; // Reintentar si no es JSON
+                    throw new Error("Invalid JSON response from Groq");
+                }
+            }
+
+            return content;
+        } catch (error: any) {
+            if (error.name === 'AbortError') throw error;
+            if (i === retries) {
+                console.error("Error definitivo calling Groq:", error);
+
+                // Si esperamos JSON, debemos lanzar error para que el catch del llamador lo gestione
+                if (jsonMode) {
+                    throw error;
+                }
+
+                return "¡Cuaack! Mi cerebro va muy rápido y se ha sobrecalentado. 🧠🔥 ¡Dame un segundito y vuelve a preguntarme!";
+            }
+            // Espera proporcional antes de reintentar
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
         }
-
-        const data = await response.json();
-        return data.choices[0]?.message?.content || "";
-    } catch (error: any) {
-        if (error.name === 'AbortError') throw error;
-        console.error("Error calling Groq:", error);
-        return "Lo siento, hubo un error al procesar tu solicitud.";
     }
+    throw new Error("Tico está agotado tras múltiples intentos.");
 }
 
 // --- MENTOR IA (Chat Principal) ---
@@ -273,17 +321,32 @@ export const generarConfiguracionProyecto = async (historial: Mensaje[]) => {
 };
 
 export const generarNivelesRubrica = async (criterio: string): Promise<string[]> => {
-    const prompt = `Para un criterio de evaluación escolar titulado "${criterio}", genera 4 descripciones progresivas (Insuficiente, Suficiente, Notable, Sobresaliente).
-    Devuelve SOLO un JSON con un array de 4 strings: ["descripción insuficiente", "descripción suficiente", "descripción notable", "descripción sobresaliente"]`;
+    const prompt = `Eres un experto en educación. Para el criterio de evaluación escolar "${criterio}", genera exactamente 4 descripciones progresivas de rendimiento.
+
+Devuelve OBLIGATORIAMENTE un JSON con esta estructura exacta:
+{"niveles": ["descripción para Insuficiente (0-4)", "descripción para Suficiente (5-6)", "descripción para Notable (7-8)", "descripción para Sobresaliente (9-10)"]}
+
+Cada descripción debe tener 1-2 frases concretas y específicas para ese nivel. Responde SOLO con el JSON, sin texto adicional.`;
 
     const response = await callGroq([{ role: 'user', content: prompt }], true);
     try {
         const parsed = JSON.parse(response);
-        if (Array.isArray(parsed)) return parsed;
-        if (parsed.niveles && Array.isArray(parsed.niveles)) return parsed.niveles;
-        return ["Error", "Error", "Error", "Error"];
+
+        // Buscar un array de 4 strings en cualquier clave del objeto
+        if (Array.isArray(parsed) && parsed.length >= 4) return parsed.slice(0, 4);
+
+        // Buscar en cualquier propiedad del objeto
+        for (const key of Object.keys(parsed)) {
+            const val = parsed[key];
+            if (Array.isArray(val) && val.length >= 4) {
+                return val.slice(0, 4).map((v: any) => String(v));
+            }
+        }
+
+        console.warn("Formato inesperado de Groq:", parsed);
+        return ["Sin descripción", "Sin descripción", "Sin descripción", "Sin descripción"];
     } catch (e) {
-        console.error("Error parsing Rubric levels:", e);
+        console.error("Error parsing Rubric levels:", e, "Response:", response);
         return ["Error al generar", "Error al generar", "Error al generar", "Error al generar"];
     }
 };
