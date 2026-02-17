@@ -382,7 +382,7 @@ export function DashboardDocente({
                         <span>Tutorial interactivo</span>
                     </button>
                     <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                        v3.1.0 (Pop Mart Toy Aesthetic)
+                        v3.1.3 (Rubric & UI Refinement)
                     </div>
                 </div>
             </aside>

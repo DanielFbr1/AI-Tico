@@ -55,7 +55,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
           <span>Volver</span>
         </button>
 
-        <nav className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100 mx-auto">
+        <nav className="hidden md:flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100 mx-auto">
           {[
             { id: 'detalle', label: 'Detalles', icon: Circle },
             { id: 'tareas', label: 'Tareas', icon: CheckCircle2 },
@@ -78,7 +78,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
         </nav>
       </header>
 
-      <main className={`w-full max-w-7xl mx-auto ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden p-4' : 'flex-none p-4 md:p-8'}`}>
+      <main className={`w-full max-w-7xl mx-auto pb-24 md:pb-8 ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden p-4' : 'flex-none p-4 md:p-8'}`}>
         {vistaActiva === 'detalle' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -201,6 +201,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
                 <EvaluacionGrupalContent
                   grupo={grupo}
                   rubricaProyecto={rubrica}
+                  onCancel={() => setVistaActiva('detalle')}
                 />
               </div>
             </div>
@@ -269,6 +270,30 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
           grupo={grupo}
         />
       )}
+
+      {/* Navegación Inferior (Móvil) */}
+      <nav className="md:hidden fixed bottom-3 left-3 right-3 bg-white/90 backdrop-blur-xl border border-slate-200 p-2 flex items-center justify-around z-[100] shadow-2xl rounded-[2rem]">
+        {[
+          { id: 'detalle', label: 'Info', icon: Circle },
+          { id: 'tareas', label: 'Tareas', icon: CheckCircle2 },
+          { id: 'chat', label: 'Chats', icon: MessageSquare },
+          { id: 'compartir', label: 'Docs', icon: Share2 },
+          { id: 'evaluacion', label: 'Nota', icon: ClipboardList },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setVistaActiva(tab.id as any)}
+            className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all ${vistaActiva === tab.id ? 'text-indigo-600 scale-110' : 'text-slate-400 opacity-60'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${vistaActiva === tab.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-transparent'}`}>
+              <tab.icon className={`w-5 h-5 ${vistaActiva === tab.id ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+            </div>
+            <span className={`text-[9px] font-black uppercase tracking-tight ${vistaActiva === tab.id ? 'opacity-100' : 'opacity-80'}`}>
+              {tab.label}
+            </span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
