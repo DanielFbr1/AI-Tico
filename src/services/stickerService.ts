@@ -26,10 +26,11 @@ export const generateAndSaveSticker = async (
     visualContext?: string
 ): Promise<{ success: boolean; sticker?: Sticker; error?: string }> => {
     try {
-        console.log("🚀 [VERSIÓN 1.0.4] MOTOR DE PEGATINAS (MODO BLOB)");
+        console.log("🚀 [v2.0.0] MOTOR DE PEGATINAS (POLLINATIONS DIRECTO)");
         console.log(`🎨 Generando para: ${resourceTitle}`);
 
-        // 1. Check Daily Limit (3 stickers per group per day)
+        // 1. Daily Limit DISABLED for testing
+        /*
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const { data: todayStickers, error: countError } = await supabase
@@ -44,42 +45,48 @@ export const generateAndSaveSticker = async (
                 error: "¡Límite diario alcanzado! Tico ha dibujado mucho hoy (3/3). Vuelve mañana para más pegatinas."
             };
         }
+        */
 
-        // 2. Prepare Prompt
+        // 2. Prepare Prompt (Pop Mart Toy Aesthetic 3.1.0)
         const cleanTitle = resourceTitle.replace(/\[.*?\]/g, '').trim();
-        const subject = visualContext || cleanTitle;
-        const simplePrompt = `A high-quality 3D digital sticker, Pixar style, cute character of ${subject}, white thick die-cut border, solid white background, vibrant colors, 4k render, toy-like appearance, no text, pure white background.`;
+        const subjectDescription = visualContext || cleanTitle;
+        const simplePrompt = `A high-quality 3D Pop Mart vinyl toy of ${subjectDescription}, thick white die-cut sticker border, extremely cute and friendly, big button eyes, happy face. Set against a solid FLAT WHITE background, studio lighting, plastic texture, vibrant high-contrast colors, centered, 8k resolution, crisp edges.`;
 
         let blob: Blob | null = null;
 
-        // 3. Call Supabase Edge Function con manejo manual de la respuesta
-        try {
-            console.log("⏳ Invocando generate-sticker...");
+        // 3. Llamar a la Edge Function (HuggingFace) - funciona correctamente
+        const MAX_RETRIES = 2;
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                console.log(`⏳ Edge Function intento ${attempt + 1}/${MAX_RETRIES + 1}...`);
+                const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-sticker`;
+                const response = await fetch(functionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ prompt: simplePrompt })
+                });
 
-            // Usamos fetch directo a la URL de la función para mayor control del BLOB
-            const { data: { publicUrl: functionUrl } } = { data: { publicUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-sticker` } };
-
-            const response = await fetch(functionUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-                },
-                body: JSON.stringify({ prompt: simplePrompt })
-            });
-
-            if (response.ok) {
-                console.log("✅ Respuesta recibida de la función");
-                blob = await response.blob();
-            } else {
-                const errorText = await response.text();
-                console.warn("⚠️ La función devolvió error:", errorText);
+                if (response.ok) {
+                    const fetchedBlob = await response.blob();
+                    if (fetchedBlob.size > 2000) {
+                        console.log(`✅ Sticker generado (${fetchedBlob.size} bytes)`);
+                        blob = fetchedBlob;
+                        break;
+                    }
+                } else {
+                    const errText = await response.text();
+                    console.warn(`⚠️ Intento ${attempt + 1} falló:`, errText);
+                }
+            } catch (err) {
+                console.warn(`🌐 Error de red (intento ${attempt + 1}):`, err);
             }
-        } catch (err) {
-            console.error("🌐 Error de red con la función:", err);
+            if (attempt < MAX_RETRIES) await new Promise(r => setTimeout(r, 3000));
         }
 
-        // 4. Final Fallback (If all fails)
+        // 4. FALLBACK: Pegatina de reserva
         if (!blob || blob.size < 2000) {
             console.log("💾 Usando Pegatina de Reserva (Tico Fallback).");
             const fallbackUrl = '/tico_fallback.png';
@@ -101,7 +108,7 @@ export const generateAndSaveSticker = async (
 
         // 5. Upload to Supabase Storage
         const fileName = `sticker_${groupId}_${Date.now()}.jpg`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
             .from(BUCKET_NAME)
             .upload(fileName, blob, {
                 contentType: 'image/jpeg',

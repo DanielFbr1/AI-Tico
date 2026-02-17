@@ -320,51 +320,51 @@ export function DashboardDocente({
                 </div>
 
                 <nav className="flex-1 p-4">
-                    <button
-                        onClick={() => { onSectionChange('grupos'); setMobileMenuOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'grupos'
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
-                            : 'text-gray-600 hover:bg-gray-100 font-medium'
-                            }`}
-                    >
-                        <Users className="w-5 h-5" />
-                        <span>Grupos</span>
-                    </button>
+                    <div className="hidden md:block">
+                        <button
+                            onClick={() => { onSectionChange('grupos'); setMobileMenuOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'grupos'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
+                                : 'text-gray-600 hover:bg-gray-100 font-medium'
+                                }`}
+                        >
+                            <Users className="w-5 h-5" />
+                            <span>Grupos</span>
+                        </button>
 
-                    <button
-                        onClick={() => { onSectionChange('resumen'); setMobileMenuOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'resumen'
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
-                            : 'text-gray-600 hover:bg-gray-100 font-medium'
-                            }`}
-                    >
-                        <LayoutDashboard className="w-5 h-5" />
-                        <span>Progreso</span>
-                    </button>
+                        <button
+                            onClick={() => { onSectionChange('resumen'); setMobileMenuOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'resumen'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
+                                : 'text-gray-600 hover:bg-gray-100 font-medium'
+                                }`}
+                        >
+                            <LayoutDashboard className="w-5 h-5" />
+                            <span>Progreso</span>
+                        </button>
 
+                        <button
+                            onClick={() => { onSectionChange('trabajo-compartido'); setMobileMenuOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'trabajo-compartido'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
+                                : 'text-gray-600 hover:bg-gray-100 font-medium'
+                                }`}
+                        >
+                            <Share2 className="w-5 h-5" />
+                            <span>Trabajo compartido</span>
+                        </button>
 
-
-                    <button
-                        onClick={() => { onSectionChange('trabajo-compartido'); setMobileMenuOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'trabajo-compartido'
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
-                            : 'text-gray-600 hover:bg-gray-100 font-medium'
-                            }`}
-                    >
-                        <Share2 className="w-5 h-5" />
-                        <span>Trabajo compartido</span>
-                    </button>
-
-                    <button
-                        onClick={() => { onSectionChange('evaluacion'); setMobileMenuOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'evaluacion'
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
-                            : 'text-gray-600 hover:bg-gray-100 font-medium'
-                            }`}
-                    >
-                        <ClipboardCheck className="w-5 h-5" />
-                        <span>Evaluación</span>
-                    </button>
+                        <button
+                            onClick={() => { onSectionChange('evaluacion'); setMobileMenuOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'evaluacion'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
+                                : 'text-gray-600 hover:bg-gray-100 font-medium'
+                                }`}
+                        >
+                            <ClipboardCheck className="w-5 h-5" />
+                            <span>Evaluación</span>
+                        </button>
+                    </div>
 
 
 
@@ -382,7 +382,7 @@ export function DashboardDocente({
                         <span>Tutorial interactivo</span>
                     </button>
                     <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                        v1.1.0 (Restauración UI & AI Edge)
+                        v3.1.0 (Pop Mart Toy Aesthetic)
                     </div>
                 </div>
             </aside>
@@ -472,18 +472,28 @@ export function DashboardDocente({
                                     </>
                                 )}
                             </div>
-                            {/* Texto visible solo en móvil como indicador */}
-                            <div className="md:hidden font-black text-slate-800 text-sm uppercase tracking-widest">
-                                {proyectoActual ? proyectoActual.nombre : 'Panel Docente'}
+                            {/* Texto e indicador visible en móvil */}
+                            <div className="md:hidden flex flex-col items-start leading-none">
+                                <div className="font-black text-slate-800 text-sm uppercase tracking-widest flex items-center gap-2">
+                                    {proyectoActual ? proyectoActual.nombre : 'Panel Docente'}
+                                    <button
+                                        onClick={onCambiarProyecto}
+                                        className="p-1.5 bg-slate-100 text-slate-400 rounded-lg active:scale-95"
+                                        title="Cambiar proyecto"
+                                    >
+                                        <FolderOpen className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Sala: {proyectoActual?.codigo_sala}</span>
                             </div>
                         </div>
 
-                        {/* Acciones en Cuadrícula 2x2 en móvil */}
-                        <div className="grid grid-cols-2 lg:flex items-center gap-2 w-full md:w-auto">
+                        {/* Acciones en Cuadrícula en móvil */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:flex items-center gap-2 w-full md:w-auto">
                             {numPendientes > 0 && (
                                 <button
                                     onClick={() => setModalRevisionAbierto(true)}
-                                    className="relative flex items-center justify-center gap-2 px-3 py-3 bg-amber-50 text-amber-600 border-2 border-amber-200 rounded-2xl font-black text-[10px] uppercase tracking-tighter"
+                                    className="relative flex items-center justify-center gap-2 px-3 py-2.5 md:py-3 bg-amber-50 text-amber-600 border-2 border-amber-200 rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-tighter"
                                 >
                                     <span className="relative flex h-2 w-2">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -493,52 +503,53 @@ export function DashboardDocente({
                                 </button>
                             )}
 
-                            {/* Botón Ajustes IA Directo */}
                             <button
                                 onClick={handleAjustesIA}
-                                className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-100 text-purple-700 border-2 border-purple-200 hover:border-purple-400 rounded-2xl font-black transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-purple-100 text-purple-700 border-2 border-purple-200 hover:border-purple-400 rounded-2xl font-black transition-all text-[10px] md:text-xs"
                                 title="Configurar Mentor IA"
                             >
-                                <Sparkles className="w-5 h-5" />
+                                <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
                                 <span className="hidden md:inline">IA MENTOR</span>
+                                <span className="md:hidden">IA</span>
                             </button>
 
                             <button
                                 onClick={() => setModalAsistenciaOpen(true)}
-                                className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-50 text-indigo-600 border-2 border-indigo-100 hover:border-indigo-300 rounded-2xl font-black transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-indigo-50 text-indigo-600 border-2 border-indigo-100 hover:border-indigo-300 rounded-2xl font-black transition-all text-[10px] md:text-xs"
                                 title="Pasar lista"
                             >
-                                <UserCheck className="w-5 h-5" />
+                                <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
                                 <span className="hidden md:inline">LISTA</span>
+                                <span className="md:hidden">LISTA</span>
                             </button>
 
-                            {/* Botón Mascota Tico */}
                             <button
                                 onClick={onOpenTicoFull}
-                                className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-50 text-emerald-600 border-2 border-emerald-100 hover:border-emerald-300 rounded-2xl font-black transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-emerald-50 text-emerald-600 border-2 border-emerald-100 hover:border-emerald-300 rounded-2xl font-black transition-all text-[10px] md:text-xs"
                                 title="Ver Mascota de clase (Pantalla Completa)"
                             >
-                                <Gamepad2 className="w-5 h-5" />
+                                <Gamepad2 className="w-4 h-4 md:w-5 md:h-5" />
                                 <span className="hidden md:inline">TICO</span>
+                                <span className="md:hidden">TICO</span>
                             </button>
 
-                            {/* Botón Sorteo/Ruleta */}
                             <button
                                 onClick={() => setModalRuletaAbierta(true)}
-                                className="flex items-center justify-center gap-2 px-4 py-3 bg-amber-50 text-amber-600 border-2 border-amber-100 hover:border-amber-300 rounded-2xl font-black transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-amber-50 text-amber-600 border-2 border-amber-100 hover:border-amber-300 rounded-2xl font-black transition-all text-[10px] md:text-xs"
                                 title="Sorteo y Grupos"
                             >
-                                <Dices className="w-5 h-5" />
+                                <Dices className="w-4 h-4 md:w-5 md:h-5" />
                                 <span className="hidden md:inline">RULETA</span>
+                                <span className="md:hidden">AZAR</span>
                             </button>
 
-                            {/* Botón Cerrar Sesión Directo */}
                             <button
                                 onClick={handleLogout}
-                                className="flex items-center justify-center gap-2 px-4 py-3 bg-rose-50 text-rose-600 border-2 border-rose-100 hover:border-rose-300 rounded-2xl font-black transition-all text-xs"
+                                className="flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-rose-50 text-rose-600 border-2 border-rose-100 hover:border-rose-300 rounded-2xl font-black transition-all text-[10px] md:text-xs"
                             >
-                                <LogOut className="w-5 h-5" />
+                                <LogOut className="w-4 h-4 md:w-5 md:h-5" />
                                 <span className="hidden md:inline">SALIR</span>
+                                <span className="md:hidden">SALIR</span>
                             </button>
                         </div>
                     </div>
@@ -548,7 +559,7 @@ export function DashboardDocente({
                 </header>
 
                 {/* Main scroll area */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50/50">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50/50 pb-24 md:pb-8">
                     <div className="max-w-7xl mx-auto space-y-8">
                         {currentSection === 'resumen' && (
                             <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 items-start">
@@ -814,6 +825,48 @@ export function DashboardDocente({
                     </div>
                 </div>
             )}
-        </div >
+            {/* Bottom Navigation (Mobile Only) */}
+            <nav className="md:hidden fixed bottom-1 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 px-2 py-3 flex items-center justify-around z-[100] shadow-[0_10px_40px_rgb(0,0,0,0.1)] rounded-[2.5rem]">
+                <button
+                    onClick={() => onSectionChange('grupos')}
+                    className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'grupos' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                >
+                    <div className={`p-2 rounded-2xl transition-all ${currentSection === 'grupos' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                        <Users className={`w-5 h-5 ${currentSection === 'grupos' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                    </div>
+                    <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'grupos' ? 'opacity-100' : 'opacity-80'}`}>Grupos</span>
+                </button>
+
+                <button
+                    onClick={() => onSectionChange('resumen')}
+                    className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'resumen' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                >
+                    <div className={`p-2 rounded-2xl transition-all ${currentSection === 'resumen' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                        <LayoutDashboard className={`w-5 h-5 ${currentSection === 'resumen' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                    </div>
+                    <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'resumen' ? 'opacity-100' : 'opacity-80'}`}>Progreso</span>
+                </button>
+
+                <button
+                    onClick={() => onSectionChange('trabajo-compartido')}
+                    className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'trabajo-compartido' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                >
+                    <div className={`p-2 rounded-2xl transition-all ${currentSection === 'trabajo-compartido' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                        <Share2 className={`w-5 h-5 ${currentSection === 'trabajo-compartido' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                    </div>
+                    <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'trabajo-compartido' ? 'opacity-100' : 'opacity-80'}`}>Trabajo</span>
+                </button>
+
+                <button
+                    onClick={() => onSectionChange('evaluacion')}
+                    className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'evaluacion' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                >
+                    <div className={`p-2 rounded-2xl transition-all ${currentSection === 'evaluacion' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                        <ClipboardCheck className={`w-5 h-5 ${currentSection === 'evaluacion' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                    </div>
+                    <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'evaluacion' ? 'opacity-100' : 'opacity-80'}`}>Evaluación</span>
+                </button>
+            </nav>
+        </div>
     );
 }

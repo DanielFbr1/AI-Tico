@@ -24,8 +24,12 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
     // Sticker Reveal State
     const [revealedSticker, setRevealedSticker] = useState<Sticker | null>(null);
 
+    // Animation Talking State
+    const [isTalking, setIsTalking] = useState(false);
+
     const handleAction = async () => {
         setIsGenerating(true);
+        setIsTalking(false);
         setActiveResponse(null);
 
         // Visual Confetti Explosion for Magic Action
@@ -53,6 +57,9 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                 state.current_outfit_id,
                 `¡Hola Tico! Dime un dato curioso súper breve (máximo 2 frases cortas) sobre **${randomTopic}** para niños de 6 a 12 años. ${excludeContext}. ¡Dilo de forma rápida y divertida!`
             );
+
+            // Set talking before finishing generation to avoid glitch
+            setIsTalking(true);
             setActiveResponse(response);
 
             // Save this fact to history to avoid repetition in the future
@@ -81,17 +88,12 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
 
             // 3. Start Sticker Generation & Minimum Animation Delay
 
-            // Wait for both the AI and at least 3 seconds of pecking animation (giving it more time)
-            const minAnimationDelay = new Promise(resolve => setTimeout(resolve, 3000));
-
-            // Translate and Enrich Context (Spanish -> English Visuals)
-            const contextPromise = generateStickerContext(result.title);
-
-            const [contextRes, _] = await Promise.all([contextPromise, minAnimationDelay]);
-
             // Extract the user-friendly resource type (e.g. "Libro", "Película") from the prefix
-            const typeMatch = result.title.match(/\[Tipo: (.*?)\]/);
+            const typeMatch = fullInput.match(/\[Tipo: (.*?)\]/);
             const displayType = typeMatch ? typeMatch[1] : 'Dato';
+
+            // Start Sticker Generation immediately without fixed delays
+            const contextRes = await generateStickerContext(result.title, displayType);
 
             // Now generate sticker with enhanced context
             const res = await generateAndSaveSticker(
@@ -130,6 +132,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                         result.category === 'Analysis' ? 'Análisis' : 'Conocimiento';
 
             const responseText = `¡${categoryName}! ${result.reasoning.split('.')[0]}.`; // Keep it short
+            setIsTalking(true);
             setActiveResponse(responseText);
 
             // 6. Unlocks? Confetti!
@@ -168,11 +171,11 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                         {/* Glow effect */}
                         <div className="absolute inset-0 bg-yellow-400 blur-3xl opacity-30 animate-pulse"></div>
 
-                        <div className="bg-white p-4 rounded-[3rem] shadow-[0_0_60px_rgba(255,215,0,0.4)] animate-in zoom-in spin-in-[10deg] duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] relative z-10 rotate-3">
+                        <div className="bg-white p-4 rounded-[3rem] shadow-[0_0_60px_rgba(255,215,0,0.4)] animate-in zoom-in spin-in-[10deg] duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] relative z-10 rotate-3 overflow-hidden">
                             <img
                                 src={revealedSticker.sticker_url}
                                 alt="New Sticker"
-                                className="w-64 h-64 md:w-80 md:h-80 object-contain drop-shadow-xl"
+                                className="w-64 h-64 md:w-80 md:h-80 object-contain drop-shadow-xl rounded-2xl bg-white"
                             />
                         </div>
 
@@ -195,35 +198,37 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
 
             {/* VERSION TAG */}
             <div className="absolute bottom-4 left-6 text-[10px] font-black text-slate-400/50 uppercase tracking-widest z-10 pointer-events-none">
-                Tico AI v2.9.6 - Voice Debugged 🎙️🛠️
+                Tico AI v3.1.0 - Pop Mart Toy Aesthetic 🧸✨
             </div>
 
-            <div className="flex flex-row w-full h-full z-10 relative">
+            <div className="flex flex-col md:flex-row w-full h-full z-10 relative">
 
                 {/* LEFT AREA: TICO AVATAR */}
-                <div className={`flex-1 flex flex-col items-center justify-center p-8 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeTab !== 'none' ? 'scale-75 opacity-30 -translate-x-20 blur-[2px]' : 'scale-100'}`}>
-                    <div className="relative hover:scale-105 transition-transform duration-500 cursor-pointer" onClick={() => { ticoAudio.playCuriositySFX(); handleAction(); }}>
+                <div className={`flex-1 md:flex-1 flex flex-col items-center justify-center p-4 md:p-8 md:translate-y-12 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeTab !== 'none' ? 'scale-50 md:scale-75 opacity-10 md:opacity-30 -translate-y-20 md:-translate-x-20 blur-[2px]' : 'scale-90 md:scale-110'}`}>
+                    <div className="relative transition-transform duration-500 cursor-pointer scale-90 md:scale-[1.1]" onClick={() => { ticoAudio.playCuriositySFX(); handleAction(); }}>
                         <TicoAvatar
                             ticoState={state}
                             isProcessing={isTicoBusy}
-                            isActiveMode={isGenerating}
+                            isActiveMode={isGenerating || isTalking}
+                            isResponding={isTalking}
+                            onAnimationEnd={() => setTimeout(() => setIsTalking(false), 2000)}
                         />
 
                         {/* Floating Response Bubble - RIGHT SIDE */}
                         {activeResponse && !revealedSticker && (
-                            <div className="absolute left-[85%] top-1/2 -translate-y-1/2 w-max max-w-[400px] bg-white p-6 rounded-[2rem] rounded-tl-none shadow-[0_20px_50px_-10px_rgba(0,0,0,0.15)] border-4 border-white ring-4 ring-blue-50 text-left animate-in zoom-in slide-in-from-left-4 duration-300 z-50">
-                                <p className="text-slate-700 font-bold text-xl italic leading-snug">
+                            <div className="absolute left-1/2 md:left-[85%] top-[-50px] md:top-1/2 -translate-x-1/2 md:translate-x-0 md:-translate-y-1/2 w-[240px] md:w-max md:max-w-[280px] bg-white p-4 rounded-[1.5rem] md:rounded-tl-none shadow-[0_20px_50px_-10px_rgba(0,0,0,0.15)] border-4 border-white ring-4 ring-blue-50 text-center md:text-left animate-in zoom-in slide-in-from-bottom-4 md:slide-in-from-left-4 duration-300 z-50">
+                                <p className="text-slate-700 font-bold text-sm md:text-base italic leading-snug">
                                     "{activeResponse}"
                                 </p>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); ticoAudio.playClickSFX(); setActiveResponse(null); }}
-                                    className="absolute -top-3 -right-3 bg-slate-900 text-white p-2 rounded-full hover:bg-rose-500 transition-all shadow-lg active:scale-90"
+                                    onClick={(e) => { e.stopPropagation(); ticoAudio.playClickSFX(); setActiveResponse(null); setIsTalking(false); }}
+                                    className="absolute -top-4 -right-4 bg-slate-900 text-white p-3 rounded-full hover:bg-rose-500 transition-all shadow-lg active:scale-90"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <X className="w-5 h-5" />
                                 </button>
 
-                                {/* Bubble Triangle pointing Left */}
-                                <div className="absolute top-[30px] -left-[20px] w-0 h-0 
+                                {/* Bubble Triangle - Only on Desktop */}
+                                <div className="hidden md:block absolute top-[30px] -left-[20px] w-0 h-0 
                                     border-t-[10px] border-t-transparent 
                                     border-b-[10px] border-b-transparent 
                                     border-r-[20px] border-r-white 
@@ -235,79 +240,90 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
 
                     <div className="mt-8 relative group">
                         {/* Dynamic Background Glow */}
-                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
 
-                        <div className="relative flex items-center bg-white/40 backdrop-blur-xl border border-white/40 rounded-[2rem] p-1 pr-8 shadow-2xl hover:scale-105 transition-all duration-500 cursor-default overflow-hidden">
-                            {/* Level Circle */}
-                            <div className="relative flex items-center justify-center w-20 h-20">
-                                <svg className="w-full h-full -rotate-90">
+                        <div className="relative flex items-center bg-white/60 backdrop-blur-2xl border border-white/50 rounded-3xl p-1.5 pr-5 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.08)] hover:shadow-[0_25px_60px_-10px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-500 cursor-default overflow-hidden">
+                            {/* Circular Level Rank */}
+                            <div className="relative flex items-center justify-center w-14 h-14 md:w-16 md:h-16 shrink-0">
+                                {/* Inner Shadow & Background */}
+                                <div className="absolute inset-1 bg-slate-50 rounded-full shadow-inner"></div>
+
+                                <svg className="w-full h-full -rotate-90 drop-shadow-sm">
                                     <circle
-                                        cx="40"
-                                        cy="40"
-                                        r="34"
-                                        className="stroke-slate-200 fill-none"
+                                        cx="32"
+                                        cy="32"
+                                        r="27"
+                                        className="stroke-slate-100 fill-none"
                                         strokeWidth="6"
                                     />
                                     <circle
-                                        cx="40"
-                                        cy="40"
-                                        r="34"
+                                        cx="32"
+                                        cy="32"
+                                        r="27"
                                         className="stroke-blue-500 fill-none transition-all duration-1000"
                                         strokeWidth="6"
-                                        strokeDasharray={`${(state.total_resources_ingested % 2 === 0 ? 100 : 50) * 2.13} 213`}
+                                        strokeDasharray={`${(state.total_resources_ingested % 2 === 0 ? 100 : 50) * 1.70} 170`}
                                         strokeLinecap="round"
                                     />
                                 </svg>
-                                <div className="absolute inset-0 flex flex-col items-center justify-center leading-none mt-1">
-                                    <span className="text-8px font-black text-slate-400 uppercase tracking-tighter">NIVEL</span>
-                                    <span className="text-2xl font-black text-slate-800 tracking-tighter">
+
+                                <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+                                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Nivel</span>
+                                    <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter drop-shadow-sm">
                                         {state.total_resources_ingested}
                                     </span>
                                 </div>
                             </div>
 
+                            {/* Divider */}
+                            <div className="w-px h-10 bg-slate-100 mx-2 md:mx-4 opacity-50" />
+
                             {/* Info Section */}
-                            <div className="ml-4 flex flex-col">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                    <span className="text-[10px] font-black text-slate-500/80 uppercase tracking-[0.2em]">Progreso Tico</span>
-                                    <div className="flex gap-0.5">
-                                        {[1, 2, 3].map(i => (
-                                            <div key={i} className={`w-1 h-1 rounded-full ${i <= (state.total_resources_ingested % 3 + 1) ? 'bg-blue-400' : 'bg-slate-200'}`} />
-                                        ))}
+                            <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.15em]">Progreso Tico</span>
+                                    {/* Progress Pips */}
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3].map(i => {
+                                            const isActive = i <= (state.total_resources_ingested % 3 + 1);
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isActive
+                                                        ? 'bg-gradient-to-br from-blue-400 to-blue-600 shadow-sm scale-110'
+                                                        : 'bg-slate-200'
+                                                        }`}
+                                                />
+                                            );
+                                        })}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-sm font-black uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm border
+                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm border flex items-center gap-1.5 transition-all
                                         ${state.current_outfit_id
-                                            ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-white/20'
-                                            : 'bg-white text-blue-600 border-blue-50'}`}
+                                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400 shadow-blue-100'
+                                            : 'bg-white text-blue-600 border-blue-100'}`}
                                     >
+                                        <Sparkles className={`w-3 h-3 ${state.current_outfit_id ? 'text-blue-200' : 'text-blue-400'}`} />
                                         {state.current_outfit_id ? 'Modo Experto' : 'Tico Original'}
                                     </span>
-                                    {state.total_resources_ingested > 10 && (
-                                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-yellow-400 shadow-sm animate-bounce-slow">
-                                            <Sparkles className="w-3.5 h-3.5 text-white" />
-                                        </div>
-                                    )}
                                 </div>
                             </div>
 
-                            {/* Ambient Shine */}
-                            <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-40 group-hover:animate-shine" />
                         </div>
                     </div>
                 </div>
 
                 {/* CENTER OVERLAY: CONTENT PANEL */}
                 {activeTab !== 'none' && !revealedSticker && (
-                    <div className="absolute inset-y-0 left-0 right-[420px] flex items-center justify-center p-6 md:p-12 z-40 pointer-events-none">
-                        <div className="bg-white/90 backdrop-blur-2xl w-full max-w-5xl h-full max-h-[85vh] rounded-[4rem] shadow-[0_40px_100px_rgba(0,0,0,0.2)] border-[8px] border-white p-8 md:p-12 flex flex-col pointer-events-auto animate-in fade-in zoom-in duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
-                            <div className="flex justify-between items-center mb-8 pb-4 border-b-2 border-slate-100/50">
-                                <h3 className="text-4xl font-black text-slate-800 uppercase flex items-center gap-5 tracking-tight">
-                                    {activeTab === 'ingestion' && <><Utensils className="text-rose-500 w-12 h-12 animate-bounce-slow" /> Alimentar</>}
-                                    {activeTab === 'wardrobe' && <><Shirt className="text-blue-600 w-12 h-12 animate-bounce-slow" /> Armario</>}
-                                    {activeTab === 'brain' && <><Cookie className="text-emerald-500 w-12 h-12 animate-bounce-slow" /> Ticoteca</>}
-                                    {activeTab === 'album' && <><StickyNote className="text-yellow-500 w-12 h-12 animate-bounce-slow" /> Álbum</>}
+                    <div className="absolute inset-0 md:right-[320px] lg:right-[360px] flex items-center justify-center p-4 md:p-12 z-[60] pointer-events-none">
+                        <div className="bg-white/95 backdrop-blur-2xl w-full max-w-5xl h-full md:max-h-[85vh] rounded-3xl md:rounded-[4rem] shadow-[0_40px_100px_rgba(0,0,0,0.2)] border-4 md:border-[8px] border-white p-4 md:p-12 flex flex-col pointer-events-auto animate-in fade-in zoom-in duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+                            <div className="flex justify-between items-center mb-4 md:mb-8 pb-2 md:pb-4 border-b-2 border-slate-100/50">
+                                <h3 className="text-xl md:text-4xl font-black text-slate-800 uppercase flex items-center gap-3 md:gap-5 tracking-tight">
+                                    {activeTab === 'ingestion' && <><Utensils className="text-rose-500 w-6 h-6 md:w-12 md:h-12 animate-bounce-slow" /> Alimentar</>}
+                                    {activeTab === 'wardrobe' && <><Shirt className="text-blue-600 w-6 h-6 md:w-12 md:h-12 animate-bounce-slow" /> Armario</>}
+                                    {activeTab === 'brain' && <><Cookie className="text-emerald-500 w-6 h-6 md:w-12 md:h-12 animate-bounce-slow" /> Ticoteca</>}
+                                    {activeTab === 'album' && <><StickyNote className="text-yellow-500 w-6 h-6 md:w-12 md:h-12 animate-bounce-slow" /> Álbum</>}
                                 </h3>
                                 <button
                                     onClick={() => { ticoAudio.playClickSFX(); setActiveTab('none'); }}
@@ -339,8 +355,8 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                     </div>
                 )}
 
-                {/* RIGHT SIDEBAR: COMPACT & FIXED */}
-                <div className="w-[320px] md:w-[360px] h-full bg-white/80 backdrop-blur-xl border-l-[4px] border-white flex flex-col z-50 shadow-[-10px_0_40px_rgba(0,0,0,0.05)]">
+                {/* RIGHT/BOTTOM SIDEBAR: COMPACT & FIXED */}
+                <div className="w-full md:w-[320px] lg:w-[360px] md:h-full backdrop-blur-3xl flex flex-col z-50 shadow-[0_-20px_50px_rgba(0,0,0,0.1)] bg-white/95 md:bg-transparent shrink-0 rounded-t-[3rem] md:rounded-none border-t-4 border-white md:border-none">
 
                     {/* HEADER ACTIONS */}
                     <div className="p-5 pb-2 shrink-0">
@@ -355,8 +371,8 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                         )}
                     </div>
 
-                    {/* MENU LIST & ACTIONS (Unified) */}
-                    <div className="flex-1 overflow-y-auto p-6 py-4 space-y-5 custom-scrollbar">
+                    {/* MENU LIST & ACTIONS (Unified) - Horizontal Scroll on Mobile */}
+                    <div className="flex-1 overflow-x-auto overflow-y-hidden md:overflow-y-auto md:overflow-x-hidden p-4 md:p-6 py-2 md:py-4 flex md:flex-col gap-3 md:space-y-5 scrollbar-hide">
                         <BigMenuButton
                             icon={<Utensils className="w-8 h-8" />}
                             label="Alimentar"
@@ -435,9 +451,9 @@ function BigMenuButton({ icon, label, description, active, onClick, color, notif
     return (
         <button
             onClick={onClick}
-            className={`w-full group flex items-center gap-6 p-6 rounded-[2.5rem] transition-all duration-300 active:scale-95 text-left border-2 ${colorStyles[color]} ${activeStyles}`}
+            className={`flex-none w-[160px] md:w-full group flex items-center gap-3 md:gap-6 p-3 md:p-6 rounded-2xl md:rounded-[2.5rem] transition-all duration-300 active:scale-95 text-left border-2 ${colorStyles[color]} ${activeStyles}`}
         >
-            <div className={`p-4 rounded-[1.5rem] bg-white shadow-sm transition-all duration-500 group-hover:rotate-12 ${iconColors[color]} relative`}>
+            <div className={`p-2.5 md:p-4 rounded-xl md:rounded-[1.5rem] bg-white shadow-sm transition-all duration-500 md:group-hover:rotate-12 ${iconColors[color]} relative shrink-0`}>
                 {icon}
                 {notification && (
                     <span className="absolute -top-1 -right-1 flex h-4 w-4">
@@ -446,9 +462,9 @@ function BigMenuButton({ icon, label, description, active, onClick, color, notif
                     </span>
                 )}
             </div>
-            <div className="flex flex-col">
-                <span className="text-2xl font-black uppercase leading-none tracking-tight">{label}</span>
-                <span className="text-xs font-bold opacity-70 uppercase tracking-wide mt-1.5">{description}</span>
+            <div className="flex flex-col min-w-0">
+                <span className="text-sm md:text-2xl font-black uppercase leading-[0.9] tracking-tight truncate">{label}</span>
+                <span className="hidden md:inline text-xs font-bold opacity-70 uppercase tracking-wide mt-1.5">{description}</span>
             </div>
         </button>
     );

@@ -1,5 +1,6 @@
-import { TicoCategory, TicoResourceAnalysis, TicoState, TicoOutfit } from '../types';
-import { callGroq } from './ai';
+import { TicoCategory, TicoResourceAnalysis, TicoState, TicoOutfit, Rubrica, MensajeIA, Grupo } from '../types';
+import { callGroq, searchWeb } from './ai';
+import { supabase } from '../lib/supabase';
 
 // --- CONFIGURACIÓN DE OUTFITS ---
 // Based on New Game Design: 1 Resource = 50% XP. 2 Resources = Level Up + Unlock.
@@ -238,31 +239,71 @@ export const generateTicoResponse = async (outfitId: string | null, userQuery: s
 /**
  * Generates an English visual context for a resource title, improving sticker accuracy.
  */
-export const generateStickerContext = async (input: string): Promise<{ englishContext: string }> => {
-    const prompt = `Act as a Cultural Translator for an AI Image Generator.
-    The user is providing a work title, often preceded by its type (e.g., [Tipo: Canción], [Tipo: Libro]).
-    
-    Input: "${input}"
-    
-    Task: 
-    1. Extract the title and identified type.
-    2. If it's a song, search for its specific artistic context, singer/band, or iconic music video elements.
-    3. If it's a book or movie, identify its main character or iconic setting.
-    4. Translate the title to English.
-    5. Provide 3-4 visual keywords describing iconic elements.
-    
-    Output Format: JSON string only.
-    {
-        "englishContext": "Full English Title. Visual keywords (NO TEXT, NO LETTERS): keyword1, keyword2, keyword3"
-    }
-    `;
+/**
+ * Generates an optimized visual prompt for image generation.
+ * Now uses internet search (Tavily) for specific context if needed.
+ */
+export const generateStickerContext = async (input: string, resourceType?: string): Promise<{ englishContext: string }> => {
+    // Clean input (remove [Tipo: ...] prefix if present)
+    const cleanInput = input.replace(/\[Tipo: .*?\]\s*/, '').trim();
+    const type = resourceType || 'item';
+
+    console.log(`🔍 Generating Smart Context for: [${type}] ${cleanInput}`);
 
     try {
-        const response = await callGroq([{ role: 'user', content: prompt }], true);
-        const parsed = JSON.parse(response);
-        return { englishContext: parsed.englishContext };
+        // 1. Research Step: Use Tavily to get real world context
+        // Specialized search queries for each category to ensure maximum precision
+        let searchQuery = `${type} "${cleanInput}"`;
+
+        switch (type.toLowerCase()) {
+            case 'libro':
+            case 'cómic':
+                searchQuery = `personaje principal y portada icónica de el ${type} "${cleanInput}", descripción visual para un dibujo`;
+                break;
+            case 'película':
+            case 'video':
+            case 'obra de arte':
+                searchQuery = `cuáles son los elementos visuales más famosos y objetos icónicos de la ${type} "${cleanInput}"`;
+                break;
+            case 'podcast':
+            case 'canción':
+                searchQuery = `de qué trata el ${type} "${cleanInput}", quién es el autor y qué objetos (micrófono, cascos, portada) lo representan mejor`;
+                break;
+            case 'periódico':
+            case 'revista':
+            case 'informe':
+                searchQuery = `logotipo y estilo visual de el/la ${type} "${cleanInput}", elementos que lo hacen reconocible`;
+                break;
+            default:
+                searchQuery = `descripción visual y objetos representativos de ${type} "${cleanInput}" para crear una pegatina`;
+        }
+
+        const searchResults = await searchWeb(searchQuery);
+
+        // 2. Visual Translation Step: Use Groq to condense research into a prompt
+        const prompt = `Role: NLP Engineer & Visual Aesthetic Specialist.
+        Identify the work: "${cleanInput}" (Category: ${type}).
+        
+        SEARCH CONTEXT:
+        "${searchResults.substring(0, 1500)}"
+        
+        TASK:
+        Generate a RICH visual description in English for a 3D COLLECTIBLE TOY.
+        - STYLE: 3D Pop Mart vinyl toy, clean plastic texture, vibrant colors.
+        - AESTHETIC: Extremely friendly, big black button eyes, simple happy expression, chibi proportions.
+        - COMPOSITION: Full body visible, centered, simple and clean silhouette.
+        
+        Response format: ONLY 1 sentence describing the visual subject in a very cute and friendly way.`;
+
+        // Use llama-3.1-8b-instant for FASTER translation
+        const finalPrompt = await callGroq([{ role: 'user', content: prompt }], false, undefined, 'llama-3.1-8b-instant');
+
+        console.log("✅ Smart Prompt Ready:", finalPrompt);
+        return { englishContext: finalPrompt };
+
     } catch (e) {
-        console.error("Error generating sticker context:", e);
-        return { englishContext: input };
+        console.error("Error generating smart sticker context:", e);
+        // Fallback for speed
+        return { englishContext: `A cute 3D representation of ${cleanInput}, bright colors, high resolution` };
     }
 };

@@ -5,6 +5,13 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const FALLBACK_KEYS: string[] = [];
+
+const MODELS = [
+    "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+    "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0",
+];
+
 Deno.serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
@@ -14,63 +21,55 @@ Deno.serve(async (req: Request) => {
         const { prompt } = await req.json();
         if (!prompt) throw new Error('Se requiere un prompt');
 
-        // Intentamos obtener varias llaves para rotación/reserva
         const hfKey1 = Deno.env.get('HF_TOKEN') || Deno.env.get('HUGGINGFACE_API_KEY_1');
         const hfKey2 = Deno.env.get('HUGGINGFACE_API_KEY_2');
 
-        if (!hfKey1 && !hfKey2) {
-            console.error("❌ No API Keys found in secrets");
-            return new Response(JSON.stringify({ error: 'No se encontraron las llaves API (HF_TOKEN) en Supabase Secrets' }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-        }
+        let keys = [hfKey1, hfKey2].filter(Boolean);
+        if (keys.length === 0) keys = FALLBACK_KEYS;
 
-        const keys = [hfKey1, hfKey2].filter(Boolean);
         let lastError = '';
 
-        // Modelo FLUX es excelente para stickers
-        const MODEL_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell";
-
-        for (const key of keys) {
-            try {
-                console.log(`🎨 Generando sticker con prompt: ${prompt}`);
-                const response = await fetch(MODEL_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${key}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ inputs: prompt }),
-                });
-
-                if (response.ok) {
-                    const blob = await response.blob();
-                    console.log("✅ Sticker generado con éxito");
-                    return new Response(blob, {
-                        headers: { ...corsHeaders, 'Content-Type': 'image/jpeg' },
+        for (const modelUrl of MODELS) {
+            for (const key of keys) {
+                try {
+                    console.log(`🎨 Trying ${modelUrl}`);
+                    const response = await fetch(modelUrl, {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${key}`,
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            inputs: prompt,
+                            parameters: {
+                                num_inference_steps: modelUrl.includes("schnell") ? 4 : 20,
+                                guidance_scale: modelUrl.includes("schnell") ? 0.0 : 7.5
+                            },
+                            negative_prompt: "ugly background, messy, dirty, unfriendly, mean, scary, distorted, gray background, grey background, dark background, gradient background, shadows, colored background, beige background, textured background, noise, watermark, text, blurry, low resolution, out of frame"
+                        }),
                     });
-                } else {
-                    const errorMsg = await response.text();
-                    lastError = `HF Error ${response.status}: ${errorMsg}`;
-                    console.warn(lastError);
 
-                    // Si es 429 (Too Many Requests), intentamos la siguiente llave inmediatamente
-                    if (response.status !== 429 && response.status !== 503) {
-                        // Si es otro error (como 401), también intentamos la siguiente
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        if (blob.size > 1000) {
+                            console.log(`✅ Success (${blob.size} bytes)`);
+                            return new Response(blob, {
+                                headers: { ...corsHeaders, 'Content-Type': response.headers.get('Content-Type') || 'image/jpeg' },
+                            });
+                        }
+                    } else {
+                        const errorMsg = await response.text();
+                        lastError = `${response.status}: ${errorMsg}`;
+                        console.warn(`⚠️ ${lastError}`);
                     }
+                } catch (err: any) {
+                    lastError = err.message;
+                    console.error(`❌ ${err.message}`);
                 }
-            } catch (err: any) {
-                lastError = `Fetch Error: ${err.message}`;
-                console.error(lastError);
             }
         }
 
-        // Si llegamos aquí, fallaron todas las llaves
-        return new Response(JSON.stringify({
-            error: 'Todas las llaves de Hugging Face fallaron',
-            details: lastError
-        }), {
+        return new Response(JSON.stringify({ error: lastError }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

@@ -7,9 +7,11 @@ interface TicoAvatarProps {
     ticoState: TicoState;
     isProcessing: boolean;
     isActiveMode: boolean; // True if generating something
+    isResponding?: boolean; // True if the response bubble is visible
+    onAnimationEnd?: () => void;
 }
 
-export const TicoAvatar: React.FC<TicoAvatarProps> = ({ ticoState, isProcessing, isActiveMode }) => {
+export const TicoAvatar: React.FC<TicoAvatarProps> = ({ ticoState, isProcessing, isActiveMode, isResponding, onAnimationEnd }) => {
     const currentOutfit = TICO_OUTFITS.find(o => o.id === ticoState.current_outfit_id);
 
     // Video Paths
@@ -17,10 +19,9 @@ export const TicoAvatar: React.FC<TicoAvatarProps> = ({ ticoState, isProcessing,
 
     // Video Paths - Dynamic based on outfit
     const IDLE_VIDEO = isTech ? "/tico/tico_tech_idle.webm" : "/tico/videos/tico_idle_animation.webm";
-    const PECKING_VIDEO = isTech ? "/tico/tico_tech_pecking.webm" : "/tico/videos/tico_pecking_action.webm";
-
-    const isBaseOutfit = !ticoState.current_outfit_id || ticoState.current_outfit_id === 'default';
-    const showIdleVideo = (isBaseOutfit || isTech);
+    const PECKING_VIDEO = "/tico/tico_tech_pecking.webm"; // Restaurada versión original de 8s (sin fondo rosa)
+    const isBaseOutfit = !ticoState.current_outfit_id || ticoState.current_outfit_id === 'default' || ticoState.current_outfit_id === '';
+    const showIdleVideo = isTech; // Only show idle video for Tech outfit specifically
 
     // Sprite Mapping (Fallback/Specific Outfits)
     const getSprite = () => {
@@ -29,37 +30,24 @@ export const TicoAvatar: React.FC<TicoAvatarProps> = ({ ticoState, isProcessing,
             case 'cre_painter': return "/tico/tico_artista_idle.png";
             case 'nat_explorer': return "/tico/Explorador.png";
             case 'ana_tech': return "/tico/tico_tech_base.png";
-            default: return "/tico/tico_base_idle.png";
+            default: return "/tico/tico_tech_base.png";
         }
     };
 
     // Local state to manage the "Pecking" animation cycle
-    // We want it to play AT LEAST once when triggered, even if processing ends early.
-    // We also want it to stop after one loop even if processing is still true (unless we want continuous pecking? User said "play once").
     const [isPecking, setIsPecking] = React.useState(false);
-    const [hasInteracted, setHasInteracted] = React.useState(false);
 
     // Trigger animation when processing starts
     React.useEffect(() => {
         if (isProcessing) {
             setIsPecking(true);
-            setHasInteracted(true); // Once we start processing, we have interacted
+        } else {
+            setIsPecking(false);
         }
     }, [isProcessing]);
 
-    // Also trigger interaction flag if isActiveMode (e.g. generating response)
-    React.useEffect(() => {
-        if (isActiveMode) {
-            setHasInteracted(true);
-        }
-    }, [isActiveMode]);
-
-    // LOGIC:
-    // 1. If isPecking -> Show Pecking Video (One Shot)
-    // 2. When Video Ends -> setIsPecking(false) -> Show Idle
-
     return (
-        <div className="relative w-96 h-96 mx-auto flex items-center justify-center">
+        <div className="relative w-96 h-96 mx-auto flex items-center justify-center hover:scale-105 transition-transform duration-500">
             {/* Background Aura (Soft & Organic) */}
             <div className={`absolute inset-0 rounded-full blur-[80px] opacity-40 mix-blend-multiply transition-colors duration-1000
                 ${currentOutfit?.category === 'VisualArts' ? 'bg-pink-400' :
@@ -77,28 +65,38 @@ export const TicoAvatar: React.FC<TicoAvatarProps> = ({ ticoState, isProcessing,
 
                 {isPecking ? (
                     <video
-                        key="pecking-video" // Force re-mount on activation to restart from 0
+                        key="pecking-video"
                         src={PECKING_VIDEO}
                         autoPlay
+                        loop={isProcessing}
                         muted
                         playsInline
-                        onEnded={() => setIsPecking(false)}
+                        onEnded={() => {
+                            if (!isProcessing) {
+                                setIsPecking(false);
+                            }
+                        }}
                         className="w-80 h-80 object-cover drop-shadow-[0_25px_50px_rgba(0,0,0,0.2)]"
                     />
-                ) : (showIdleVideo && hasInteracted) ? (
+                ) : (isResponding || isActiveMode || showIdleVideo) ? (
                     <video
-                        src={IDLE_VIDEO}
+                        key="active-video-container"
+                        src={(isResponding || isActiveMode) ? "/tico/tico_tech_idle.webm" : IDLE_VIDEO}
                         autoPlay
-                        loop
+                        loop={!isResponding}
                         muted
                         playsInline
-                        className={`w-80 h-80 object-cover drop-shadow-[0_25px_50px_rgba(0,0,0,0.2)] transition-all duration-500 ${isActiveMode ? 'animate-float scale-110 brightness-110' : ''}`}
+                        onEnded={() => {
+                            if (isResponding && onAnimationEnd) {
+                                onAnimationEnd();
+                            }
+                        }}
+                        className={`w-80 h-80 object-cover drop-shadow-[0_25px_50px_rgba(0,0,0,0.2)] transition-all duration-500 ${(isActiveMode || isResponding) ? 'animate-float scale-110 brightness-110' : ''}`}
                     />
                 ) : (
                     <img
-                        src={ticoLogo} // Use the light SVG logo as the initial/fallback state
+                        src={getSprite()}
                         alt="Tico Avatar"
-                        onClick={() => setHasInteracted(true)} // Can also trigger here manually
                         className="w-80 h-80 object-contain drop-shadow-[0_25px_50px_rgba(0,0,0,0.2)] filter animate-breathing cursor-pointer"
                     />
                 )}
