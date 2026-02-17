@@ -59,7 +59,7 @@ export async function callGroq(
 
                 // Si es 429 y nos quedan reintentos, esperamos y seguimos
                 if (response.status === 429 && i < retries) {
-                    const waitTime = (i + 1) * 5000; // Espera más agresiva para 429
+                    const waitTime = (i + 1) * 8000; // Espera aún más agresiva (8s, 16s...)
                     console.warn(`⚠️ Groq Rate Limit (429). Reintentando en ${waitTime}ms...`);
                     await new Promise(resolve => setTimeout(resolve, waitTime));
                     continue;
@@ -328,7 +328,7 @@ Devuelve OBLIGATORIAMENTE un JSON con esta estructura exacta:
 
 Cada descripción debe tener 1-2 frases concretas y específicas para ese nivel. Responde SOLO con el JSON, sin texto adicional.`;
 
-    const response = await callGroq([{ role: 'user', content: prompt }], true);
+    const response = await callGroq([{ role: 'user', content: prompt }], true, undefined, 'llama-3.1-8b-instant');
     try {
         const parsed = JSON.parse(response);
 

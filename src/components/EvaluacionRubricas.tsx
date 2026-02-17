@@ -190,8 +190,8 @@ export function EvaluacionRubricas({ rubrica, grupos = [], proyectoId }: Evaluac
             { puntos: '9-10', descripcion: safeNiveles[3] }
           ]
         });
-        // Esperar 2 segundos entre peticiones para evitar 429 Rate Limit
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Esperar 3.5 segundos entre peticiones para evitar 429 Rate Limit
+        await new Promise(resolve => setTimeout(resolve, 3500));
       }
       setLocalCriterios(newCriterios);
       toast.success("Rúbrica completada con inteligencia artificial ✨");
