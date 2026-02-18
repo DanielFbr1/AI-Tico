@@ -193,9 +193,6 @@ export default function App() {
       <AuthProvider>
         <AppContent />
         <Toaster position="top-right" richColors />
-        <div className="fixed bottom-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded-full pointer-events-none z-50 backdrop-blur-sm">
-          v1.2.0 (Tico Tech & Dynamic Backgrounds)
-        </div>
       </AuthProvider>
     </ErrorBoundary>
   );

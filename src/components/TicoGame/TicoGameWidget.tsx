@@ -198,13 +198,13 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
 
             {/* VERSION TAG */}
             <div className="absolute bottom-4 left-6 text-[10px] font-black text-slate-400/50 uppercase tracking-widest z-10 pointer-events-none">
-                Tico AI v3.1.6 - Unified AI Settings 🎓⚙️
+                Tico AI v3.2.5 - UX Polish ✨🎓
             </div>
 
             <div className="flex flex-col md:flex-row w-full h-full z-10 relative">
 
-                {/* LEFT AREA: TICO AVATAR */}
-                <div className={`flex-1 md:flex-1 flex flex-col items-center justify-center p-4 md:p-8 md:translate-y-12 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeTab !== 'none' ? 'scale-50 md:scale-75 opacity-10 md:opacity-30 -translate-y-20 md:-translate-x-20 blur-[2px]' : 'scale-90 md:scale-110'}`}>
+                {/* LEFT AREA: TICO AVATAR - Balanced for Mobile */}
+                <div className={`flex-1 md:flex-1 flex flex-col items-center justify-center p-4 md:p-8 translate-y-20 md:translate-y-12 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeTab !== 'none' ? 'scale-50 md:scale-75 opacity-10 md:opacity-30 -translate-y-20 md:-translate-x-20 blur-[2px]' : 'scale-90 md:scale-110'}`}>
                     <div className="relative transition-transform duration-500 cursor-pointer scale-90 md:scale-[1.1]" onClick={() => { ticoAudio.playCuriositySFX(); handleAction(); }}>
                         <TicoAvatar
                             ticoState={state}
@@ -214,21 +214,20 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                             onAnimationEnd={() => setTimeout(() => setIsTalking(false), 2000)}
                         />
 
-                        {/* Floating Response Bubble - RIGHT SIDE */}
+                        {/* Floating Response Bubble - ABOVE TICO ON MOBILE (Lowered) */}
                         {activeResponse && !revealedSticker && (
-                            <div className="absolute left-1/2 md:left-[85%] top-[-50px] md:top-1/2 -translate-x-1/2 md:translate-x-0 md:-translate-y-1/2 w-[240px] md:w-max md:max-w-[280px] bg-white p-4 rounded-[1.5rem] md:rounded-tl-none shadow-[0_20px_50px_-10px_rgba(0,0,0,0.15)] border-4 border-white ring-4 ring-blue-50 text-center md:text-left animate-in zoom-in slide-in-from-bottom-4 md:slide-in-from-left-4 duration-300 z-50">
-                                <p className="text-slate-700 font-bold text-sm md:text-base italic leading-snug">
+                            <div className="absolute left-1/2 md:left-[85%] top-[-160px] md:top-1/2 -translate-x-1/2 md:translate-x-0 md:-translate-y-1/2 w-[280px] md:w-max md:max-w-[320px] bg-white p-4 md:p-6 rounded-[2rem] md:rounded-tl-none shadow-[0_20px_50px_-10px_rgba(0,0,0,0.25)] border-4 border-white ring-8 ring-blue-50/50 text-center md:text-left animate-in zoom-in slide-in-from-bottom-8 md:slide-in-from-left-4 duration-500 z-[100]">
+                                <p className="text-slate-700 font-black text-sm md:text-lg italic leading-tight">
                                     "{activeResponse}"
                                 </p>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); ticoAudio.playClickSFX(); setActiveResponse(null); setIsTalking(false); }}
-                                    className="absolute -top-4 -right-4 bg-slate-900 text-white p-3 rounded-full hover:bg-rose-500 transition-all shadow-lg active:scale-90"
+                                    className="absolute -top-3 -right-3 md:-top-5 md:-right-5 bg-slate-900 text-white p-2 md:p-3 rounded-full hover:bg-rose-500 transition-all shadow-lg active:scale-90"
                                 >
-                                    <X className="w-5 h-5" />
+                                    <X className="w-4 h-4 md:w-5 md:h-5" />
                                 </button>
 
-                                {/* Bubble Triangle - Only on Desktop */}
-                                <div className="hidden md:block absolute top-[30px] -left-[20px] w-0 h-0 
+                                <div className="hidden md:block absolute top-[40px] -left-[20px] w-0 h-0 
                                     border-t-[10px] border-t-transparent 
                                     border-b-[10px] border-b-transparent 
                                     border-r-[20px] border-r-white 
@@ -238,59 +237,59 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                         )}
                     </div>
 
-                    <div className="mt-8 relative group">
+                    <div className="mt-4 md:mt-8 relative group">
                         {/* Dynamic Background Glow */}
                         <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
 
-                        <div className="relative flex items-center bg-white/60 backdrop-blur-2xl border border-white/50 rounded-3xl p-1.5 pr-5 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.08)] hover:shadow-[0_25px_60px_-10px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-500 cursor-default overflow-hidden">
+                        <div className="relative flex items-center bg-white/70 backdrop-blur-2xl border-2 border-white rounded-[2rem] p-1.5 pr-6 shadow-[0_15px_40px_-5px_rgba(0,0,0,0.1)] hover:shadow-[0_25px_60px_-10px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-500 cursor-default overflow-hidden group">
                             {/* Circular Level Rank */}
-                            <div className="relative flex items-center justify-center w-14 h-14 md:w-16 md:h-16 shrink-0">
+                            <div className="relative flex items-center justify-center w-16 h-16 md:w-20 md:h-20 shrink-0">
                                 {/* Inner Shadow & Background */}
                                 <div className="absolute inset-1 bg-slate-50 rounded-full shadow-inner"></div>
 
-                                <svg className="w-full h-full -rotate-90 drop-shadow-sm">
+                                <svg className="w-full h-full -rotate-90 drop-shadow-sm" viewBox="0 0 64 64">
                                     <circle
                                         cx="32"
                                         cy="32"
-                                        r="27"
+                                        r="28"
                                         className="stroke-slate-100 fill-none"
                                         strokeWidth="6"
                                     />
                                     <circle
                                         cx="32"
                                         cy="32"
-                                        r="27"
+                                        r="28"
                                         className="stroke-blue-500 fill-none transition-all duration-1000"
                                         strokeWidth="6"
-                                        strokeDasharray={`${(state.total_resources_ingested % 2 === 0 ? 100 : 50) * 1.70} 170`}
+                                        strokeDasharray={`${((state.total_resources_ingested % 3) === 0 && state.total_resources_ingested > 0 ? 176 : ((state.total_resources_ingested % 3) * 176) / 3)} 176`}
                                         strokeLinecap="round"
                                     />
                                 </svg>
 
                                 <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-                                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Nivel</span>
-                                    <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter drop-shadow-sm">
+                                    <span className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Nivel</span>
+                                    <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter drop-shadow-sm transition-transform group-hover:scale-110 duration-300">
                                         {state.total_resources_ingested}
                                     </span>
                                 </div>
                             </div>
 
                             {/* Divider */}
-                            <div className="w-px h-10 bg-slate-100 mx-2 md:mx-4 opacity-50" />
+                            <div className="w-px h-12 bg-slate-200 mx-3 md:mx-6 opacity-60" />
 
                             {/* Info Section */}
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.15em]">Progreso Tico</span>
+                                    <span className="text-[10px] md:text-xs font-black text-slate-700 uppercase tracking-[0.2em] drop-shadow-sm">Progreso Tico</span>
                                     {/* Progress Pips */}
-                                    <div className="flex gap-1">
+                                    <div className="flex gap-1.5">
                                         {[1, 2, 3].map(i => {
                                             const isActive = i <= (state.total_resources_ingested % 3 + 1);
                                             return (
                                                 <div
                                                     key={i}
-                                                    className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isActive
-                                                        ? 'bg-gradient-to-br from-blue-400 to-blue-600 shadow-sm scale-110'
+                                                    className={`w-2 h-2 rounded-full transition-all duration-500 ${isActive
+                                                        ? 'bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_2px_4px_rgba(59,130,246,0.3)] scale-110'
                                                         : 'bg-slate-200'
                                                         }`}
                                                 />
@@ -299,13 +298,13 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm border flex items-center gap-1.5 transition-all
+                                    <span className={`text-[10px] md:text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-xl shadow-sm border-2 flex items-center gap-2 transition-all
                                         ${state.current_outfit_id
-                                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400 shadow-blue-100'
-                                            : 'bg-white text-blue-600 border-blue-100'}`}
+                                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400/30'
+                                            : 'bg-slate-100 text-slate-500 border-slate-200'}`}
                                     >
-                                        <Sparkles className={`w-3 h-3 ${state.current_outfit_id ? 'text-blue-200' : 'text-blue-400'}`} />
-                                        {state.current_outfit_id ? 'Modo Experto' : 'Tico Original'}
+                                        <Sparkles className={`w-3.5 h-3.5 ${state.current_outfit_id ? 'text-blue-200' : 'text-slate-400'}`} />
+                                        {state.current_outfit_id ? 'Modo Experto Activado' : 'Sin Equipamiento'}
                                     </span>
                                 </div>
                             </div>
@@ -371,10 +370,10 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                         )}
                     </div>
 
-                    {/* MENU LIST & ACTIONS (Unified) - Horizontal Scroll on Mobile */}
-                    <div className="flex-1 overflow-x-auto overflow-y-hidden md:overflow-y-auto md:overflow-x-hidden p-4 md:p-6 py-2 md:py-4 flex md:flex-col gap-3 md:space-y-5 scrollbar-hide">
+                    {/* MENU LIST & ACTIONS (Unified) - Grid on Mobile to prevent scroll */}
+                    <div className="shrink-0 p-4 md:p-6 py-2 md:py-4 grid grid-cols-4 md:flex md:flex-col gap-2 md:gap-3 md:space-y-5">
                         <BigMenuButton
-                            icon={<Utensils className="w-8 h-8" />}
+                            icon={<Utensils className="w-6 h-6 md:w-8 md:h-8" />}
                             label="Alimentar"
                             description="Dar datos y comida a Tico"
                             active={activeTab === 'ingestion'}
@@ -382,7 +381,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                             color="rose"
                         />
                         <BigMenuButton
-                            icon={<Shirt className="w-8 h-8" />}
+                            icon={<Shirt className="w-6 h-6 md:w-8 md:h-8" />}
                             label="Armario"
                             description="Personalizar su apariencia"
                             active={activeTab === 'wardrobe'}
@@ -390,7 +389,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                             color="blue"
                         />
                         <BigMenuButton
-                            icon={<Cookie className="w-8 h-8" />}
+                            icon={<Cookie className="w-6 h-6 md:w-8 md:h-8" />}
                             label="Ticoteca"
                             description="Registro de datos picoteados"
                             active={activeTab === 'brain'}
@@ -398,7 +397,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                             color="emerald"
                         />
                         <BigMenuButton
-                            icon={<StickyNote className="w-8 h-8" />}
+                            icon={<StickyNote className="w-6 h-6 md:w-8 md:h-8" />}
                             label="Álbum"
                             description="Colección de pegatinas"
                             active={activeTab === 'album'}
@@ -411,7 +410,7 @@ export function TicoGameWidget({ projectId, onBack }: { projectId?: string | num
                             notification={hasNewSticker}
                         />
 
-                        <div className="h-px bg-slate-200 w-full my-4 opacity-50" />
+                        <div className="hidden md:block h-px bg-slate-200 w-full my-4 opacity-50" />
                     </div>
                 </div>
             </div>
@@ -451,19 +450,19 @@ function BigMenuButton({ icon, label, description, active, onClick, color, notif
     return (
         <button
             onClick={onClick}
-            className={`flex-none w-[160px] md:w-full group flex items-center gap-3 md:gap-6 p-3 md:p-6 rounded-2xl md:rounded-[2.5rem] transition-all duration-300 active:scale-95 text-left border-2 ${colorStyles[color]} ${activeStyles}`}
+            className={`flex-none md:w-full group flex flex-col md:flex-row items-center gap-1.5 md:gap-6 p-2 md:p-6 rounded-xl md:rounded-[2.5rem] transition-all duration-300 active:scale-95 text-center md:text-left border-2 ${colorStyles[color]} ${activeStyles}`}
         >
-            <div className={`p-2.5 md:p-4 rounded-xl md:rounded-[1.5rem] bg-white shadow-sm transition-all duration-500 md:group-hover:rotate-12 ${iconColors[color]} relative shrink-0`}>
+            <div className={`p-2 md:p-4 rounded-lg md:rounded-[1.5rem] bg-white shadow-sm transition-all duration-500 md:group-hover:rotate-12 ${iconColors[color]} relative shrink-0`}>
                 {icon}
                 {notification && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3 md:h-4 md:w-4">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border-2 border-white"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 md:h-4 md:w-4 bg-rose-500 border-2 border-white"></span>
                     </span>
                 )}
             </div>
             <div className="flex flex-col min-w-0">
-                <span className="text-sm md:text-2xl font-black uppercase leading-[0.9] tracking-tight truncate">{label}</span>
+                <span className="text-[10px] md:text-2xl font-black uppercase leading-tight tracking-tight truncate">{label}</span>
                 <span className="hidden md:inline text-xs font-bold opacity-70 uppercase tracking-wide mt-1.5">{description}</span>
             </div>
         </button>

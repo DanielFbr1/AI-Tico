@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TicoState } from '../types';
 import { INITIAL_TICO_STATE } from '../services/ticoLogic';
+import { supabase } from '../lib/supabase';
 
 export function useTicoGame(contextId: string = 'default') {
     const storageKey = `tico-game-state-v3-${contextId}`;
@@ -11,20 +12,75 @@ export function useTicoGame(contextId: string = 'default') {
             const saved = localStorage.getItem(storageKey);
             if (saved) {
                 const parsed = JSON.parse(saved);
-                // Merge with initial state to ensure new fields exists if version changed
                 return { ...INITIAL_TICO_STATE, ...parsed };
             }
             return INITIAL_TICO_STATE;
         } catch (e) {
-            console.error("Error loading Tico state:", e);
+            console.error("Error loading local Tico state:", e);
             return INITIAL_TICO_STATE;
         }
     });
 
-    // Save state on change
+    const isFirstRender = useRef(true);
+
+    // FETCH FROM SUPABASE ON MOUNT
     useEffect(() => {
+        if (!contextId || contextId === 'default') return;
+
+        const fetchTicoState = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('proyectos')
+                    .select('tico_state')
+                    .eq('id', contextId)
+                    .single();
+
+                if (error) {
+                    console.warn("Could not fetch Tico state from Supabase (maybe column missing?):", error.message);
+                    return;
+                }
+
+                if (data?.tico_state) {
+                    console.log("🎮 Syncing Tico state from Supabase...");
+                    const remoteState = { ...INITIAL_TICO_STATE, ...data.tico_state };
+                    setState(remoteState);
+                    localStorage.setItem(storageKey, JSON.stringify(remoteState));
+                }
+            } catch (e) {
+                console.error("Error fetching Tico state:", e);
+            }
+        };
+
+        fetchTicoState();
+    }, [contextId, storageKey]);
+
+    // SAVE TO LOCAL & DEBOUNCED SUPABASE
+    useEffect(() => {
+        // Skip first render save to avoid overwriting remote state with default local state
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        // Always save to local storage immediately
         localStorage.setItem(storageKey, JSON.stringify(state));
-    }, [state, storageKey]);
+
+        if (!contextId || contextId === 'default') return;
+
+        // Save to Supabase (Debounced)
+        const timeoutId = setTimeout(async () => {
+            try {
+                await supabase
+                    .from('proyectos')
+                    .update({ tico_state: state })
+                    .eq('id', contextId);
+            } catch (e) {
+                console.error("Error saving Tico state to Supabase:", e);
+            }
+        }, 2000); // 2 second debounce
+
+        return () => clearTimeout(timeoutId);
+    }, [state, contextId, storageKey]);
 
     const updateState = useCallback((newState: TicoState) => {
         setState(newState);
@@ -37,10 +93,16 @@ export function useTicoGame(contextId: string = 'default') {
         }));
     }, []);
 
-    const reset = useCallback(() => {
+    const reset = useCallback(async () => {
         setState(INITIAL_TICO_STATE);
         localStorage.removeItem(storageKey);
-    }, [storageKey]);
+        if (contextId && contextId !== 'default') {
+            await supabase
+                .from('proyectos')
+                .update({ tico_state: INITIAL_TICO_STATE })
+                .eq('id', contextId);
+        }
+    }, [contextId, storageKey]);
 
     return {
         state,

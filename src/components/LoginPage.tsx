@@ -182,29 +182,29 @@ export function LoginPage() {
             <div className="min-h-screen bg-[#4f39f6] flex items-center justify-center p-4 selection:bg-white selection:text-[#4f39f6]">
                 <div className="max-w-6xl w-full">
                     {/* Header y Botones de Selección */}
-                    <div className="text-center mb-16">
-                        <h1 className="text-8xl font-black text-white mb-6 tracking-tight drop-shadow-[0_4px_0_rgba(0,0,0,0.2)]">
+                    <div className="text-center mb-8 md:mb-16">
+                        <h1 className="text-6xl md:text-8xl font-black text-white mb-4 md:mb-6 tracking-tight drop-shadow-[0_4px_0_rgba(0,0,0,0.2)]">
                             AI Tico
                         </h1>
-                        <p className="text-2xl text-white/90 font-bold tracking-wide">Plataforma de Innovación ABP</p>
+                        <p className="text-xl md:text-2xl text-white/90 font-bold tracking-wide">Plataforma de Innovación ABP</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
                         {/* Profesor */}
                         <button
                             onClick={() => {
                                 setView('teacher-auth');
                                 setIsSignUp(false);
                             }}
-                            className="group relative bg-white rounded-3xl p-8 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all duration-100 hover:bg-gray-50 overflow-hidden text-left"
+                            className="group relative bg-white rounded-3xl p-6 md:p-8 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all duration-100 hover:bg-gray-50 overflow-hidden text-left"
                         >
                             <div className="relative z-10">
-                                <div className="w-20 h-20 bg-[#00d4ff] rounded-2xl flex items-center justify-center mb-6 shadow-[0_4px_0_#009ac2]">
-                                    <GraduationCap className="w-10 h-10 text-white" />
+                                <div className="w-16 h-16 md:w-20 md:h-20 bg-[#00d4ff] rounded-2xl flex items-center justify-center mb-4 md:mb-6 shadow-[0_4px_0_#009ac2]">
+                                    <GraduationCap className="w-8 h-8 md:w-10 md:h-10 text-white" />
                                 </div>
-                                <h2 className="text-3xl font-black text-slate-700 mb-3 tracking-tight">Soy Profesor/a</h2>
-                                <p className="text-slate-500 mb-6 font-bold leading-relaxed">Gestiona proyectos, evalúa y configura a Tico.</p>
-                                <div className="flex items-center justify-end gap-2 text-[#00d4ff] font-black uppercase tracking-widest group-hover:gap-4 transition-all">
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-700 mb-2 md:mb-3 tracking-tight">Soy Profesor/a</h2>
+                                <p className="text-slate-500 mb-4 md:mb-6 font-bold leading-relaxed text-sm md:text-base">Gestiona proyectos, evalúa y configura a Tico.</p>
+                                <div className="flex items-center justify-end gap-2 text-[#00d4ff] font-black uppercase tracking-widest group-hover:gap-4 transition-all text-sm md:text-base">
                                     <span>Acceso Docente</span>
                                     <ArrowRight className="w-5 h-5" />
                                 </div>
@@ -217,15 +217,15 @@ export function LoginPage() {
                                 setView('student-auth'); // DIRECT TO AUTH, SKIP VERIFY
                                 setIsSignUp(false);
                             }}
-                            className="group relative bg-white rounded-3xl p-8 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all duration-100 hover:bg-gray-50 overflow-hidden text-left"
+                            className="group relative bg-white rounded-3xl p-6 md:p-8 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all duration-100 hover:bg-gray-50 overflow-hidden text-left"
                         >
                             <div className="relative z-10">
-                                <div className="w-20 h-20 bg-[#ff007a] rounded-2xl flex items-center justify-center mb-6 shadow-[0_4px_0_#b30055]">
-                                    <User className="w-10 h-10 text-white" />
+                                <div className="w-16 h-16 md:w-20 md:h-20 bg-[#ff007a] rounded-2xl flex items-center justify-center mb-4 md:mb-6 shadow-[0_4px_0_#b30055]">
+                                    <User className="w-8 h-8 md:w-10 md:h-10 text-white" />
                                 </div>
-                                <h2 className="text-3xl font-black text-slate-700 mb-3 tracking-tight">Soy Alumno/a</h2>
-                                <p className="text-slate-500 mb-6 font-bold leading-relaxed">Únete a tu clase, habla con Tico y mira tu progreso.</p>
-                                <div className="flex items-center justify-end gap-2 text-[#ff007a] font-black uppercase tracking-widest group-hover:gap-4 transition-all">
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-700 mb-2 md:mb-3 tracking-tight">Soy Alumno/a</h2>
+                                <p className="text-slate-500 mb-4 md:mb-6 font-bold leading-relaxed text-sm md:text-base">Únete a tu clase, habla con Tico y mira tu progreso.</p>
+                                <div className="flex items-center justify-end gap-2 text-[#ff007a] font-black uppercase tracking-widest group-hover:gap-4 transition-all text-sm md:text-base">
                                     <span>Acceso Alumno</span>
                                     <ArrowRight className="w-5 h-5" />
                                 </div>

@@ -428,7 +428,7 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
 
 
       {/* Mensajes */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto no-scrollbar p-4 bg-gray-50">
+      <div ref={containerRef} className="flex-1 overflow-y-auto no-scrollbar p-3 md:p-4 bg-gray-50">
         {mensajes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-4">
@@ -469,9 +469,9 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
               return (
                 <div
                   key={mensaje.id}
-                  className={`mb-4 ${mensaje.tipo === 'alumno' ? 'flex justify-end' : 'flex justify-start'}`}
+                  className={`mb-3 md:mb-4 ${mensaje.tipo === 'alumno' ? 'flex justify-end' : 'flex justify-start'}`}
                 >
-                  <div className={`max-w-[85%] ${mensaje.tipo === 'alumno' ? 'order-2' : 'order-1'}`}>
+                  <div className={`max-w-[90%] md:max-w-[85%] ${mensaje.tipo === 'alumno' ? 'order-2' : 'order-1'}`}>
                     <div className="flex items-center gap-2 mb-1">
                       {mensaje.tipo === 'ia' && <Bot className="w-4 h-4 text-gray-600" />}
                       <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
@@ -479,9 +479,9 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
                       </span>
                     </div>
                     <div
-                      className={`p-3 rounded-2xl ${mensaje.tipo === 'alumno'
-                        ? 'bg-blue-600 text-white rounded-tr-none'
-                        : 'bg-white border border-gray-200 text-gray-900 rounded-tl-none shadow-sm'
+                      className={`p-2.5 md:p-3 rounded-2xl ${mensaje.tipo === 'alumno'
+                        ? 'bg-blue-600 text-white rounded-tr-none shadow-md shadow-blue-100'
+                        : 'bg-white border border-slate-100 text-gray-900 rounded-tl-none shadow-sm'
                         }`}
                     >
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -519,67 +519,74 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
       </div>
 
       {/* Input / ReadOnly Banner */}
-      <div className="border-t border-gray-100 p-4 bg-white">
+      {/* Input / ReadOnly Banner */}
+      <div className="border-t border-gray-100 p-3 md:p-4 bg-white shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
         {isReadOnly ? (
           <div className="flex items-center justify-center gap-3 py-2 text-slate-400 italic text-sm">
             <Bot className="w-4 h-4 opacity-50" />
             <span>Modo supervisión: Estás viendo la conversación del grupo</span>
           </div>
         ) : (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={toggleMute}
-              className={`p-3 rounded-xl transition-all ${!isMuted
-                ? 'bg-blue-100 text-blue-600'
-                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                }`}
-              title={isMuted ? "Activar voz" : "Silenciar voz"}
-            >
-              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-            </button>
-            {microPermitidoAdmin && (
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
               <button
                 type="button"
-                onClick={toggleListening}
-                className={`p-3 rounded-xl transition-all ${isRecording
-                  ? 'bg-red-100 text-red-600 animate-pulse'
-                  : isTranscribing
-                    ? 'bg-yellow-100 text-yellow-600 animate-pulse'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                onClick={toggleMute}
+                className={`p-3 rounded-2xl transition-all ${!isMuted
+                  ? 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                  : 'bg-slate-50 text-slate-400 border border-slate-100 hover:bg-slate-100'
                   }`}
-                title={isRecording ? "Detener grabación" : "Dictar respuesta"}
-                disabled={isTranscribing}
+                title={isMuted ? "Activar voz" : "Silenciar voz"}
               >
-                {isRecording ? <MicOff className="w-5 h-5" /> : isTranscribing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5" />}
+                {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
               </button>
-            )}
-            <input
-              type="text"
-              value={inputMensaje}
-              onChange={(e) => setInputMensaje(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && !escribiendo && !typingId && enviarMensaje()}
-              placeholder={isRecording ? "Grabando audio..." : isTranscribing ? "Transcribiendo..." : "Escribe una pregunta al mentor..."}
-              className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
-              disabled={escribiendo || !!typingId}
-            />
-            {escribiendo || typingId ? (
-              <button
-                onClick={detenerIA}
-                className="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl hover:bg-rose-200 transition-all flex items-center justify-center border-2 border-rose-200"
-                title="Detener respuesta"
-              >
-                <Square className="w-5 h-5 fill-current" />
-              </button>
-            ) : (
-              <button
-                onClick={() => enviarMensaje()}
-                disabled={!inputMensaje.trim()}
-                className="w-12 h-12 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center disabled:opacity-50"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            )}
+              {microPermitidoAdmin && (
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  className={`p-3 rounded-2xl transition-all ${isRecording
+                    ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-200'
+                    : isTranscribing
+                      ? 'bg-amber-100 text-amber-600 animate-pulse'
+                      : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+                    }`}
+                  title={isRecording ? "Detener grabación" : "Dictar respuesta"}
+                  disabled={isTranscribing}
+                >
+                  {isRecording ? <MicOff className="w-5 h-5" /> : isTranscribing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5" />}
+                </button>
+              )}
+
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={inputMensaje}
+                  onChange={(e) => setInputMensaje(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && !escribiendo && !typingId && enviarMensaje()}
+                  placeholder={isRecording ? "Grabando frase..." : isTranscribing ? "Transcribiendo..." : "Escribe a TICO..."}
+                  className="w-full pl-4 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 text-sm font-medium placeholder:text-slate-400 shadow-inner"
+                  disabled={escribiendo || !!typingId}
+                />
+              </div>
+
+              {escribiendo || typingId ? (
+                <button
+                  onClick={detenerIA}
+                  className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full hover:bg-rose-100 transition-all flex items-center justify-center border border-rose-100 shrink-0"
+                >
+                  <Square className="w-5 h-5 fill-current" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => enviarMensaje()}
+                  disabled={!inputMensaje.trim()}
+                  className="w-12 h-12 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-all flex items-center justify-center disabled:opacity-50 disabled:bg-slate-300 shadow-lg shadow-indigo-200 active:scale-95 shrink-0"
+                >
+                  <Send className="w-5 h-5 ml-0.5" />
+                </button>
+              )}
+            </div>
+            {/* Mobile helper text or indicators can go here */}
           </div>
         )}
       </div>

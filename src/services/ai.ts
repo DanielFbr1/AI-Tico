@@ -269,11 +269,31 @@ export const generarConfiguracionTico = async (mensaje: string, instruccionesAct
 
 export const generarTareasDocente = async (contexto: string) => {
     const prompt = `Genera una lista de 3 a 5 tareas sugeridas para un docente basadas en este contexto: "${contexto}".
-    Devuelve SOLO un JSON con este formato: [{"titulo": "...", "descripcion": "..."}]`;
+    
+    RESPONDE EXCLUSIVAMENTE CON UN OBJETO JSON CON ESTE FORMATO:
+    {
+      "tasks": [
+        {
+          "titulo": "Título corto de la tarea",
+          "descripcion": "Descripción clara y accionable para el alumno"
+        }
+      ]
+    }
+    
+    Asegúrate de que el JSON sea válido y no incluyas texto fuera del objeto.`;
 
-    const response = await callGroq([{ role: 'user', content: prompt }], true);
     try {
-        return JSON.parse(response);
+        const response = await callGroq([{ role: 'user', content: prompt }], true);
+        const parsed = JSON.parse(response);
+
+        if (parsed.tasks && Array.isArray(parsed.tasks)) {
+            return parsed.tasks;
+        } else if (Array.isArray(parsed)) {
+            return parsed;
+        }
+
+        console.warn("Formato inesperado en generarTareasDocente:", parsed);
+        return [];
     } catch (e) {
         console.error("Error parsing JSON tasks:", e);
         return [];
@@ -332,15 +352,28 @@ Cada descripción debe tener 1-2 frases concretas y específicas para ese nivel.
     try {
         const parsed = JSON.parse(response);
 
-        // Buscar un array de 4 strings en cualquier clave del objeto
-        if (Array.isArray(parsed) && parsed.length >= 4) return parsed.slice(0, 4);
-
-        // Buscar en cualquier propiedad del objeto
-        for (const key of Object.keys(parsed)) {
-            const val = parsed[key];
-            if (Array.isArray(val) && val.length >= 4) {
-                return val.slice(0, 4).map((v: any) => String(v));
+        // Buscar un array de 4 elementos en cualquier clave del objeto
+        let rawNiveles: any[] = [];
+        if (Array.isArray(parsed)) {
+            rawNiveles = parsed;
+        } else {
+            for (const key of Object.keys(parsed)) {
+                if (Array.isArray(parsed[key]) && parsed[key].length >= 4) {
+                    rawNiveles = parsed[key];
+                    break;
+                }
             }
+        }
+
+        if (rawNiveles.length >= 4) {
+            return rawNiveles.slice(0, 4).map((v: any) => {
+                if (typeof v === 'string') return v;
+                if (v && typeof v === 'object') {
+                    // Intentar sacar 'descripcion', 'contenido' o simplemente el primer valor string
+                    return v.descripcion || v.content || v.text || v.desc || Object.values(v).find(val => typeof val === 'string') || JSON.stringify(v);
+                }
+                return String(v);
+            });
         }
 
         console.warn("Formato inesperado de Groq:", parsed);

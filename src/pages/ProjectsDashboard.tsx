@@ -216,14 +216,14 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
         <div className="min-h-screen bg-[#fcfdff] p-4 md:p-8 font-sans overflow-x-hidden">
             <header className="mb-6 md:mb-12 max-w-7xl mx-auto">
                 <div className="flex items-center justify-between bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100/50 sticky top-0 z-50">
-                    <div className="flex items-center gap-3 md:gap-5">
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center text-blue-600 border-2 border-blue-100 shrink-0">
-                            <Layout className="w-5 h-5 md:w-7 md:h-7" />
+                    <div className="flex items-center gap-2 md:gap-5 min-w-0">
+                        <div className="w-9 h-9 md:w-14 md:h-14 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center text-blue-600 border-2 border-blue-100 shrink-0">
+                            <Layout className="w-4 h-4 md:w-7 md:h-7" />
                         </div>
                         <div className="overflow-hidden">
-                            <h1 className="text-lg md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1 truncate">Proyectos</h1>
-                            <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <h1 className="text-base md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1 truncate">Proyectos</h1>
+                            <p className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1 md:gap-2">
+                                <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 {proyectos.length} total
                             </p>
                         </div>

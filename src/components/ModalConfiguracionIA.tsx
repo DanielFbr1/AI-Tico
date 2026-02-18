@@ -144,24 +144,24 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-[2rem] shadow-2xl max-w-5xl w-full flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh]">
-                {/* Header */}
-                <div className={`p-8 text-white flex items-center justify-between shrink-0 ${isGlobal ? 'bg-gradient-to-r from-slate-800 to-slate-900' : 'bg-gradient-to-r from-purple-600 to-pink-600'}`}>
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                            {isGlobal ? <Globe className="w-6 h-6 text-blue-300" /> : <Sparkles className="w-6 h-6 text-yellow-300" />}
+                {/* Header - More Compact */}
+                <div className={`px-6 py-4 text-white flex items-center justify-between shrink-0 ${isGlobal ? 'bg-gradient-to-r from-slate-800 to-slate-900 border-b border-white/10' : 'bg-gradient-to-r from-purple-600 to-pink-600'}`}>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                            {isGlobal ? <Globe className="w-5 h-5 text-blue-300" /> : <Sparkles className="w-5 h-5 text-yellow-300" />}
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
+                            <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
                                 Ajustes Mentor IA
-                                {isGlobal && <span className="text-[10px] bg-blue-500 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Global</span>}
+                                {isGlobal && <span className="text-[9px] bg-blue-500 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Global</span>}
                             </h2>
-                            <p className={`${isGlobal ? 'text-slate-300' : 'text-purple-100'} font-medium text-sm`}>
+                            <p className={`${isGlobal ? 'text-slate-400' : 'text-purple-100'} font-medium text-xs`}>
                                 {isGlobal ? 'Configuración para TODOS los grupos' : `Personaliza para ${grupo?.nombre || 'este grupo'}`}
                             </p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
-                        <X className="w-6 h-6" />
+                    <button onClick={onClose} className="text-white/70 hover:text-white transition-colors p-2">
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 

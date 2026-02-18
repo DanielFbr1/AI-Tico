@@ -123,6 +123,8 @@ export interface Recurso {
 export interface ProyectoActivo {
     id: string;
     nombre: string;
+    descripcion: string; // Added
+    contexto_ia?: string; // Added
     tipo: string;
     codigo_sala: string;
     clase?: string;

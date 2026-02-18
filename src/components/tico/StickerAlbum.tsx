@@ -28,7 +28,7 @@ const StickerItem = React.memo(({ sticker, index }: { sticker: Sticker, index: n
                 <img
                     src={sticker.sticker_url}
                     alt={sticker.resource_title}
-                    className="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform duration-500 filter hover:brightness-110 will-change-transform"
+                    className="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform duration-500 filter hover:brightness-110 will-change-transform bg-white"
                     loading="lazy"
                     decoding="async"
                     referrerPolicy="no-referrer"
@@ -239,7 +239,7 @@ export const StickerAlbum: React.FC<StickerAlbumProps & { isActive?: boolean }> 
             </div>
 
             {/* Grid optimizado con renderizado perezoso */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 pb-20 overflow-y-auto custom-scrollbar p-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-6 pb-20 overflow-y-auto custom-scrollbar p-1 md:p-2">
                 {stickers.map((sticker, index) => (
                     <StickerItem key={sticker.id} sticker={sticker} index={index} />
                 ))}

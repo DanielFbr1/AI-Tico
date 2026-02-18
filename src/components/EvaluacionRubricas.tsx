@@ -155,9 +155,11 @@ export function EvaluacionRubricas({ rubrica, grupos = [], proyectoId }: Evaluac
   };
 
   const removeCriterio = (index: number) => {
-    if (!confirm("¿Estás seguro de eliminar este criterio?")) return;
+    // Confirmation removed as requested
     const newCriterios = localCriterios.filter((_, i) => i !== index);
     setLocalCriterios(newCriterios);
+    // Auto-save after removal
+    setTimeout(() => handleSaveRubric(true), 100);
   };
 
   const handleLevelChange = (criterioIndex: number, levelIndex: number, newText: string) => {
@@ -179,8 +181,18 @@ export function EvaluacionRubricas({ rubrica, grupos = [], proyectoId }: Evaluac
     try {
       const newCriterios = [];
       for (const crit of localCriterios) {
-        const nivelesGenerados = await generarNivelesRubrica(crit.nombre);
-        const safeNiveles = nivelesGenerados.length === 4 ? nivelesGenerados : ["", "", "", ""];
+        // Enviar el contexto del criterio para una mejor generación
+        const nivelesGenerados = await generarNivelesRubrica(`${crit.nombre}: ${crit.descripcion || ''}`);
+
+        // Validación robusta para evitar [object Object]
+        const safeNiveles = (Array.isArray(nivelesGenerados) && nivelesGenerados.length >= 4)
+          ? nivelesGenerados.map(n => {
+            if (typeof n === 'string') return n;
+            if (n && typeof n === 'object') return (n as any).descripcion || (n as any).content || JSON.stringify(n);
+            return String(n);
+          })
+          : ["Sin descripción", "Sin descripción", "Sin descripción", "Sin descripción"];
+
         newCriterios.push({
           ...crit,
           niveles: [
@@ -190,10 +202,11 @@ export function EvaluacionRubricas({ rubrica, grupos = [], proyectoId }: Evaluac
             { puntos: '9-10', descripcion: safeNiveles[3] }
           ]
         });
-        // Esperar 3.5 segundos entre peticiones para evitar 429 Rate Limit
-        await new Promise(resolve => setTimeout(resolve, 3500));
+        // Esperar un poco para evitar Rate Limit
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
       setLocalCriterios(newCriterios);
+      await handleSaveRubric(true);
       toast.success("Rúbrica completada con inteligencia artificial ✨");
     } catch (e) {
       console.error("Error generating global rubric", e);
@@ -447,10 +460,10 @@ export function EvaluacionRubricas({ rubrica, grupos = [], proyectoId }: Evaluac
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-6 py-4 font-black text-slate-700 w-1/4">Criterio</th>
-                    <th className="px-4 py-3 font-bold text-center text-red-700 bg-red-50/50">Insuficiente</th>
-                    <th className="px-4 py-3 font-bold text-center text-orange-700 bg-orange-50/50">Suficiente</th>
-                    <th className="px-4 py-3 font-bold text-center text-blue-700 bg-blue-50/50">Notable</th>
-                    <th className="px-4 py-3 font-bold text-center text-green-700 bg-green-50/50">Sobresaliente</th>
+                    <th className="px-4 py-3 font-bold text-center text-red-700 bg-red-50/50 min-w-[140px]">Insuficiente</th>
+                    <th className="px-4 py-3 font-bold text-center text-orange-700 bg-orange-50/50 min-w-[140px]">Suficiente</th>
+                    <th className="px-4 py-3 font-bold text-center text-blue-700 bg-blue-50/50 min-w-[140px]">Notable</th>
+                    <th className="px-4 py-3 font-bold text-center text-green-700 bg-green-50/50 min-w-[140px]">Sobresaliente</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

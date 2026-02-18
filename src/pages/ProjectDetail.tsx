@@ -64,6 +64,18 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
                     className: '!rounded-[2rem] !border-amber-200 !bg-amber-50'
                 });
             }
+
+            // Detect Task Revision (NUEVO: Alerta cuando envían tarea)
+            const oldRevisionCount = (oldGroup?.hitos || []).filter(h => h.estado === 'revision').length;
+            const newRevisionCount = (newGroup.hitos || []).filter(h => h.estado === 'revision').length;
+
+            if (newRevisionCount > oldRevisionCount) {
+                toast.info(`📨 ¡El equipo "${newGroup.nombre}" ha enviado una tarea para revisión!`, {
+                    duration: 6000,
+                    icon: '📨',
+                    className: '!rounded-[2rem] !border-blue-200 !bg-blue-50'
+                });
+            }
         });
     };
 

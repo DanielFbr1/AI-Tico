@@ -1,4 +1,28 @@
-import { Plus, Users, Layout, LogOut, MessageSquare, History, Globe, Sparkles, Award, Key, CircleHelp, Upload, Loader2, Bot, FolderOpen, Trophy, CheckCircle2, Star, AlertCircle, TrendingUp, Target } from 'lucide-react';
+import {
+  Users,
+  Layout,
+  Globe,
+  MessageSquare,
+  Award,
+  Bot,
+  Plus,
+  History,
+  Key,
+  CircleHelp,
+  LogOut,
+  ChevronRight,
+  Sparkles,
+  ArrowLeft,
+  Upload,
+  Loader2,
+  FolderOpen,
+  Trophy,
+  CheckCircle2,
+  Star,
+  AlertCircle,
+  TrendingUp,
+  Target
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Grupo, HitoGrupo, ProyectoFase, Rubrica } from '../types';
 import { supabase } from '../lib/supabase';
@@ -42,6 +66,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   // Estados de Vista
   const [vistaActiva, setVistaActiva] = useState<'grupo' | 'tareas' | 'comunidad' | 'chat' | 'perfil'>('grupo');
   const [chatTab, setChatTab] = useState<'ia' | 'equipo'>('ia');
+  const [mobileChatTab, setMobileChatTab] = useState<'menu' | 'ia' | 'equipo'>('menu');
 
   // Custom Hook for Tracking
   useGroupTracking(alumno.grupo_id ? Number(alumno.grupo_id) : 0);
@@ -562,8 +587,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
   return (
     <div className={`min-h-screen bg-[#fcfdff] flex flex-col ${vistaActiva === 'chat' ? 'h-screen overflow-hidden' : ''}`}>
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200">
+      {/* Header - Hidden on mobile if a specific chat is active */}
+      <header className={`bg-white border-b border-slate-200 ${vistaActiva === 'chat' && mobileChatTab !== 'menu' ? 'hidden md:block' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -573,12 +598,17 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[9px] text-slate-300 font-bold uppercase tracking-wider bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">v1.1.0 (Restauración UI & AI Edge)</span>
+                  <span className="text-[9px] text-slate-300 font-bold uppercase tracking-wider bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">v3.5.2 (Chat UI Polish)</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
-                  {alumno.clase || 'Clase'} • {grupoDisplay?.nombre || 'Mi grupo'}
+                  {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
                 </p>
-                <p className="text-[9px] text-slate-300 font-mono mt-0.5">Room: {grupoReal?.proyecto_id?.slice(0, 8)}...</p>
+                <div className="mt-2 text-[10px] md:text-xs">
+                  <span className="inline-flex items-center bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-xl font-black border border-indigo-100/50 shadow-sm shadow-indigo-500/5 tracking-wider">
+                    <span className="opacity-50 mr-2 uppercase text-[8px] md:text-[9px]">Código de Clase:</span>
+                    <span className="font-mono tracking-[0.1em]">{alumno.codigo_sala || 'N/A'}</span>
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -672,58 +702,58 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         </div>
       </header>
 
-      {/* Navigation - 2x2 Grid en móvil */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-30">
+      {/* Navigation - Visible solo en Desktop */}
+      <div className="hidden md:block bg-white border-b border-slate-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-2 md:px-6">
-          <nav className="grid grid-cols-2 md:flex gap-1 md:gap-2 p-2 md:p-0">
+          <nav className="grid grid-cols-3 sm:flex gap-1 md:gap-2 p-2 md:p-0">
             <button
               onClick={() => { setVistaActiva('grupo'); window.scrollTo(0, 0); }}
-              className={`px-4 md:px-6 py-3 md:py-5 font-bold text-[10px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'grupo'
+              className={`px-2 md:px-6 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'grupo'
                 ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
                 : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
                 }`}
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
                 <Users className="w-4 h-4" />
-                <span>Mi Grupo</span>
+                <span className="truncate">Mi Equipo</span>
               </div>
             </button>
 
             {/* NUEVO BOTÓN TAREAS */}
             <button
               onClick={() => { setVistaActiva('tareas'); window.scrollTo(0, 0); }}
-              className={`px-4 md:px-6 py-3 md:py-5 font-bold text-[10px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'tareas'
+              className={`px-2 md:px-6 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'tareas'
                 ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
                 : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
                 }`}
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
                 <Layout className="w-4 h-4" />
-                <span>Tareas</span>
+                <span className="truncate">Tareas</span>
               </div>
             </button>
             <button
               onClick={() => { setVistaActiva('comunidad'); window.scrollTo(0, 0); }}
-              className={`px-4 md:px-8 py-3 md:py-5 font-bold text-[10px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'comunidad'
+              className={`px-2 md:px-8 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'comunidad'
                 ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
                 : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
                 }`}
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
                 <Globe className="w-4 h-4" />
-                <span>Global</span>
+                <span className="truncate">Global</span>
               </div>
             </button>
             <button
               onClick={() => { setVistaActiva('chat'); window.scrollTo(0, 0); }}
-              className={`px-4 md:px-8 py-3 md:py-5 font-bold text-[10px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'chat'
+              className={`px-2 md:px-8 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'chat'
                 ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
                 : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
                 }`}
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
                 <MessageSquare className="w-4 h-4" />
-                <span>Chat</span>
+                <span className="truncate">Chat</span>
               </div>
             </button>
             <button
@@ -732,14 +762,14 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 setHasNewEvaluation(false); // Limpiar aviso al entrar
                 window.scrollTo(0, 0);
               }}
-              className={`px-4 md:px-8 py-3 md:py-5 font-bold text-[10px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] relative ${vistaActiva === 'perfil'
+              className={`px-2 md:px-8 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] relative ${vistaActiva === 'perfil'
                 ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
                 : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
                 }`}
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
                 <Award className="w-4 h-4" />
-                <span>Mis Notas</span>
+                <span className="truncate">Mis Notas</span>
               </div>
 
               {/* INDICADOR DE EVALUACIÓN DISPONIBLE */}
@@ -755,7 +785,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       </div>
 
       {/* Content */}
-      <main className={`max-w-7xl mx-auto px-6 w-full ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden py-4' : 'py-8 flex-none'}`}>
+      <main className={`max-w-7xl mx-auto px-6 w-full pb-24 md:pb-8 ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden py-4' : 'py-8 flex-none'}`}>
         {showExample && (
           <div className="bg-indigo-600 rounded-3xl p-6 mb-8 text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
             {/* ... Demo Banner styles ... */}
@@ -789,7 +819,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
             ) : (
               <>
                 {/* COLUMNA 1: Tarjeta de Grupo - Full Width */}
-                <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 relative overflow-hidden">
+                <div className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200 relative overflow-hidden">
                   {/* ... (Contenido Tarjeta Grupo Existente) ... */}
                   <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -translate-y-1/2 translate-x-1/2 -z-0"></div>
                   <div className="relative z-10 flex flex-col h-full justify-between">
@@ -830,7 +860,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
 
                 {/* Sección de Recursos del Grupo */}
-                <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
+                <div className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
@@ -859,13 +889,13 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Árbol (Ocupa 1/3) */}
-                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[400px]">
+                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[280px] md:min-h-[400px]">
                   <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-green-500"></div>
-                  <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase mb-4 z-10 w-full text-center">Nuestro Árbol</h2>
-                  <div className="relative z-10 transform scale-100">
+                  <h2 className="text-sm md:text-xl font-black text-slate-800 tracking-tight uppercase mb-2 md:mb-4 z-10 w-full text-center">Nuestro Árbol</h2>
+                  <div className="relative z-10 transform scale-[0.7] md:scale-100 -my-10 md:my-0">
                     <LivingTree progress={grupoDisplay.progreso || 0} health={100} size={240} />
                   </div>
-                  <div className="mt-8 flex gap-8 text-center">
+                  <div className="mt-2 md:mt-8 flex gap-8 text-center">
                     <div>
                       <div className="text-2xl font-black text-slate-800">{grupoDisplay.progreso}%</div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Crecimiento</div>
@@ -888,7 +918,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                     <RoadmapView
                       fases={fasesProyecto.length > 0 ? fasesProyecto : (todosLosGrupos.length > 0 && alumno.proyecto_id) ? (PROYECTOS_MOCK.find(p => p.id === alumno.proyecto_id)?.fases || PROYECTOS_MOCK[0]?.fases || []) : []}
                       hitosGrupo={grupoReal?.hitos || []}
-                      onToggleHito={async (faseId, hitoTitulo, currentStatus) => {
+                      onToggleHito={async (faseId, hitoTitulo, currentStatus, hitoId) => {
                         if (!grupoReal) return;
 
                         let nextStatus: HitoGrupo['estado'] | null = null;
@@ -898,11 +928,10 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                         if (!nextStatus) return;
 
                         try {
-                          const updatedHitos = (grupoReal.hitos || []).map(h =>
-                            (h.fase_id === faseId && h.titulo === hitoTitulo)
-                              ? { ...h, estado: nextStatus }
-                              : h
-                          ) as HitoGrupo[];
+                          const updatedHitos = (grupoReal.hitos || []).map(h => {
+                            const isMatch = hitoId ? h.id === hitoId : (h.fase_id === faseId && h.titulo === hitoTitulo);
+                            return isMatch ? { ...h, estado: nextStatus } : h;
+                          }) as HitoGrupo[];
 
                           setGrupoReal({ ...grupoReal, hitos: updatedHitos });
 
@@ -1049,46 +1078,75 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         {/* VISTA MENTOR IA / EQUIPO */}
         {
           vistaActiva === 'chat' && grupoDisplay && (
-            <div className="bg-white rounded-[2.5rem] p-4 md:p-6 shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
-              {/* Header Toggles - Better visual separation */}
-              <div className="flex bg-slate-50 p-1.5 rounded-3xl mb-4 shrink-0 shadow-inner">
-                <button
-                  onClick={() => setChatTab('ia')}
-                  className={`flex-1 py-3 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 ${chatTab === 'ia'
-                    ? 'bg-white text-indigo-600 shadow-md transform scale-100 ring-1 ring-black/5'
-                    : 'text-slate-400 hover:text-slate-600'
-                    }`}
-                >
-                  <Bot className={`w-4 h-4 ${chatTab === 'ia' ? 'text-indigo-600' : 'text-slate-400'}`} />
-                  <span>Hablar con TICO</span>
-                </button>
-                <div className="w-px bg-slate-200 mx-1 my-2"></div>
-                <button
-                  onClick={() => setChatTab('equipo')}
-                  className={`flex-1 py-3 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 ${chatTab === 'equipo'
-                    ? 'bg-white text-emerald-600 shadow-md transform scale-100 ring-1 ring-black/5'
-                    : 'text-slate-400 hover:text-slate-600'
-                    }`}
-                >
-                  <Users className={`w-4 h-4 ${chatTab === 'equipo' ? 'text-emerald-600' : 'text-slate-400'}`} />
-                  <span>Chat de Grupo</span>
-                </button>
-              </div>
+            <div className="h-full flex flex-col overflow-hidden">
+              {/* UNIFIED VIEW: Selection Menu or Focused Chat */}
+              <div className="h-full flex flex-col overflow-hidden">
+                {mobileChatTab === 'menu' ? (
+                  <div className="flex-1 flex flex-col justify-center items-center gap-6 p-6 animate-in fade-in zoom-in duration-500 max-w-4xl mx-auto w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                      {/* Botón TICO */}
+                      <button
+                        onClick={() => setMobileChatTab('ia')}
+                        className="group relative h-32 md:h-64 bg-gradient-to-r md:bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-[2.5rem] p-6 md:p-10 shadow-xl shadow-indigo-100 active:scale-95 transition-all overflow-hidden border-4 border-white flex items-center md:flex-col md:justify-center gap-5"
+                      >
+                        <div className="absolute top-0 right-0 w-32 md:w-64 h-32 md:h-64 bg-white/10 rounded-full -mr-16 md:-mr-32 -mt-16 md:-mt-32 group-hover:scale-110 transition-transform"></div>
+                        <div className="w-16 h-16 md:w-28 md:h-28 bg-white/20 backdrop-blur-md rounded-2xl md:rounded-[2rem] flex items-center justify-center text-white border border-white/30 shadow-inner shrink-0 relative z-10">
+                          <Bot className="w-9 h-9 md:w-16 md:h-16 group-hover:rotate-12 transition-transform" />
+                        </div>
+                        <div className="text-left md:text-center relative z-10">
+                          <h3 className="text-xl md:text-3xl font-black text-white uppercase tracking-tight leading-none italic">Hablar con Tico</h3>
+                        </div>
+                      </button>
 
-              {/* Chat Container - Managed to fit space */}
-              <div className="flex-1 min-h-0 relative rounded-2xl overflow-hidden border border-slate-100 bg-white">
-                {chatTab === 'ia' ? (
-                  <div className="h-full">
-                    <div className="h-full">
-                      <MentorChat grupo={grupoDisplay} mostrarEjemplo={showExample} proyectoNombre={nombreProyecto} contextoIA={contextoProyecto} />
+                      {/* Botón GRUPO */}
+                      <button
+                        onClick={() => setMobileChatTab('equipo')}
+                        className="group relative h-32 md:h-64 bg-gradient-to-r md:bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[2.5rem] p-6 md:p-10 shadow-xl shadow-emerald-100 active:scale-95 transition-all overflow-hidden border-4 border-white flex items-center md:flex-col md:justify-center gap-5"
+                      >
+                        <div className="absolute bottom-0 left-0 w-32 md:w-64 h-32 md:h-64 bg-white/10 rounded-full -ml-16 md:-ml-32 -mb-16 md:-mb-32 group-hover:scale-110 transition-transform"></div>
+                        <div className="w-16 h-16 md:w-28 md:h-28 bg-white/20 backdrop-blur-md rounded-2xl md:rounded-[2rem] flex items-center justify-center text-white border border-white/30 shadow-inner shrink-0 relative z-10 pr-0.5">
+                          <Users className="w-9 h-9 md:w-16 md:h-16 group-hover:-rotate-12 transition-transform" />
+                        </div>
+                        <div className="text-left md:text-center relative z-10">
+                          <h3 className="text-xl md:text-3xl font-black text-white uppercase tracking-tight leading-none italic">Hablar con el grupo</h3>
+                        </div>
+                      </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full">
-                    <ChatGrupo
-                      grupoId={String(grupoDisplay.id)}
-                      miembroActual={alumno.nombre || 'Alumno'}
-                    />
+                  <div className="flex-1 flex flex-col bg-white overflow-hidden md:rounded-[2.5rem] rounded-t-[2.5rem] border border-slate-100 shadow-2xl h-full">
+                    {/* Compact Sub-Header */}
+                    <div className="px-6 py-4 md:py-6 flex items-center justify-between border-b border-slate-50 shrink-0 bg-white/50 backdrop-blur-md z-10">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl text-white shadow-lg ${mobileChatTab === 'ia' ? 'bg-indigo-600 shadow-indigo-100' : 'bg-emerald-600 shadow-emerald-100'}`}>
+                          {mobileChatTab === 'ia' ? <Bot size={20} className="md:w-6 md:h-6" /> : <Users size={20} className="md:w-6 md:h-6" />}
+                        </div>
+                        <div>
+                          <h4 className="font-black text-slate-800 uppercase tracking-tight text-sm md:text-lg italic">
+                            {mobileChatTab === 'ia' ? 'Mentor TICO' : 'Chat de Equipo'}
+                          </h4>
+                          <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest hidden md:block">Canal de comunicación activo</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setMobileChatTab('menu')}
+                        className="px-4 md:px-6 py-2 md:py-3 bg-slate-50 rounded-xl md:rounded-2xl text-slate-400 font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-slate-100 hover:text-slate-600 active:scale-90 transition-all border border-slate-100 flex items-center gap-2"
+                      >
+                        <ArrowLeft size={14} className="md:w-4 md:h-4" />
+                        <span>Volver</span>
+                      </button>
+                    </div>
+
+                    <div className="flex-1 min-h-0 relative h-full">
+                      {mobileChatTab === 'ia' ? (
+                        <MentorChat grupo={grupoDisplay} mostrarEjemplo={showExample} proyectoNombre={nombreProyecto} contextoIA={contextoProyecto} />
+                      ) : (
+                        <ChatGrupo
+                          grupoId={String(grupoDisplay.id)}
+                          miembroActual={alumno.nombre || 'Alumno'}
+                        />
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1262,6 +1320,74 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               }
             }}
           />
+        )
+      }
+
+      {/* Bottom Navigation (Mobile Only) - Hidden if any main modal is open or a focused chat is active to avoid overlapping */}
+      {
+        !modalSubirRecursoOpen && !modalUnirseOpen && !modalProponerOpen && !tutorialActivo && (mobileChatTab === 'menu' || vistaActiva !== 'chat') && (
+          <nav className="md:hidden fixed bottom-1 left-3 right-3 bg-white/90 backdrop-blur-xl border border-white/20 px-1 py-3 flex items-center justify-around z-[100] shadow-[0_10px_40px_rgb(0,0,0,0.1)] rounded-[2.5rem] animate-in slide-in-from-bottom-5 duration-300">
+            <button
+              onClick={() => { setVistaActiva('grupo'); window.scrollTo(0, 0); }}
+              className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${vistaActiva === 'grupo' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
+            >
+              <div className={`p-2 rounded-2xl transition-all ${vistaActiva === 'grupo' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-transparent'}`}>
+                <Users className={`w-5 h-5 ${vistaActiva === 'grupo' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+              </div>
+              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'grupo' ? 'opacity-100' : 'opacity-80'}`}>Mi Equipo</span>
+            </button>
+
+            <button
+              onClick={() => { setVistaActiva('tareas'); window.scrollTo(0, 0); }}
+              className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${vistaActiva === 'tareas' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
+            >
+              <div className={`p-2 rounded-2xl transition-all ${vistaActiva === 'tareas' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-transparent'}`}>
+                <Layout className={`w-5 h-5 ${vistaActiva === 'tareas' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+              </div>
+              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'tareas' ? 'opacity-100' : 'opacity-80'}`}>Tareas</span>
+            </button>
+
+            <button
+              onClick={() => { setVistaActiva('comunidad'); window.scrollTo(0, 0); }}
+              className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${vistaActiva === 'comunidad' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
+            >
+              <div className={`p-2 rounded-2xl transition-all ${vistaActiva === 'comunidad' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-transparent'}`}>
+                <Globe className={`w-5 h-5 ${vistaActiva === 'comunidad' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+              </div>
+              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'comunidad' ? 'opacity-100' : 'opacity-80'}`}>Global</span>
+            </button>
+
+            <button
+              onClick={() => { setVistaActiva('chat'); window.scrollTo(0, 0); }}
+              className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${vistaActiva === 'chat' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
+            >
+              <div className={`p-2 rounded-2xl transition-all ${vistaActiva === 'chat' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-transparent'}`}>
+                <MessageSquare className={`w-5 h-5 ${vistaActiva === 'chat' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+              </div>
+              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'chat' ? 'opacity-100' : 'opacity-80'}`}>Chat</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setVistaActiva('perfil');
+                setHasNewEvaluation(false);
+                window.scrollTo(0, 0);
+              }}
+              className={`flex flex-col items-center gap-1.5 flex-1 transition-all relative ${vistaActiva === 'perfil' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
+            >
+              <div className={`p-2 rounded-2xl transition-all ${vistaActiva === 'perfil' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-transparent'}`}>
+                <Award className={`w-5 h-5 ${vistaActiva === 'perfil' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+              </div>
+              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'perfil' ? 'opacity-100' : 'opacity-80'}`}>Mis Notas</span>
+
+              {hasNewEvaluation && vistaActiva !== 'perfil' && (
+                <span className="absolute top-1 right-2 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-pink-500 border-2 border-white"></span>
+                </span>
+              )}
+            </button>
+          </nav>
         )
       }
     </div >

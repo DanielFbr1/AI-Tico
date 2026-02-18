@@ -35,7 +35,7 @@ export const BrainChart: React.FC<BrainChartProps> = ({ ticoState }) => {
     ];
 
     return (
-        <div className="w-full flex flex-col gap-4 animate-in fade-in duration-700 h-full overflow-y-auto custom-scrollbar pr-2">
+        <div className="w-full flex flex-col gap-2 md:gap-4 animate-in fade-in duration-700 h-full overflow-y-auto custom-scrollbar pr-2">
             {/* ULTRA-COMPACT HERO SECTION */}
             <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 rounded-[2rem] p-5 text-white shadow-lg shrink-0">
                 <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
@@ -64,7 +64,7 @@ export const BrainChart: React.FC<BrainChartProps> = ({ ticoState }) => {
             </div>
 
             {/* WISDOM BARS SECTION */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 shrink-0">
                 {categories.map(cat => {
                     const xp = ticoState.experience[cat.id] || 0;
                     const level = Math.floor(xp / 100);

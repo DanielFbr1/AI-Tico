@@ -1,15 +1,13 @@
 import { useState, useRef } from 'react';
-import { Upload, FileText, Video, Music, Image as ImageIcon } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image as ImageIcon, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Grupo } from '../types';
-import { X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-
 import { Recurso } from '../types';
 
 interface ModalSubirRecursoProps {
     grupo: Grupo;
-    proyectoId?: string; // New prop
+    proyectoId?: string;
     onClose: () => void;
     onSuccess: (nuevoRecurso: Recurso) => void;
 }
@@ -20,7 +18,6 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
     const [contenidoTexto, setContenidoTexto] = useState('');
     const [archivo, setArchivo] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
-    // Nuevo estado para el tipo seleccionado (Auto-detected)
     const [tipoSeleccionado, setTipoSeleccionado] = useState<Recurso['tipo']>('texto');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,7 +35,6 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
             const file = e.target.files[0];
             setArchivo(file);
 
-            // Auto-Detect Type
             const ext = file.name.split('.').pop()?.toLowerCase();
             if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext || '')) {
                 setTipoSeleccionado('audio');
@@ -50,7 +46,7 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
                 setTipoSeleccionado('imagen');
                 toast.info("🖼️ Detectado: Imagen");
             } else {
-                setTipoSeleccionado('texto'); // Doc is treated as text/resource
+                setTipoSeleccionado('texto');
                 toast.info("📄 Detectado: Documento");
                 setContenidoTexto('');
             }
@@ -61,7 +57,6 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
         let finalTitulo = titulo.trim();
         let finalDescripcion = descripcion.trim();
 
-        // Auto-fill title
         if (!finalTitulo && archivo) {
             finalTitulo = archivo.name;
         } else if (!finalTitulo) {
@@ -81,11 +76,9 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
         try {
             let mediaUrl = '';
 
-            // 1. Subir al Storage
             if (archivo) {
                 const fileExt = archivo.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                // Use proyecto_id if group is fake (id=0), else group id
                 const folderPath = (grupo.id === 0 && proyectoId) ? `global/${proyectoId}` : `${grupo.id}`;
                 const filePath = `${folderPath}/${fileName}`;
 
@@ -102,18 +95,13 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
                 mediaUrl = data.publicUrl;
             }
 
-            // 2. Insertar en Base de Datos
             const user = (await supabase.auth.getUser()).data.user;
-
-            // Determine Grupo vs Proyecto
             const grupoIdValue = (typeof grupo.id === 'string' ? parseInt(grupo.id) : grupo.id);
             const isGlobal = grupoIdValue === 0 || grupoIdValue < 0;
 
             const payload: any = {
-                // If global (id 0), set grupo_id NULL and proyecto_id
                 grupo_id: isGlobal ? null : grupoIdValue,
-                proyecto_id: proyectoId, // Always save project ID if available
-
+                proyecto_id: proyectoId,
                 grupo_nombre: grupo.nombre,
                 tipo: tipoSeleccionado,
                 titulo: finalTitulo,
@@ -131,7 +119,6 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
 
             if (error) throw error;
 
-            // Adaptar respuesta
             const nuevoRecurso: Recurso = {
                 id: data.id,
                 grupoId: data.grupo_id || 0,
@@ -157,24 +144,39 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
-                    <div>
-                        <h3 className="text-xl font-black text-slate-800 tracking-tight">Subir Aportación</h3>
-                        <p className="text-xs text-slate-500 font-medium">{grupo.id === 0 ? 'Compartir con toda la clase' : 'Compartir con el equipo'}</p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[150] p-0 md:p-4 animate-in fade-in duration-300">
+            <div className="bg-white rounded-none md:rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.25)] w-full max-w-2xl h-full md:h-auto md:max-h-[85vh] animate-in zoom-in-95 duration-300 flex flex-col overflow-hidden relative border border-white/20">
+
+                {/* Header Compacto */}
+                <div className="p-5 md:p-8 border-b border-slate-50 flex justify-between items-center bg-white shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                            <Upload className="w-5 h-5 md:w-6 md:h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-none">Subir Aportación</h3>
+                            <p className="text-[10px] md:text-xs text-indigo-500 font-black uppercase tracking-[0.2em] mt-1.5 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                                {grupo.id === 0 ? 'Clase' : `Equipo: ${grupo.nombre}`}
+                            </p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+                    <button
+                        onClick={onClose}
+                        className="p-2 md:p-3 bg-slate-50 hover:bg-rose-50 rounded-xl text-slate-400 hover:text-rose-500 transition-all active:scale-90"
+                    >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
+                {/* Contenido Optimizando Altura */}
+                <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 md:space-y-6 pb-32 md:pb-8 custom-scrollbar">
 
-                    {/* ZONE 1: SMART UPLOAD (Dynamic Icons) */}
-                    <div>
+                    {/* ZONE 1: SMART UPLOAD (Muy Compacto en PC) */}
+                    <div className="space-y-3">
+                        <label className="block text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Archivo</label>
                         <div
-                            className={`border-3 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer group relative overflow-hidden ${archivo ? 'border-emerald-400 bg-emerald-50/30' : 'border-indigo-100 bg-indigo-50/30 hover:border-indigo-400 hover:bg-indigo-50'}`}
+                            className={`border-4 border-dashed rounded-2xl md:rounded-[2rem] p-6 md:p-6 text-center transition-all cursor-pointer group relative overflow-hidden active:scale-[0.99] border-slate-100 bg-slate-50/30 hover:bg-white hover:border-indigo-400 ${archivo ? 'border-emerald-400 bg-emerald-50/20' : ''}`}
                             onClick={() => fileInputRef.current?.click()}
                         >
                             <input
@@ -182,84 +184,89 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
                                 ref={fileInputRef}
                                 className="hidden"
                                 onChange={handleFileChange}
-                                accept="*" // Accept everything, auto-detect later
+                                accept="*"
                             />
 
-                            {/* Dynamic Icon */}
-                            <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-110 ${archivo ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-indigo-500'}`}>
-                                {archivo ? <Icon className="w-7 h-7" /> : <Upload className="w-7 h-7" />}
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+                                <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center shadow-lg transition-all duration-700 ${archivo ? 'bg-emerald-500 text-white rotate-12 scale-110' : 'bg-white text-indigo-500 group-hover:rotate-6'}`}>
+                                    {archivo ? <Icon className="w-6 h-6 md:w-7 md:h-7" /> : <Upload className="w-6 h-6 md:w-7 md:h-7" />}
+                                </div>
+                                <div className="text-left">
+                                    <h4 className="text-base md:text-lg font-black text-slate-900 leading-tight break-all">
+                                        {archivo ? archivo.name : 'Haz clic para seleccionar'}
+                                    </h4>
+                                    <p className="text-[10px] md:text-[11px] text-slate-400 font-bold uppercase tracking-widest opacity-60">
+                                        {archivo ? `Tipo: ${TiposDisponibles.find(t => t.id === tipoSeleccionado)?.label}` : 'Auto-detección activada'}
+                                    </p>
+                                </div>
                             </div>
-
-                            <h4 className="text-lg font-black text-slate-700 mb-1">
-                                {archivo ? archivo.name : 'Haz clic o arrastra tu archivo'}
-                            </h4>
-                            <p className="text-xs text-slate-400 font-medium max-w-xs mx-auto">
-                                {archivo ? `Tipo detectado: ${TiposDisponibles.find(t => t.id === tipoSeleccionado)?.label}` : 'Detectamos el tipo automáticamente'}
-                            </p>
                         </div>
                     </div>
 
-                    {/* ZONE 2: Metadata (Optional) */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Título (Opcional)</label>
+                    {/* ZONE 2: Metadata */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                        <div className="space-y-2">
+                            <label className="block text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Título</label>
                             <input
                                 type="text"
                                 value={titulo}
                                 onChange={(e) => setTitulo(e.target.value)}
-                                placeholder={archivo ? archivo.name : "Título del recurso"}
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-medium text-sm text-slate-700"
+                                placeholder={archivo ? archivo.name : "Ej: Boceto"}
+                                className="w-full px-5 py-3 md:py-3.5 bg-slate-50 border-2 border-slate-50 rounded-xl md:rounded-[1.25rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-sm text-slate-700 outline-none"
                             />
                         </div>
-                        <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Descripción (Opcional)</label>
+                        <div className="space-y-2">
+                            <label className="block text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Descripción</label>
                             <input
                                 type="text"
                                 value={descripcion}
                                 onChange={(e) => setDescripcion(e.target.value)}
                                 placeholder="..."
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-medium text-sm text-slate-700"
+                                className="w-full px-5 py-3 md:py-3.5 bg-slate-50 border-2 border-slate-50 rounded-xl md:rounded-[1.25rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-sm text-slate-700 outline-none"
                             />
                         </div>
                     </div>
 
-                    {/* ZONE 3: Extra Content (Only for Text type or specific need) */}
+                    {/* ZONE 3: Extra Content */}
                     {!archivo && (
-                        <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Contenido de Texto (Opcional si subes archivo)</label>
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-4">
+                            <label className="block text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Tu mensaje</label>
                             <textarea
                                 value={contenidoTexto}
                                 onChange={(e) => setContenidoTexto(e.target.value)}
-                                placeholder="Escribe aquí si no subes archivo..."
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-mono text-sm resize-none"
-                                rows={3}
+                                placeholder="Escribe aquí..."
+                                className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-xl md:rounded-[1.25rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-medium text-slate-600 text-sm resize-none min-h-[100px] outline-none"
                             />
                         </div>
                     )}
+                </div>
 
-                    <div className="flex gap-3 pt-2">
-                        <button
-                            onClick={onClose}
-                            disabled={uploading}
-                            className="flex-1 px-6 py-4 bg-slate-100 text-slate-500 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handleSubirRecurso}
-                            disabled={uploading}
-                            className="flex-1 px-6 py-4 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-purple-600 transition-all shadow-lg hover:shadow-purple-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {uploading ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Publicando...
-                                </>
-                            ) : (
-                                'Publicar'
-                            )}
-                        </button>
-                    </div>
+                {/* Footer Fijo Refinado */}
+                <div className="p-4 md:p-8 border-t border-slate-50 bg-white/90 backdrop-blur-xl absolute bottom-0 left-0 right-0 md:relative shrink-0 flex items-center justify-between gap-4 z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none">
+                    <button
+                        onClick={onClose}
+                        disabled={uploading}
+                        className="px-6 md:px-10 py-4 text-slate-400 font-black text-[10px] md:text-sm uppercase tracking-[0.2em] hover:text-slate-600 hover:bg-slate-50 rounded-2xl transition-all"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={handleSubirRecurso}
+                        disabled={uploading}
+                        className="px-8 md:px-14 py-4 md:py-5 bg-slate-900 text-white rounded-[1.1rem] md:rounded-[1.5rem] font-black text-xs md:text-sm uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(0,0,0,0.2)] hover:bg-indigo-600 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 group"
+                    >
+                        {uploading ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span>...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles className="w-4 h-4 text-indigo-400 group-hover:text-white transition-colors" />
+                                <span>Publicar</span>
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
         </div>

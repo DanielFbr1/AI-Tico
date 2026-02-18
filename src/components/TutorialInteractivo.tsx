@@ -64,6 +64,11 @@ export function TutorialInteractivo({ pasos, onComplete, onSkip, onStepChange }:
               top = window.innerHeight / 2;
               left = window.innerWidth / 2;
           }
+          // Clamp values to prevent overflow
+          const tooltipWidth = Math.min(448, window.innerWidth - 32); // max-w-md is 448px
+          left = Math.max(16 + tooltipWidth / 2, Math.min(left, window.innerWidth - 16 - tooltipWidth / 2));
+          top = Math.max(16, Math.min(top, window.innerHeight - 16));
+
           setPosicion({ top, left });
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
@@ -125,15 +130,18 @@ export function TutorialInteractivo({ pasos, onComplete, onSkip, onStepChange }:
 
       {/* Tooltip del tutorial - POSICIONAMIENTO DINÁMICO */}
       <div
-        className="fixed z-[60] bg-white rounded-2xl shadow-2xl border-2 border-blue-400 p-6 max-w-md animate-bounce-in transition-all duration-300"
+        className="fixed z-[60] bg-white rounded-2xl shadow-2xl border-2 border-blue-400 p-5 md:p-6 w-[calc(100vw-2rem)] md:w-auto max-w-md animate-bounce-in transition-all duration-300 mx-auto left-0 right-0 md:mx-0 md:left-auto md:right-auto"
         style={{
-          top: paso.posicion === 'center' ? '50%' : `${posicion.top}px`,
-          left: paso.posicion === 'center' ? '50%' : `${posicion.left}px`,
-          transform: paso.posicion === 'center' ? 'translate(-50%, -50%)' :
-            paso.posicion === 'bottom' ? 'translate(-50%, 0)' :
-              paso.posicion === 'top' ? 'translate(-50%, -100%)' :
-                paso.posicion === 'right' ? 'translate(0, -50%)' :
-                  paso.posicion === 'left' ? 'translate(-100%, -50%)' : 'none',
+          top: window.innerWidth < 768 ? 'auto' : (paso.posicion === 'center' ? '50%' : `${posicion.top}px`),
+          bottom: window.innerWidth < 768 ? '120px' : 'auto',
+          left: window.innerWidth < 768 ? '50%' : (paso.posicion === 'center' ? '50%' : `${posicion.left}px`),
+          transform: window.innerWidth < 768 ? 'translateX(-50%)' : (
+            paso.posicion === 'center' ? 'translate(-50%, -50%)' :
+              paso.posicion === 'bottom' ? 'translate(-50%, 0)' :
+                paso.posicion === 'top' ? 'translate(-50%, -100%)' :
+                  paso.posicion === 'right' ? 'translate(0, -50%)' :
+                    paso.posicion === 'left' ? 'translate(-100%, -50%)' : 'none'
+          ),
           margin: 0
         }}
       >

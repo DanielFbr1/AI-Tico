@@ -275,7 +275,7 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
 
 
             {/* Messages Area */}
-            <div ref={containerRef} className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-4 bg-slate-50/30">
+            <div ref={containerRef} className="flex-1 overflow-y-auto no-scrollbar p-3 md:p-6 space-y-3 md:space-y-4 bg-slate-50/30">
                 {loading && mensajes.length === 0 ? (
                     <div className="flex justify-center p-8">
                         <Loader2 className="w-8 h-8 text-slate-300 animate-spin" />
@@ -292,7 +292,7 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
 
                         return (
                             <div key={msg.id} className={`flex flex-col ${esMio ? 'items-end' : 'items-start'}`}>
-                                <div className={`flex items-end gap-2 max-w-[85%] ${esMio ? 'flex-row-reverse' : 'flex-row'}`}>
+                                <div className={`flex items-end gap-1.5 md:gap-2 max-w-[92%] md:max-w-[85%] ${esMio ? 'flex-row-reverse' : 'flex-row'}`}>
                                     {/* Avatar */}
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 shadow-sm
                                         ${esProfe ? 'bg-purple-600 text-white' :
@@ -300,14 +300,14 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
                                         {esProfe ? 'P' : msg.remitente.charAt(0).toUpperCase()}
                                     </div>
 
-                                    <div className={`p-4 rounded-2xl text-sm shadow-sm leading-relaxed relative group
+                                    <div className={`p-3 md:p-4 rounded-2xl text-[13px] md:text-sm shadow-sm leading-relaxed relative group
                                         ${esMio
                                             ? 'bg-indigo-600 text-white rounded-br-none shadow-indigo-200'
                                             : esProfe
                                                 ? 'bg-purple-50 border border-purple-100 text-purple-800 rounded-bl-none'
                                                 : 'bg-white border border-slate-100 text-slate-700 rounded-bl-none'
                                         }`}>
-                                        {!esMio && <p className="text-[10px] font-bold opacity-50 mb-1 uppercase tracking-wider">{msg.remitente}</p>}
+                                        {!esMio && <p className="text-[9px] font-bold opacity-50 mb-0.5 uppercase tracking-wider">{msg.remitente}</p>}
 
                                         {msg.audio_url ? (
                                             <div className="flex items-center gap-2 min-w-[200px]">
@@ -339,33 +339,37 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white border-t border-slate-100">
-                <div className="flex items-center gap-3">
+            <div className="p-3 md:p-4 bg-white border-t border-slate-100 shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={isRecording ? stopRecordingRobust : startRecordingRobust}
-                        className={`p-3 rounded-xl transition-all shrink-0 ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        className={`p-3.5 rounded-2xl transition-all shrink-0 border ${isRecording
+                            ? 'bg-rose-500 text-white border-rose-400 animate-pulse shadow-lg shadow-rose-200'
+                            : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'}`}
                     >
                         {isRecording ? <StopCircle className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                     </button>
 
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        placeholder={isRecording ? "Grabando audio..." : "Escribe un mensaje al equipo..."}
-                        disabled={isRecording}
-                        className="flex-1 bg-slate-50 border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm disabled:opacity-50 px-4 py-3"
-                    />
+                    <div className="flex-1 relative">
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                            placeholder={isRecording ? "Grabando equipo..." : "Mensaje al grupo..."}
+                            disabled={isRecording}
+                            className="w-full pl-4 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 text-sm font-medium placeholder:text-slate-400 shadow-inner"
+                        />
+                    </div>
 
                     {!isRecording && (
                         <button
                             type="button"
                             onClick={() => handleSend()}
                             disabled={!input.trim()}
-                            className="bg-emerald-500 text-white p-3 rounded-xl hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-200 active:scale-95"
+                            className="w-12 h-12 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50 disabled:bg-slate-300 transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center justify-center shrink-0"
                         >
-                            <Send className="w-5 h-5" />
+                            <Send className="w-5 h-5 ml-0.5" />
                         </button>
                     )}
                 </div>

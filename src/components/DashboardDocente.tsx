@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices, Gamepad2 } from 'lucide-react';
+import { LayoutList, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices, Gamepad2, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
 import { Card_Metrica } from './Card_Metrica';
 import { Card_Grupo } from './Card_Grupo';
@@ -42,6 +42,7 @@ interface DashboardDocenteProps {
     onClaseChange: (clase: string) => void;
     onUpdateProjectName: (newName: string) => Promise<void>;
     onOpenTicoFull?: () => void;
+    hideSidebar?: boolean;
 }
 
 export function DashboardDocente({
@@ -60,7 +61,8 @@ export function DashboardDocente({
     onCambiarProyecto,
     onClaseChange,
     onUpdateProjectName,
-    onOpenTicoFull
+    onOpenTicoFull,
+    hideSidebar = false
 }: DashboardDocenteProps) {
     const [modalCrearGrupoAbierto, setModalCrearGrupoAbierto] = useState(false);
     const [menuAlumnosAbierto, setMenuAlumnosAbierto] = useState(false); // New state for dropdown
@@ -139,14 +141,17 @@ export function DashboardDocente({
         }
     };
 
-    const handleEliminarTareaGlobal = async (grupoId: string | number, hitoTitulo: string) => {
+    const handleEliminarTareaGlobal = async (grupoId: string | number, hitoId: string) => {
         const grupo = grupos.find(g => g.id === grupoId);
         if (!grupo) return;
 
-        if (!confirm(`¿Estás seguro de eliminar la tarea "${hitoTitulo}" del grupo ${grupo.nombre}?`)) return;
+        const hito = grupo.hitos?.find(h => h.id === hitoId);
+        if (!hito) return;
+
+        if (!confirm(`¿Estás seguro de eliminar la tarea "${hito.titulo}" del grupo ${grupo.nombre}?`)) return;
 
         try {
-            const nuevosHitos = (grupo.hitos || []).filter(h => h.titulo !== hitoTitulo);
+            const nuevosHitos = (grupo.hitos || []).filter(h => h.id !== hitoId);
 
             // Recalcular progreso
             const total = nuevosHitos.length;
@@ -258,6 +263,7 @@ export function DashboardDocente({
                 <ModalAsignarTareas
                     grupoNombre={grupoParaTareas.nombre}
                     faseId={proyectoActual?.fases?.find(f => f.estado === 'actual')?.id || '1'}
+                    proyectoContexto={proyectoActual?.descripcion}
                     onClose={() => setModalAsignarAbierto(false)}
                     onSave={async (nuevosHitos) => {
                         const updatedHitos = [...(grupoParaTareas.hitos || []), ...nuevosHitos] as HitoGrupo[];
@@ -308,84 +314,86 @@ export function DashboardDocente({
             )}
 
             {/* Sidebar */}
-            <aside className={`
-        fixed md:relative z-50 h-full w-72 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
-                <div className="p-6 border-b border-gray-200 flex justify-center items-center relative">
-                    <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                    <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
-                        <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
-                    </button>
-                </div>
-
-                <nav className="flex-1 p-4">
-                    <div className="hidden md:block">
-                        <button
-                            onClick={() => { onSectionChange('grupos'); setMobileMenuOpen(false); }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'grupos'
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
-                                : 'text-gray-600 hover:bg-gray-100 font-medium'
-                                }`}
-                        >
-                            <Users className="w-5 h-5" />
-                            <span>Grupos</span>
-                        </button>
-
-                        <button
-                            onClick={() => { onSectionChange('resumen'); setMobileMenuOpen(false); }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'resumen'
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
-                                : 'text-gray-600 hover:bg-gray-100 font-medium'
-                                }`}
-                        >
-                            <LayoutDashboard className="w-5 h-5" />
-                            <span>Progreso</span>
-                        </button>
-
-                        <button
-                            onClick={() => { onSectionChange('trabajo-compartido'); setMobileMenuOpen(false); }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'trabajo-compartido'
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
-                                : 'text-gray-600 hover:bg-gray-100 font-medium'
-                                }`}
-                        >
-                            <Share2 className="w-5 h-5" />
-                            <span>Trabajo compartido</span>
-                        </button>
-
-                        <button
-                            onClick={() => { onSectionChange('evaluacion'); setMobileMenuOpen(false); }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'evaluacion'
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
-                                : 'text-gray-600 hover:bg-gray-100 font-medium'
-                                }`}
-                        >
-                            <ClipboardCheck className="w-5 h-5" />
-                            <span>Evaluación</span>
+            {!modalAsistenciaOpen && !hideSidebar && (
+                <aside className={`
+            fixed md:relative z-50 h-full w-72 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300
+            ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          `}>
+                    <div className="p-6 border-b border-gray-200 flex justify-center items-center relative">
+                        <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
+                        <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
+                            <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
                     </div>
 
+                    <nav className="flex-1 p-4">
+                        <div className="hidden md:block">
+                            <button
+                                onClick={() => { onSectionChange('grupos'); setMobileMenuOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'grupos'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
+                                    : 'text-gray-600 hover:bg-gray-100 font-medium'
+                                    }`}
+                            >
+                                <Users className="w-5 h-5" />
+                                <span>Grupos</span>
+                            </button>
+
+                            <button
+                                onClick={() => { onSectionChange('resumen'); setMobileMenuOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'resumen'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
+                                    : 'text-gray-600 hover:bg-gray-100 font-medium'
+                                    }`}
+                            >
+                                <LayoutList className="w-5 h-5" />
+                                <span>Tareas</span>
+                            </button>
+
+                            <button
+                                onClick={() => { onSectionChange('trabajo-compartido'); setMobileMenuOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'trabajo-compartido'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
+                                    : 'text-gray-600 hover:bg-gray-100 font-medium'
+                                    }`}
+                            >
+                                <Share2 className="w-5 h-5" />
+                                <span>Trabajo compartido</span>
+                            </button>
+
+                            <button
+                                onClick={() => { onSectionChange('evaluacion'); setMobileMenuOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'evaluacion'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
+                                    : 'text-gray-600 hover:bg-gray-100 font-medium'
+                                    }`}
+                            >
+                                <ClipboardCheck className="w-5 h-5" />
+                                <span>Evaluación</span>
+                            </button>
+                        </div>
 
 
-                    <div className="mt-6 pt-4 border-t border-gray-200">
-                        <ListaAlumnosEnLinea proyectoId={proyectoActual?.id} grupos={grupos} />
+
+                        <div className="mt-6 pt-4 border-t border-gray-200">
+                            <ListaAlumnosEnLinea proyectoId={proyectoActual?.id} grupos={grupos} />
+                        </div>
+                    </nav>
+
+                    <div className="p-4 border-t border-gray-200">
+                        <button
+                            onClick={onIniciarTutorial}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all font-bold group"
+                        >
+                            <CircleHelp className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
+                            <span>Tutorial interactivo</span>
+                        </button>
+                        <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
+                            v3.2.1 (Performance & Control)
+                        </div>
                     </div>
-                </nav>
-
-                <div className="p-4 border-t border-gray-200">
-                    <button
-                        onClick={onIniciarTutorial}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all font-bold group"
-                    >
-                        <CircleHelp className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
-                        <span>Tutorial interactivo</span>
-                    </button>
-                    <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                        v3.1.6 (Unified AI Settings)
-                    </div>
-                </div>
-            </aside>
+                </aside>
+            )}
 
             {/* Main content */}
             <div className="flex-1 flex flex-col overflow-hidden w-full">
@@ -515,7 +523,7 @@ export function DashboardDocente({
 
                             <button
                                 onClick={() => setModalAsistenciaOpen(true)}
-                                className="flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-indigo-50 text-indigo-600 border-2 border-indigo-100 hover:border-indigo-300 rounded-2xl font-black transition-all text-[10px] md:text-xs"
+                                className="flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-indigo-50 text-indigo-600 border-2 border-indigo-100 hover:border-indigo-300 rounded-2xl font-black transition-all duration-200 active:scale-95 text-[10px] md:text-xs"
                                 title="Pasar lista"
                             >
                                 <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
@@ -600,7 +608,7 @@ export function DashboardDocente({
                                                                 <span className="bg-indigo-50 text-indigo-700 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider truncate max-w-[120px]">{task.grupoNombre}</span>
                                                                 <div className="flex items-center gap-1">
                                                                     {task.estado === 'revision' && <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" title="Pendiente de revisión"></span>}
-                                                                    <button onClick={() => handleEliminarTareaGlobal(task.grupoId, task.titulo)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Eliminar tarea">
+                                                                    <button onClick={() => handleEliminarTareaGlobal(task.grupoId, task.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Eliminar tarea">
                                                                         <Trash2 className="w-3 h-3" />
                                                                     </button>
                                                                 </div>
@@ -628,7 +636,7 @@ export function DashboardDocente({
                                                             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
                                                             <div className="flex justify-between items-start mb-2 pl-2">
                                                                 <span className="bg-slate-50 text-slate-600 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider truncate max-w-[120px]">{task.grupoNombre}</span>
-                                                                <button onClick={() => handleEliminarTareaGlobal(task.grupoId, task.titulo)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Eliminar tarea">
+                                                                <button onClick={() => handleEliminarTareaGlobal(task.grupoId, task.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Eliminar tarea">
                                                                     <Trash2 className="w-3 h-3" />
                                                                 </button>
                                                             </div>
@@ -654,7 +662,7 @@ export function DashboardDocente({
                                                         <div key={idx} className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 opacity-80 hover:opacity-100 transition-all group relative">
                                                             <div className="flex justify-between items-start mb-2">
                                                                 <span className="bg-white text-emerald-700 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider truncate max-w-[120px] border border-emerald-100">{task.grupoNombre}</span>
-                                                                <button onClick={() => handleEliminarTareaGlobal(task.grupoId, task.titulo)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Eliminar tarea">
+                                                                <button onClick={() => handleEliminarTareaGlobal(task.grupoId, task.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Eliminar tarea">
                                                                     <Trash2 className="w-3 h-3" />
                                                                 </button>
                                                             </div>
@@ -825,48 +833,50 @@ export function DashboardDocente({
                     </div>
                 </div>
             )}
-            {/* Bottom Navigation (Mobile Only) */}
-            <nav className="md:hidden fixed bottom-1 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 px-2 py-3 flex items-center justify-around z-[100] shadow-[0_10px_40px_rgb(0,0,0,0.1)] rounded-[2.5rem]">
-                <button
-                    onClick={() => onSectionChange('grupos')}
-                    className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'grupos' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
-                >
-                    <div className={`p-2 rounded-2xl transition-all ${currentSection === 'grupos' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
-                        <Users className={`w-5 h-5 ${currentSection === 'grupos' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
-                    </div>
-                    <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'grupos' ? 'opacity-100' : 'opacity-80'}`}>Grupos</span>
-                </button>
+            {/* Bottom Navigation (Mobile Only) - Hidden if any main modal is open to avoid overlapping */}
+            {!modalCrearGrupoAbierto && !modalAsignarAbierto && !modalRevisionAbierto && !modalAsistenciaOpen && !modalAjustesIAAbierto && !alumnoParaEvaluar && (
+                <nav className="md:hidden fixed bottom-1 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 px-2 py-3 flex items-center justify-around z-[100] shadow-[0_10px_40px_rgb(0,0,0,0.1)] rounded-[2.5rem] animate-in slide-in-from-bottom-5 duration-300">
+                    <button
+                        onClick={() => onSectionChange('grupos')}
+                        className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'grupos' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                    >
+                        <div className={`p-2 rounded-2xl transition-all ${currentSection === 'grupos' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                            <Users className={`w-5 h-5 ${currentSection === 'grupos' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                        </div>
+                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'grupos' ? 'opacity-100' : 'opacity-80'}`}>Grupos</span>
+                    </button>
 
-                <button
-                    onClick={() => onSectionChange('resumen')}
-                    className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'resumen' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
-                >
-                    <div className={`p-2 rounded-2xl transition-all ${currentSection === 'resumen' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
-                        <LayoutDashboard className={`w-5 h-5 ${currentSection === 'resumen' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
-                    </div>
-                    <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'resumen' ? 'opacity-100' : 'opacity-80'}`}>Progreso</span>
-                </button>
+                    <button
+                        onClick={() => onSectionChange('resumen')}
+                        className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'resumen' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                    >
+                        <div className={`p-2 rounded-2xl transition-all ${currentSection === 'resumen' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                            <LayoutList className={`w-5 h-5 ${currentSection === 'resumen' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                        </div>
+                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'resumen' ? 'opacity-100' : 'opacity-80'}`}>Tareas</span>
+                    </button>
 
-                <button
-                    onClick={() => onSectionChange('trabajo-compartido')}
-                    className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'trabajo-compartido' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
-                >
-                    <div className={`p-2 rounded-2xl transition-all ${currentSection === 'trabajo-compartido' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
-                        <Share2 className={`w-5 h-5 ${currentSection === 'trabajo-compartido' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
-                    </div>
-                    <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'trabajo-compartido' ? 'opacity-100' : 'opacity-80'}`}>Trabajo</span>
-                </button>
+                    <button
+                        onClick={() => onSectionChange('trabajo-compartido')}
+                        className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'trabajo-compartido' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                    >
+                        <div className={`p-2 rounded-2xl transition-all ${currentSection === 'trabajo-compartido' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                            <Share2 className={`w-5 h-5 ${currentSection === 'trabajo-compartido' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                        </div>
+                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'trabajo-compartido' ? 'opacity-100' : 'opacity-80'}`}>Trabajo</span>
+                    </button>
 
-                <button
-                    onClick={() => onSectionChange('evaluacion')}
-                    className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'evaluacion' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
-                >
-                    <div className={`p-2 rounded-2xl transition-all ${currentSection === 'evaluacion' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
-                        <ClipboardCheck className={`w-5 h-5 ${currentSection === 'evaluacion' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
-                    </div>
-                    <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'evaluacion' ? 'opacity-100' : 'opacity-80'}`}>Evaluación</span>
-                </button>
-            </nav>
+                    <button
+                        onClick={() => onSectionChange('evaluacion')}
+                        className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'evaluacion' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                    >
+                        <div className={`p-2 rounded-2xl transition-all ${currentSection === 'evaluacion' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                            <ClipboardCheck className={`w-5 h-5 ${currentSection === 'evaluacion' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                        </div>
+                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'evaluacion' ? 'opacity-100' : 'opacity-80'}`}>Evaluación</span>
+                    </button>
+                </nav>
+            )}
         </div>
     );
 }

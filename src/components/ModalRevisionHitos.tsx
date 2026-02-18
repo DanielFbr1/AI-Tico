@@ -56,12 +56,8 @@ export function ModalRevisionHitos({ grupos, onClose, onUpdateBatch }: ModalRevi
 
         if (updates.length > 0) {
             await onUpdateBatch(selectedGrupo.id, updates);
-        }
-
-        // Reset or close if empty
-        const remaining = (selectedGrupo.hitos || []).filter(h => h.estado === 'revision' && (!decisiones[h.id] || decisiones[h.id].accion === 'pendiente')).length;
-        if (remaining === 0) {
-            setSelectedGroupId(null); // Go back to list
+            toast.success("Cambios aplicados correctamente");
+            onClose(); // Close the entire modal after saving
         }
     };
 

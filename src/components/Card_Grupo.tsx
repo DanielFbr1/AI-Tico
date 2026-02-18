@@ -49,14 +49,14 @@ export function Card_Grupo({ grupo, onClick, onEdit, onDelete, onAssignTasks, on
     >
       {/* Botones de acción rápidos */}
       {(mostrarBotonEditar || mostrarBotonBorrar || onAssignTasks) && (
-        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all z-20">
+        <div className="absolute top-4 right-4 flex gap-2 md:opacity-0 md:group-hover:opacity-100 transition-all z-20">
           {onAssignTasks && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onAssignTasks();
               }}
-              className="p-2.5 bg-white shadow-sm border border-slate-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
+              className="p-2 md:p-2.5 bg-white shadow-md border border-slate-100 rounded-xl text-slate-500 md:text-slate-400 hover:text-indigo-600 transition-all active:scale-95"
               title="Asignar Tareas con IA"
             >
               <ClipboardList className="w-4 h-4" />
@@ -69,7 +69,7 @@ export function Card_Grupo({ grupo, onClick, onEdit, onDelete, onAssignTasks, on
                 e.stopPropagation();
                 onEdit();
               }}
-              className="p-2.5 bg-white shadow-sm border border-slate-100 rounded-xl text-slate-400 hover:text-blue-600 transition-all"
+              className="p-2 md:p-2.5 bg-white shadow-md border border-slate-100 rounded-xl text-slate-500 md:text-slate-400 hover:text-blue-600 transition-all active:scale-95"
               title="Editar grupo"
             >
               <Edit2 className="w-4 h-4" />
@@ -81,7 +81,7 @@ export function Card_Grupo({ grupo, onClick, onEdit, onDelete, onAssignTasks, on
                 e.stopPropagation();
                 onDelete();
               }}
-              className="p-2.5 bg-white shadow-sm border border-slate-100 rounded-xl text-slate-400 hover:text-red-500 transition-all"
+              className="p-2 md:p-2.5 bg-white shadow-md border border-slate-100 rounded-xl text-slate-500 md:text-slate-400 hover:text-red-500 transition-all active:scale-95"
               title="Eliminar grupo"
             >
               <Trash2 className="w-4 h-4" />

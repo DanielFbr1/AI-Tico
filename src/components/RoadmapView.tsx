@@ -5,7 +5,7 @@ import { ProyectoFase, HitoGrupo } from '../types';
 interface RoadmapViewProps {
     fases: ProyectoFase[];
     hitosGrupo: HitoGrupo[];
-    onToggleHito: (faseId: string, hitoTitulo: string, currentEstado: string) => void;
+    onToggleHito: (faseId: string, hitoTitulo: string, currentEstado: string, hitoId?: string) => void;
     currentPhaseId?: string;
     readOnly?: boolean;
     layout?: 'horizontal' | 'vertical' | 'compact-grid';
@@ -24,13 +24,14 @@ export function RoadmapView({ fases = [], hitosGrupo, onToggleHito, currentPhase
 
     // LAYOUT TAREAS (KANBAN: Pendientes, En Curso, Completadas)
     if (layout === 'compact-grid') {
-        const allTasks: { faseId: string, faseNombre: string, titulo: string, status: string }[] = [];
+        const allTasks: { id?: string, faseId: string, faseNombre: string, titulo: string, status: string }[] = [];
 
         fases.forEach(fase => {
             const customHitos = hitosGrupo.filter(h => h.fase_id === fase.id);
             if (customHitos.length > 0) {
                 customHitos.forEach(h => {
                     allTasks.push({
+                        id: h.id,
                         faseId: fase.id,
                         faseNombre: fase.nombre,
                         titulo: h.titulo,
@@ -61,7 +62,7 @@ export function RoadmapView({ fases = [], hitosGrupo, onToggleHito, currentPhase
 
                                 {task.status === 'pendiente' && !readOnly && (
                                     <button
-                                        onClick={() => onToggleHito(task.faseId, task.titulo, task.status)}
+                                        onClick={() => onToggleHito(task.faseId, task.titulo, task.status, task.id)}
                                         className="w-full py-1.5 bg-slate-50 hover:bg-indigo-50 text-indigo-500 rounded-lg text-xs font-bold border border-slate-100 hover:border-indigo-100 transition-colors"
                                     >
                                         Empezar Tarea
@@ -76,7 +77,7 @@ export function RoadmapView({ fases = [], hitosGrupo, onToggleHito, currentPhase
                                         </div>
                                         {!readOnly && (
                                             <button
-                                                onClick={() => onToggleHito(task.faseId, task.titulo, task.status)}
+                                                onClick={() => onToggleHito(task.faseId, task.titulo, task.status, task.id)}
                                                 className="w-full py-1.5 bg-white hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold border border-rose-200 hover:border-rose-300 transition-colors flex items-center justify-center gap-1 shadow-sm"
                                             >
                                                 Corregir y Reenviar
@@ -87,7 +88,7 @@ export function RoadmapView({ fases = [], hitosGrupo, onToggleHito, currentPhase
 
                                 {task.status === 'en_progreso' && !readOnly && (
                                     <button
-                                        onClick={() => onToggleHito(task.faseId, task.titulo, task.status)}
+                                        onClick={() => onToggleHito(task.faseId, task.titulo, task.status, task.id)}
                                         className="w-full py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg text-xs font-bold border border-amber-100 hover:border-amber-200 transition-colors flex items-center justify-center gap-1"
                                     >
                                         Enviar a Revisión
@@ -195,7 +196,7 @@ export function RoadmapView({ fases = [], hitosGrupo, onToggleHito, currentPhase
                                                 <div className="flex items-center gap-4">
                                                     <button
                                                         disabled={readOnly || status === 'aprobado' || status === 'revision'}
-                                                        onClick={() => onToggleHito(fase.id, hitoTitulo, status)}
+                                                        onClick={() => onToggleHito(fase.id, hitoTitulo, status, hito?.id)}
                                                         className={`shrink-0 transition-transform active:scale-95 ${readOnly ? 'cursor-default' : 'cursor-pointer'}`}
                                                     >
                                                         {status === 'aprobado' ? (
@@ -311,7 +312,7 @@ export function RoadmapView({ fases = [], hitosGrupo, onToggleHito, currentPhase
                                     <div className="flex items-center gap-4">
                                         <button
                                             disabled={readOnly || status === 'aprobado' || status === 'revision'}
-                                            onClick={() => onToggleHito(activePhase, hitoTitulo, status)}
+                                            onClick={() => onToggleHito(activePhase, hitoTitulo, status, hitosGrupo.find(h => h.fase_id === activePhase && h.titulo === hitoTitulo)?.id)}
                                             className={`shrink-0 transition-transform active:scale-95 ${readOnly ? 'cursor-default' : 'cursor-pointer'
                                                 }`}
                                         >

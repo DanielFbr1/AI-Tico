@@ -81,25 +81,25 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
             <div className="bg-white/95 backdrop-blur-xl rounded-[2.5rem] w-full max-w-5xl overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] flex flex-col max-h-[95vh] border border-white/20">
                 {/* Header - More Compact */}
-                <div className="bg-slate-900 text-white px-8 py-5 flex justify-between items-center shrink-0 border-b border-slate-800">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-yellow-400 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(250,204,21,0.4)] animate-pulse">
-                            <Trophy className="w-7 h-7 text-slate-900" />
+                <div className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-800">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.3)]">
+                            <Trophy className="w-5 h-5 text-slate-900" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black tracking-tight leading-tight">
+                            <h2 className="text-lg font-black tracking-tight leading-tight">
                                 Sorteo Mágico
                             </h2>
-                            <p className="text-slate-400 text-xs uppercase font-bold tracking-widest">
+                            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">
                                 {alumnos.length} Alumnos • <span className="text-yellow-500 font-mono">{codigoSala}</span>
                             </p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors group"
+                        className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors group"
                     >
-                        <X className="w-6 h-6 text-slate-400 group-hover:text-white group-hover:rotate-90 transition-all duration-300" />
+                        <X className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
                     </button>
                 </div>
 
