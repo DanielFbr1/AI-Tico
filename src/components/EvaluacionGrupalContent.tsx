@@ -242,22 +242,22 @@ export function EvaluacionGrupalContent({ grupo, onSave, onCancel, rubricaProyec
     return (
         <div className={`flex flex-col ${isModal ? 'h-[80vh]' : 'h-full'} bg-[#fbfbfe]`}>
             {/* Header for both Tab and Modal, adjusted for context */}
-            <div className={`bg-white border-b border-gray-100 flex justify-between items-center shadow-sm shrink-0 ${isModal ? 'p-6' : 'p-8 rounded-t-[2.5rem]'}`}>
-                <div className="flex items-center gap-4">
-                    <div className={`bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-100 flex items-center justify-center ${isModal ? 'p-2 w-10 h-10' : 'p-3 w-14 h-14'}`}>
-                        <Users className={isModal ? 'w-5 h-5' : 'w-7 h-7'} />
+            <div className={`bg-white border-b border-gray-100 flex justify-between items-center shadow-sm shrink-0 ${isModal ? 'p-4 md:p-6' : 'p-6 md:p-8 rounded-t-[1.5rem] md:rounded-t-[2.5rem]'}`}>
+                <div className="flex items-center gap-3 md:gap-4">
+                    <div className={`bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-100 flex items-center justify-center ${isModal ? 'p-2 w-8 h-8 md:w-10 md:h-10' : 'p-2 w-10 h-10 md:p-3 md:w-14 md:h-14'}`}>
+                        <Users className={isModal ? 'w-4 h-4 md:w-5 md:h-5' : 'w-5 h-5 md:w-7 md:h-7'} />
                     </div>
                     <div>
-                        <h2 className={`${isModal ? 'text-lg' : 'text-2xl'} font-black text-gray-900 tracking-tight`}>
+                        <h2 className={`${isModal ? 'text-base md:text-lg' : 'text-xl md:text-2xl'} font-black text-gray-900 tracking-tight`}>
                             {isModal ? `Evaluando: ${grupo.nombre}` : 'Evaluación Grupal'}
                         </h2>
-                        {!isModal && <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Aplica a todo el equipo</p>}
-                        {isModal && <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mt-0.5">Control de Calificaciones</p>}
+                        {!isModal && <p className="text-[10px] md:text-sm font-bold text-gray-500 uppercase tracking-wider">Aplica a todo el equipo</p>}
+                        {isModal && <p className="text-[9px] md:text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mt-0.5">Control de Calificaciones</p>}
                     </div>
                 </div>
             </div>
 
-            <div className={`flex-1 overflow-y-auto p-6 md:p-8 space-y-8`}>
+            <div className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8`}>
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200 flex items-center justify-between">
                     <div>
                         <span className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1 block">Nota Media del Grupo</span>

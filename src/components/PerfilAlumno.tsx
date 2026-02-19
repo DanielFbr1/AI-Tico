@@ -237,17 +237,17 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
         <div className={`bg-gradient-to-r ${getDepartamentoColor('General')} text-white relative overflow-hidden shrink-0`}>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/3 translate-x-1/3 blur-3xl"></div>
 
-          <div className="relative z-10 px-6 py-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg text-3xl font-black border-2 border-white/20 shrink-0">
+          <div className="relative z-10 px-4 md:px-6 py-4 md:py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 md:gap-5">
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg text-2xl md:text-3xl font-black border-2 border-white/20 shrink-0">
                 <span className={`bg-gradient-to-br ${getDepartamentoColor('General')} bg-clip-text text-transparent`}>
                   {alumno.charAt(0).toUpperCase()}
                 </span>
               </div>
 
               <div>
-                <h2 className="text-2xl font-black drop-shadow-sm tracking-tight leading-none mb-1">{alumno}</h2>
-                <div className="flex items-center gap-2 text-xs font-medium text-white/80">
+                <h2 className="text-xl md:text-2xl font-black drop-shadow-sm tracking-tight leading-none mb-1">{alumno}</h2>
+                <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-white/80">
                   <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {grupo.nombre}</span>
                   <span>•</span>
                   <span>General</span>
@@ -255,12 +255,12 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
-              <div className="bg-white/10 rounded-2xl px-5 py-2 backdrop-blur-md border border-white/20 shadow-lg flex flex-col items-center justify-center min-w-[100px]">
-                <div className="text-white/70 text-[9px] font-black uppercase tracking-widest">Nota Grupal</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black tracking-tighter shadow-black drop-shadow-md">{notaMedia.toFixed(1)}</span>
-                  <span className="text-xs font-bold opacity-60">/10</span>
+            <div className="flex items-center gap-4 md:gap-6 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="bg-white/10 rounded-2xl px-4 md:px-5 py-1.5 md:py-2 backdrop-blur-md border border-white/20 shadow-lg flex flex-col items-center justify-center min-w-[80px] md:min-w-[100px]">
+                <div className="text-white/70 text-[8px] md:text-[9px] font-black uppercase tracking-widest leading-none mb-1">Nota Grupal</div>
+                <div className="flex items-baseline gap-1 leading-none">
+                  <span className="text-2xl md:text-3xl font-black tracking-tighter shadow-black drop-shadow-md">{notaMedia.toFixed(1)}</span>
+                  <span className="text-[10px] md:text-xs font-bold opacity-60">/10</span>
                 </div>
               </div>
 
@@ -277,7 +277,7 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
               <h3 className="text-lg font-black text-slate-800 mb-5 uppercase tracking-tight flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-indigo-600" /> Rendimiento Clave
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex items-center gap-5 hover:scale-[1.02] transition-transform">
                   <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shrink-0">
                     <Users className="w-8 h-8" />
@@ -340,9 +340,9 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                       const hasComment = cleanComment.length > 0;
 
                       return (
-                        <div key={index} className={`bg-gray-50 rounded-xl border-2 border-gray-200 transition-all hover:bg-white hover:shadow-md ${hasComment ? 'p-6' : 'p-4 items-center'}`}>
-                          <div className={`flex justify-between ${hasComment ? 'items-start' : 'items-center'}`}>
-                            <div className="flex-1 mr-6">
+                        <div key={index} className={`bg-gray-50 rounded-xl border-2 border-gray-200 transition-all hover:bg-white hover:shadow-md ${hasComment ? 'p-4 md:p-6' : 'p-3 md:p-4 items-center'}`}>
+                          <div className={`flex flex-col md:flex-row justify-between ${hasComment ? 'items-start' : 'items-center'} gap-4`}>
+                            <div className="flex-1 w-full md:mr-6">
                               <h4 className={`font-bold text-gray-900 text-lg ${hasComment ? 'mb-2' : 'mb-0'}`}>{item.nombre}</h4>
                               {hasComment && (
                                 <p className="text-gray-700 font-medium text-base leading-relaxed bg-white p-3 rounded-lg border border-gray-100 shadow-sm inline-block">
@@ -351,14 +351,15 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                               )}
                             </div>
 
-                            <div className="text-right flex flex-col items-end gap-2 min-w-[120px]">
-                              <span className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-bold rounded-lg shadow-sm border border-white/20 uppercase tracking-wider ${getNivelColor(item.puntos)}`}>
+                            <div className="text-right flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start gap-2 min-w-full md:min-w-[120px]">
+                              <span className={`inline-flex items-center gap-2 px-3 py-1 text-[10px] md:text-xs font-bold rounded-lg shadow-sm border border-white/20 uppercase tracking-wider ${getNivelColor(item.puntos)}`}>
                                 {getNivelIcon(item.puntos)}
-                                {getNivelFromPuntos(item.puntos)}
+                                <span className="hidden sm:inline">{getNivelFromPuntos(item.puntos)}</span>
+                                <span className="sm:hidden">{getNivelFromPuntos(item.puntos).slice(0, 4)}.</span>
                               </span>
-                              <div className="text-3xl font-black text-gray-900 leading-none flex items-baseline gap-1">
+                              <div className="text-2xl md:text-3xl font-black text-gray-900 leading-none flex items-baseline gap-1">
                                 {Number(item.puntos).toFixed(1)}
-                                <span className="text-sm text-gray-400 font-bold">/10</span>
+                                <span className="text-xs md:text-sm text-gray-400 font-bold">/10</span>
                               </div>
                             </div>
                           </div>

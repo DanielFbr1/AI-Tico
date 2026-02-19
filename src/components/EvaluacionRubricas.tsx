@@ -460,10 +460,22 @@ export function EvaluacionRubricas({ rubrica, grupos = [], proyectoId }: Evaluac
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-6 py-4 font-black text-slate-700 w-1/4">Criterio</th>
-                    <th className="px-4 py-3 font-bold text-center text-red-700 bg-red-50/50 min-w-[140px]">Insuficiente</th>
-                    <th className="px-4 py-3 font-bold text-center text-orange-700 bg-orange-50/50 min-w-[140px]">Suficiente</th>
-                    <th className="px-4 py-3 font-bold text-center text-blue-700 bg-blue-50/50 min-w-[140px]">Notable</th>
-                    <th className="px-4 py-3 font-bold text-center text-green-700 bg-green-50/50 min-w-[140px]">Sobresaliente</th>
+                    <th className="px-3 py-3 font-bold text-center text-red-700 bg-red-50/50 min-w-[100px] md:min-w-[140px]">
+                      <span className="hidden md:inline">Insuficiente</span>
+                      <span className="md:hidden">Insuf.</span>
+                    </th>
+                    <th className="px-3 py-3 font-bold text-center text-orange-700 bg-orange-50/50 min-w-[100px] md:min-w-[140px]">
+                      <span className="hidden md:inline">Suficiente</span>
+                      <span className="md:hidden">Sufic.</span>
+                    </th>
+                    <th className="px-3 py-3 font-bold text-center text-blue-700 bg-blue-50/50 min-w-[100px] md:min-w-[140px]">
+                      <span className="hidden md:inline">Notable</span>
+                      <span className="md:hidden">Notab.</span>
+                    </th>
+                    <th className="px-3 py-3 font-bold text-center text-green-700 bg-green-50/50 min-w-[100px] md:min-w-[140px]">
+                      <span className="hidden md:inline">Sobresaliente</span>
+                      <span className="md:hidden">Sobres.</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -472,7 +484,7 @@ export function EvaluacionRubricas({ rubrica, grupos = [], proyectoId }: Evaluac
                     while (nivelesArray.length < 4) nivelesArray.push({ puntos: ['0-4', '5-6', '7-8', '9-10'][nivelesArray.length] || '0', descripcion: '' });
                     return (
                       <tr key={index} className="hover:bg-slate-50 transition-colors group">
-                        <td className="px-6 py-4 border-r border-slate-100 align-top relative group/cell min-w-[300px]">
+                        <td className="px-4 py-4 border-r border-slate-100 align-top relative group/cell min-w-[150px] md:min-w-[300px]">
                           <div className="flex justify-between items-start gap-2">
                             <div className="flex-1">
                               <input type="text" value={criterio.nombre} onChange={(e) => updateCriterio(index, 'nombre', e.target.value)} className="font-bold text-slate-800 text-sm mb-1 w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none" />

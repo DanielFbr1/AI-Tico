@@ -23,6 +23,13 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
     // Wheel constants - Vibrant dark colors for maximum text contrast
     const colors = ['#2563eb', '#7c3aed', '#db2777', '#ca8a04', '#059669', '#4f46e5', '#dc2626', '#0891b2'];
     const wheelRef = useRef<HTMLDivElement>(null);
+    const [mobileTab, setMobileTab] = useState<'wheel' | 'controls'>(mode === 'single' ? 'wheel' : 'controls');
+
+    // Sync mobile tab when mode changes via desktop interface logic (just in case)
+    useEffect(() => {
+        if (mode === 'single') setMobileTab('wheel');
+        else if (generatedGroups.length === 0) setMobileTab('controls');
+    }, [mode]);
 
     const spinWheel = () => {
         if (alumnos.length < 1) return;
@@ -78,8 +85,8 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
-            <div className="bg-white/95 backdrop-blur-xl rounded-[2.5rem] w-full max-w-5xl overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] flex flex-col max-h-[95vh] border border-white/20">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-300">
+            <div className="bg-white rounded-none md:rounded-[2.5rem] w-full h-full md:h-auto md:max-w-5xl overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] flex flex-col md:max-h-[95vh] border-none md:border md:border-white/20">
                 {/* Header - More Compact */}
                 <div className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-800">
                     <div className="flex items-center gap-3">
@@ -103,11 +110,11 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                     </button>
                 </div>
 
-                {/* Main View - Two Columns */}
+                {/* Main View - Simplified for Mobile */}
                 <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-slate-50/50">
 
-                    {/* Column 1: The Wheel (Always visible if pupils exist) */}
-                    <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 relative border-b md:border-b-0 md:border-r border-slate-200/60 overflow-hidden">
+                    {/* Column 1: The Wheel */}
+                    <div className={`flex-1 flex flex-col items-center justify-center p-4 md:p-12 relative border-b md:border-b-0 md:border-r border-slate-200/60 overflow-hidden ${mobileTab === 'wheel' ? 'flex' : 'hidden md:flex'}`}>
 
                         {loading ? (
                             <div className="flex flex-col items-center gap-4">
@@ -121,7 +128,7 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                 <p className="text-slate-500 text-sm">Los alumnos deben entrar con el código para aparecer aquí.</p>
                             </div>
                         ) : (
-                            <div className="relative w-full max-w-[420px] aspect-square flex items-center justify-center">
+                            <div className="relative w-full max-w-[280px] md:max-w-[420px] aspect-square flex items-center justify-center my-4 md:my-0">
                                 {/* Pointer - More Stylized */}
                                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-30 drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
                                     <div className="w-10 h-12 bg-slate-900 rounded-b-lg flex items-center justify-center p-1">
@@ -200,7 +207,7 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                     </div>
 
                     {/* Column 2: Controls & Results */}
-                    <div className="w-full md:w-[400px] flex flex-col p-8 bg-white shrink-0">
+                    <div className={`w-full md:w-[400px] flex flex-col p-6 md:p-8 bg-white shrink-0 overflow-y-auto ${mobileTab === 'controls' ? 'flex' : 'hidden md:flex'}`}>
 
                         {/* Mode Switcher */}
                         <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 mb-8">
@@ -326,6 +333,31 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                             )}
                         </div>
                     </div>
+                </div>
+
+                {/* Mobile Bottom Navigation Bar */}
+                <div className="md:hidden flex border-t border-slate-100 bg-white p-2 safe-bottom">
+                    <button
+                        onClick={() => { setMode('single'); setMobileTab('wheel'); }}
+                        className={`flex-1 flex flex-col items-center py-2 gap-1 rounded-xl transition-all ${mobileTab === 'wheel' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
+                    >
+                        <Shuffle className="w-5 h-5" />
+                        <span className="text-[10px] font-black uppercase">Ruleta</span>
+                    </button>
+                    <button
+                        onClick={() => { setMode('groups'); setMobileTab('controls'); }}
+                        className={`flex-1 flex flex-col items-center py-2 gap-1 rounded-xl transition-all ${mobileTab === 'controls' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
+                    >
+                        <Users className="w-5 h-5" />
+                        <span className="text-[10px] font-black uppercase">Grupos</span>
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="flex-1 flex flex-col items-center py-2 gap-1 text-slate-400"
+                    >
+                        <X className="w-5 h-5" />
+                        <span className="text-[10px] font-black uppercase">Cerrar</span>
+                    </button>
                 </div>
             </div>
         </div>

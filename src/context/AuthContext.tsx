@@ -67,11 +67,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setPerfil(fetchedPerfil);
                 console.log("✅ Perfil cargado:", metadata.rol);
             } else {
+                // Check for pending role from social login
+                const pendingRole = localStorage.getItem('pendingRole') as Perfil['rol'] | null;
+                if (pendingRole) {
+                    console.log("📝 Aplicando rol pendiente:", pendingRole);
+
+                    // Update metadata
+                    await supabase.auth.updateUser({
+                        data: { rol: pendingRole }
+                    });
+
+                    // Update profiles table
+                    await supabase.from('profiles').upsert({
+                        id: user.id,
+                        rol: pendingRole,
+                        nombre: user.email?.split('@')[0] || 'Usuario'
+                    });
+
+                    setPerfil({
+                        id: user.id,
+                        nombre: user.email?.split('@')[0] || 'Usuario',
+                        rol: pendingRole
+                    });
+
+                    localStorage.removeItem('pendingRole');
+                    return;
+                }
+
                 console.error("❌ Usuario sin rol en Metadata ni DB. Asignando 'alumno' por defecto para seguridad.");
                 setPerfil({
                     id: user.id,
                     nombre: user.email?.split('@')[0] || 'Usuario',
-                    rol: 'alumno' // Safer default than teacher
+                    rol: 'alumno'
                 });
             }
         } catch (err) {

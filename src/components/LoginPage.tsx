@@ -140,6 +140,10 @@ export function LoginPage() {
     const handleSocialLogin = async (provider: 'google' | 'azure') => {
         try {
             setLoading(true);
+            // Guardar el rol seleccionado para recuperarlo al volver del OAuth
+            const targetRole = (view === 'teacher-auth') ? 'profesor' : (view === 'family-auth') ? 'familia' : 'alumno';
+            localStorage.setItem('pendingRole', targetRole);
+
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
@@ -187,79 +191,114 @@ export function LoginPage() {
 
     if (view === 'selection') {
         return (
-            <div className="min-h-screen bg-[#4f39f6] flex items-center justify-center p-4 selection:bg-white selection:text-[#4f39f6]">
-                <div className="max-w-6xl w-full">
-                    {/* Header y Botones de Selección */}
-                    <div className="text-center mb-8 md:mb-16">
-                        <h1 className="text-6xl md:text-8xl font-black text-white mb-4 md:mb-6 tracking-tight drop-shadow-[0_4px_0_rgba(0,0,0,0.2)]">
-                            AI Tico
+            <div className="h-[100dvh] w-full bg-[#0B101E] flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+                {/* Capa 1: Fondo (Imagen 3D) - Sin filtros para máxima nitidez */}
+                <div className="absolute inset-0 z-0 select-none pointer-events-none">
+                    <img
+                        src="/tico/Main_menu_bg4.jpg"
+                        alt="Digital Learning Forest Background"
+                        className="w-full h-full object-cover object-center scale-[1.05] translate-x-4 translate-y-4 md:scale-[1.08] md:translate-x-12 md:translate-y-0 contrast-[1.01] md:contrast-[1.01] md:[image-rendering:high-quality]"
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/tico/bg_nido_digital.jpg';
+                            (e.target as HTMLImageElement).classList.add('opacity-50', 'mix-blend-luminosity');
+                        }}
+                    />
+                </div>
+
+                {/* Capa 2: Tico (Desktop Absolute - Sobre el pedestal) */}
+                <div className="hidden md:block absolute z-10 bottom-[-2%] md:left-[8%] lg:left-[13%] w-[450px] lg:w-[580px] pointer-events-none transition-all duration-500">
+                    <img
+                        src="/assets/tico_icon.png"
+                        alt="Tico Icon"
+                        className="w-full h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                    />
+                </div>
+
+                {/* Capa 3: UI (Textos y Paneles) */}
+                <div className="w-full max-w-7xl relative z-20 flex flex-col h-full p-6 md:p-12 justify-center">
+
+                    {/* Header - Centrado */}
+                    <div className="w-full text-center mt-0 md:mt-[-2rem] md:mb-auto shrink-0">
+                        <h1 className="text-4xl md:text-5xl lg:text-7xl font-black text-white mb-2 tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]">
+                            AI-Tico
                         </h1>
-                        <p className="text-xl md:text-2xl text-white/90 font-bold tracking-wide">Plataforma de Innovación ABP</p>
+                        <p className="text-sm md:text-xl text-white font-bold tracking-wide drop-shadow-md">
+                            Crea y organiza tus proyectos con IA.
+                        </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
-                        {/* Profesor */}
-                        <button
-                            onClick={() => {
-                                setView('teacher-auth');
-                                setIsSignUp(false);
-                            }}
-                            className="group relative bg-white rounded-3xl p-6 md:p-8 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all duration-100 hover:bg-gray-50 overflow-hidden text-left"
-                        >
-                            <div className="relative z-10">
-                                <div className="w-16 h-16 md:w-20 md:h-20 bg-[#00d4ff] rounded-2xl flex items-center justify-center mb-4 md:mb-6 shadow-[0_4px_0_#009ac2]">
-                                    <GraduationCap className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                                </div>
-                                <h2 className="text-2xl md:text-3xl font-black text-slate-700 mb-2 md:mb-3 tracking-tight">Soy Profesor/a</h2>
-                                <p className="text-slate-500 mb-4 md:mb-6 font-bold leading-relaxed text-sm md:text-base">Gestiona proyectos, evalúa y configura a Tico.</p>
-                                <div className="flex items-center justify-end gap-2 text-[#00d4ff] font-black uppercase tracking-widest group-hover:gap-4 transition-all text-sm md:text-base">
-                                    <span>Acceso Docente</span>
-                                    <ArrowRight className="w-5 h-5" />
-                                </div>
-                            </div>
-                        </button>
+                    {/* Tico Mobile - Solo visible en móvil, entre título y paneles */}
+                    <div className="md:hidden w-full flex justify-center my-6 shrink-0">
+                        <img
+                            src="/assets/tico_icon.png"
+                            alt="Tico Icon Mobile"
+                            className="w-[200px] h-auto drop-shadow-2xl"
+                        />
+                    </div>
 
-                        {/* Alumno */}
-                        <button
-                            onClick={() => {
-                                setView('student-auth'); // DIRECT TO AUTH, SKIP VERIFY
-                                setIsSignUp(false);
-                            }}
-                            className="group relative bg-white rounded-3xl p-6 md:p-8 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all duration-100 hover:bg-gray-50 overflow-hidden text-left"
-                        >
-                            <div className="relative z-10">
-                                <div className="w-16 h-16 md:w-20 md:h-20 bg-[#ff007a] rounded-2xl flex items-center justify-center mb-4 md:mb-6 shadow-[0_4px_0_#b30055]">
-                                    <User className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                                </div>
-                                <h2 className="text-2xl md:text-3xl font-black text-slate-700 mb-2 md:mb-3 tracking-tight">Soy Alumno/a</h2>
-                                <p className="text-slate-500 mb-4 md:mb-6 font-bold leading-relaxed text-sm md:text-base">Únete a tu clase, habla con Tico y mira tu progreso.</p>
-                                <div className="flex items-center justify-end gap-2 text-[#ff007a] font-black uppercase tracking-widest group-hover:gap-4 transition-all text-sm md:text-base">
-                                    <span>Acceso Alumno</span>
-                                    <ArrowRight className="w-5 h-5" />
-                                </div>
-                            </div>
-                        </button>
+                    {/* Contenedor de Cuerpo - Para móvil centrado, para desktop paneles a la derecha */}
+                    <div className="w-full flex flex-col md:flex-row items-center justify-center md:justify-end md:flex-1 md:mt-24">
+                        <div className="w-full max-w-sm md:max-w-md lg:max-w-lg mb-4 md:mb-0">
+                            <div className="grid grid-cols-1 gap-3 md:gap-5">
+                                {/* Docente */}
+                                <button
+                                    onClick={() => {
+                                        setView('teacher-auth');
+                                        setIsSignUp(false);
+                                    }}
+                                    className="group flex items-center text-left bg-white/10 hover:bg-white/20 border border-white/20 hover:border-cyan-400 rounded-2xl p-4 md:p-5 backdrop-blur-xl transition-all duration-300 relative overflow-hidden shadow-2xl"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-12 h-12 md:w-14 md:h-14 bg-cyan-500/30 rounded-xl flex items-center justify-center shrink-0 mr-4 border border-cyan-400/50 shadow-[0_0_20px_rgba(34,211,238,0.3)]">
+                                        <GraduationCap className="w-6 h-6 md:w-7 md:h-7 text-cyan-300" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Docente</h2>
+                                    </div>
+                                    <ArrowRight className="w-5 h-5 text-cyan-300 opacity-50 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
+                                </button>
 
-                        {/* Familia */}
-                        <button
-                            onClick={() => {
-                                setView('family-auth');
-                                setIsSignUp(false);
-                            }}
-                            className="group relative bg-white rounded-3xl p-6 md:p-8 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all duration-100 hover:bg-gray-50 overflow-hidden text-left md:col-span-2"
-                        >
-                            <div className="relative z-10">
-                                <div className="w-16 h-16 md:w-20 md:h-20 bg-[#10b981] rounded-2xl flex items-center justify-center mb-4 md:mb-6 shadow-[0_4px_0_#059669]">
-                                    <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                                </div>
-                                <h2 className="text-2xl md:text-3xl font-black text-slate-700 mb-2 md:mb-3 tracking-tight">Soy Familia</h2>
-                                <p className="text-slate-500 mb-4 md:mb-6 font-bold leading-relaxed text-sm md:text-base">Consulta las notas y el progreso de tus hijos.</p>
-                                <div className="flex items-center justify-end gap-2 text-[#10b981] font-black uppercase tracking-widest group-hover:gap-4 transition-all text-sm md:text-base">
-                                    <span>Acceso Familia</span>
-                                    <ArrowRight className="w-5 h-5" />
-                                </div>
+                                {/* Alumno */}
+                                <button
+                                    onClick={() => {
+                                        setView('student-auth');
+                                        setIsSignUp(false);
+                                    }}
+                                    className="group flex items-center text-left bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400 rounded-2xl p-4 md:p-5 backdrop-blur-xl transition-all duration-300 relative overflow-hidden shadow-2xl"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-12 h-12 md:w-14 md:h-14 bg-yellow-500/30 rounded-xl flex items-center justify-center shrink-0 mr-4 border border-yellow-400/50 shadow-[0_0_20px_rgba(250,204,21,0.3)]">
+                                        <User className="w-6 h-6 md:w-7 md:h-7 text-yellow-300" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Alumno</h2>
+                                    </div>
+                                    <ArrowRight className="w-5 h-5 text-yellow-300 opacity-50 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
+                                </button>
+
+                                {/* Familia */}
+                                <button
+                                    onClick={() => {
+                                        setView('family-auth');
+                                        setIsSignUp(false);
+                                    }}
+                                    className="group flex items-center text-left bg-white/10 hover:bg-white/20 border border-white/20 hover:border-pink-400 rounded-2xl p-4 md:p-5 backdrop-blur-xl transition-all duration-300 relative overflow-hidden shadow-2xl"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-12 h-12 md:w-14 md:h-14 bg-pink-500/30 rounded-xl flex items-center justify-center shrink-0 mr-4 border border-pink-400/50 shadow-[0_0_20px_rgba(244,114,182,0.3)]">
+                                        <Users className="w-6 h-6 md:w-7 md:h-7 text-pink-300" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Familia</h2>
+                                    </div>
+                                    <ArrowRight className="w-5 h-5 text-pink-300 opacity-50 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
+                                </button>
                             </div>
-                        </button>
+
+                            <div className="mt-6 md:mt-8 text-center md:text-right">
+                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase">Sistema Unificado V1.3.0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -270,145 +309,158 @@ export function LoginPage() {
     const isFamily = view === 'family-auth';
     const isTeacherOrFamily = isTeacher || isFamily;
 
+    // Theme values for Auth form based on role
+    const themeColor = isTeacher ? 'cyan' : isFamily ? 'pink' : 'yellow';
+    const ringColorClass = isTeacher ? 'focus:ring-cyan-500/50' : isFamily ? 'focus:ring-pink-500/50' : 'focus:ring-yellow-500/50';
+    const borderColorClassActive = isTeacher ? 'focus:border-cyan-500' : isFamily ? 'focus:border-pink-500' : 'focus:border-yellow-500';
+    const btnBgClass = isTeacher ? 'bg-cyan-600 hover:bg-cyan-500 shadow-[0_0_20px_rgba(8,145,178,0.4)]' : isFamily ? 'bg-pink-600 hover:bg-pink-500 shadow-[0_0_20px_rgba(219,39,119,0.4)]' : 'bg-yellow-600 hover:bg-yellow-500 shadow-[0_0_20px_rgba(202,138,4,0.4)]';
+    const iconColorClass = isTeacher ? 'text-cyan-400' : isFamily ? 'text-pink-400' : 'text-yellow-400';
+    const iconBgClass = isTeacher ? 'bg-cyan-500/20 border-cyan-500/30' : isFamily ? 'bg-pink-500/20 border-pink-500/30' : 'bg-yellow-500/20 border-yellow-500/30';
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center p-4">
-            <div className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-8 relative">
-                <button
-                    onClick={() => {
-                        setView('selection');
-                        setError('');
-                        setEmail('');
-                        setPassword('');
-                        setStudentName('');
-                        setRoomCode('');
-                    }}
-                    className="absolute top-6 left-6 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                    <ArrowRight className="w-6 h-6 rotate-180" />
-                </button>
+        <div className="h-[100dvh] w-full bg-[#0B101E] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+            {/* Background glowing orbs */}
+            <div className="absolute top-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none" />
 
-                <div className="flex justify-center mb-6">
-                    <div className={`w-16 h-16 bg-gradient-to-br rounded-2xl flex items-center justify-center shadow-lg ${isFamily ? 'from-emerald-500 to-teal-600' : isTeacher ? 'from-blue-500 to-purple-600' : 'from-pink-500 to-rose-600'}`}>
-                        {isFamily ? <Users className="w-8 h-8 text-white" /> : isTeacher ? <GraduationCap className="w-8 h-8 text-white" /> : <User className="w-8 h-8 text-white" />}
+            <div className="w-full max-w-sm relative z-10">
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative">
+                    <button
+                        onClick={() => {
+                            setView('selection');
+                            setError('');
+                            setEmail('');
+                            setPassword('');
+                            setStudentName('');
+                            setRoomCode('');
+                        }}
+                        className="absolute top-5 left-5 text-slate-400 hover:text-white transition-colors bg-white/5 p-2 rounded-full border border-white/5 hover:border-white/20"
+                    >
+                        <ArrowRight className="w-4 h-4 rotate-180" />
+                    </button>
+
+                    <div className="flex flex-col items-center mb-6 mt-2">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${iconBgClass} mb-4`}>
+                            {isFamily ? <Users className={`w-6 h-6 ${iconColorClass}`} /> : isTeacher ? <GraduationCap className={`w-6 h-6 ${iconColorClass}`} /> : <User className={`w-6 h-6 ${iconColorClass}`} />}
+                        </div>
+                        <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+                            {isFamily ? 'Acceso Familia' : isTeacher ? 'Acceso Docente' : 'Acceso Alumno'}
+                        </h1>
+                        <p className="text-slate-400 text-xs mt-1">
+                            {isSignUp ? 'Crear nueva cuenta' : 'Ingresa tus credenciales'}
+                        </p>
                     </div>
-                </div>
 
-                <h1 className="text-2xl font-black text-gray-900 text-center mb-2 uppercase tracking-tight">
-                    {isFamily ? 'Panel Familia' : isTeacher ? 'Panel Docente' : 'Acceso Alumno'}
-                </h1>
-                <p className="text-gray-500 text-center mb-6 font-medium leading-relaxed text-sm">
-                    {isFamily
-                        ? (isSignUp ? 'Crea tu cuenta familiar' : 'Inicia sesión en tu cuenta')
-                        : isTeacher
-                            ? (isSignUp ? 'Crea tu cuenta profesional' : 'Inicia sesión en tu cuenta')
-                            : (isSignUp ? 'Crea tu cuenta (Código opcional)' : 'Entra con tu usuario')}
-                </p>
+                    <form onSubmit={handleAuth} className="space-y-3 md:space-y-4">
 
-                <form onSubmit={handleAuth} className="space-y-4">
-
-                    {/* Campos para ALUMNOS */}
-                    {!isTeacherOrFamily && (
-                        <>
+                        {/* Campos para ALUMNOS */}
+                        {!isTeacherOrFamily && (
                             <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Nombre de Usuario</label>
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Usuario</label>
                                 <input
                                     type="text"
                                     value={studentName}
                                     onChange={(e) => setStudentName(e.target.value)}
-                                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all font-bold text-sm"
+                                    className={`w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
                                     placeholder="Ej: JuanPerez"
                                     required
                                 />
                             </div>
-                            {/* Campo Código de Clase eliminado a petición del usuario. Solo nombre. */}
-                        </>
-                    )}
+                        )}
 
-                    {/* Campos para PROFESORES */}
-                    {isTeacherOrFamily && (
-                        <>
-                            {/* Social Login solo para profes */}
-                            {isTeacher && !isSignUp && (
-                                <div className="grid grid-cols-2 gap-3 mb-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleSocialLogin('google')}
-                                        className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border-2 border-slate-100 rounded-xl hover:bg-slate-50 transition-all font-bold text-slate-600 text-sm"
-                                    >
-                                        <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
-                                        Google
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleSocialLogin('azure')}
-                                        className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border-2 border-slate-100 rounded-xl hover:bg-slate-50 transition-all font-bold text-slate-600 text-sm"
-                                    >
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" className="w-4 h-4" />
-                                        Microsoft
-                                    </button>
-                                </div>
-                            )}
+                        {/* Campos para PROFESORES Y FAMILIAS */}
+                        {isTeacherOrFamily && (
+                            <>
+                                {/* Social Login (compact) - Ahora visible tanto en login como registro */}
+                                {isTeacherOrFamily && (
+                                    <div className="grid grid-cols-2 gap-2 mb-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSocialLogin('google')}
+                                            className="flex items-center justify-center gap-2 py-2 bg-white border border-transparent rounded-xl hover:bg-slate-100 transition-all font-bold text-slate-800 text-xs"
+                                        >
+                                            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-3.5 h-3.5" />
+                                            Google
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSocialLogin('azure')}
+                                            className="flex items-center justify-center gap-2 py-2 bg-slate-800 border border-slate-700 rounded-xl hover:bg-slate-700 transition-all font-bold text-white text-xs"
+                                        >
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" className="w-3.5 h-3.5" />
+                                            Microsoft
+                                        </button>
+                                    </div>
+                                )}
 
-                            {isSignUp && (
+                                {isSignUp && (
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Nombre Completo</label>
+                                        <input
+                                            type="text"
+                                            value={studentName}
+                                            onChange={(e) => setStudentName(e.target.value)}
+                                            className={`w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
+                                            placeholder={isFamily ? 'María López' : 'Profesor García'}
+                                            required
+                                        />
+                                    </div>
+                                )}
+
                                 <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Tu Nombre</label>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Email</label>
                                     <input
-                                        type="text"
-                                        value={studentName}
-                                        onChange={(e) => setStudentName(e.target.value)}
-                                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all font-bold text-sm"
-                                        placeholder={isFamily ? 'María López' : 'Profesor García'}
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className={`w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
+                                        placeholder="correo@ejemplo.com"
                                         required
                                     />
                                 </div>
-                            )}
+                            </>
+                        )}
 
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">{isFamily ? 'Email' : 'Email Profesional'}</label>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all font-bold text-sm"
-                                    placeholder={isFamily ? 'mama@gmail.com' : 'profe@escuela.edu'}
-                                    required
-                                />
+                        <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Contraseña</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className={`w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
+                                placeholder="••••••••"
+                                required
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="bg-rose-500/10 text-rose-400 p-2.5 rounded-lg text-xs font-medium border border-rose-500/20 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                {error}
                             </div>
-                        </>
-                    )}
+                        )}
 
-                    <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Contraseña</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all font-bold text-sm"
-                            placeholder="••••••••"
-                            required
-                        />
-                    </div>
-
-                    {error && <div className="bg-rose-50 text-rose-600 p-3 rounded-xl text-xs font-bold border border-rose-100 animate-in slide-in-from-top-2">{error}</div>}
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className={`w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] ${isFamily ? 'bg-emerald-600' : isTeacher ? 'bg-blue-600' : 'bg-rose-600'} text-white`}
-                    >
-                        {loading ? 'Procesando...' : sessionData ? 'Entrando...' : isSignUp ? 'Crear Cuenta' : 'Entrar'}
-                    </button>
-
-                    <div className="mt-4 text-center">
                         <button
-                            type="button"
-                            onClick={() => setIsSignUp(!isSignUp)}
-                            className="text-slate-400 hover:text-slate-900 text-[10px] font-black uppercase tracking-widest transition-colors"
+                            type="submit"
+                            disabled={loading}
+                            className={`w-full py-3 mt-2 rounded-xl font-bold text-sm text-white transition-all ${btnBgClass} disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
                         >
-                            {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+                            {loading ? (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : null}
+                            {loading ? 'Procesando...' : sessionData ? 'Entrando...' : isSignUp ? 'Crear Cuenta' : 'Entrar'}
                         </button>
-                    </div>
-                </form>
+
+                        <div className="text-center pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsSignUp(!isSignUp)}
+                                className="text-slate-400 hover:text-white text-xs font-medium transition-colors"
+                            >
+                                {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );
