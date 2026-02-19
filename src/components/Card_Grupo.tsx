@@ -1,5 +1,6 @@
-import { Edit2, Trash2, Users, MessageSquare, Clock, ArrowRight, ClipboardList } from 'lucide-react';
+import { Edit2, Trash2, Users, MessageSquare, Clock, ArrowRight, ClipboardList, GraduationCap } from 'lucide-react';
 import { Grupo } from '../types';
+import { getAsignaturaStyles } from '../data/asignaturas';
 
 interface CardGrupoProps {
   grupo: Grupo;
@@ -10,9 +11,11 @@ interface CardGrupoProps {
   onRevisar?: () => void;
   mostrarBotonEditar?: boolean;
   mostrarBotonBorrar?: boolean;
+  asignatura?: string;
 }
 
-export function Card_Grupo({ grupo, onClick, onEdit, onDelete, onAssignTasks, onRevisar, mostrarBotonEditar = false, mostrarBotonBorrar = false }: CardGrupoProps) {
+export function Card_Grupo({ grupo, onClick, onEdit, onDelete, onAssignTasks, onRevisar, mostrarBotonEditar = false, mostrarBotonBorrar = false, asignatura }: CardGrupoProps) {
+  const asigStyles = getAsignaturaStyles(asignatura);
   const getEstadoStyles = (estado: Grupo['estado']) => {
     switch (estado) {
       case 'Completado':
@@ -115,7 +118,7 @@ export function Card_Grupo({ grupo, onClick, onEdit, onDelete, onAssignTasks, on
           )}
         </div>
 
-        <h3 className="text-xl font-black text-slate-800 leading-tight mb-6 group-hover:text-blue-600 transition-colors tracking-tight uppercase">
+        <h3 className={`text-xl font-black ${asignatura ? asigStyles.textClass : 'text-slate-800'} leading-tight mb-6 group-hover:text-blue-600 transition-colors tracking-tight uppercase`}>
           {grupo.nombre}
         </h3>
 
@@ -134,10 +137,10 @@ export function Card_Grupo({ grupo, onClick, onEdit, onDelete, onAssignTasks, on
 
         <div className="mt-auto pt-5 border-t border-slate-50 flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-400">
-            <div className="p-1.5 bg-slate-50 rounded-lg">
-              <Users className="w-3.5 h-3.5" />
+            <div className={`p-1.5 ${asignatura ? asigStyles.lightBgClass : 'bg-slate-50'} rounded-lg`}>
+              <Users className={`w-3.5 h-3.5 ${asignatura ? asigStyles.textClass : ''}`} />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-tighter">{grupo.miembros.length} Miembros</span>
+            <span className={`text-[10px] font-black uppercase tracking-tighter ${asignatura ? asigStyles.textClass : ''}`}>{grupo.miembros.length} Miembros</span>
           </div>
 
           <div className="flex items-center gap-2 text-slate-400">

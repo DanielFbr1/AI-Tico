@@ -1,21 +1,26 @@
 import React, { useState } from 'react';
-import { X, Plus, Users, Layout, Sparkles, Bot } from 'lucide-react';
-import { Proyecto, ProyectoEstado } from '../types';
+import { X, Plus, Users, Layout, Sparkles, Bot, GraduationCap } from 'lucide-react';
+import { Proyecto, ProyectoEstado, Organizacion } from '../types';
 import { AsistenteDisenoProyecto } from './AsistenteDisenoProyecto';
+import { ASIGNATURAS } from '../data/asignaturas';
 
 interface ModalCrearProyectoProps {
     onClose: () => void;
-    onCrear: (proyecto: Omit<Proyecto, 'id'>) => void;
+    onCrear: (proyecto: Omit<Proyecto, 'id' | 'grupos'>) => void;
     nombreUsuario: string;
     clasesExistentes?: string[];
+    organizacionContext?: { clase: Organizacion, breadcrumb: Organizacion[] };
 }
 
-export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExistentes = [] }: ModalCrearProyectoProps) {
+export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExistentes = [], organizacionContext }: ModalCrearProyectoProps) {
     const [modo, setModo] = useState<'manual' | 'ia'>('manual');
     const [nombre, setNombre] = useState('');
     const [descripcion, setDescripcion] = useState('');
     const [tipo, setTipo] = useState('Aprendizaje Basado en Proyectos');
     const [clase, setClase] = useState('');
+    const [colegio, setColegio] = useState('');
+    const [curso, setCurso] = useState('');
+    const [asignatura, setAsignatura] = useState('');
     const [contextoIA, setContextoIA] = useState('');
     const [rubricaIA, setRubricaIA] = useState<any>(null);
 
@@ -26,7 +31,11 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
                 nombre: nombre.trim(),
                 descripcion: descripcion.trim(),
                 tipo,
-                clase,
+                clase: organizacionContext ? organizacionContext.clase.nombre : clase,
+                colegio: organizacionContext ? organizacionContext.breadcrumb[1]?.nombre : (colegio.trim() || undefined),
+                curso: organizacionContext ? organizacionContext.breadcrumb[0]?.nombre : (curso.trim() || undefined),
+                organizacion_clase_id: organizacionContext?.clase.id,
+                etapa: organizacionContext ? organizacionContext.breadcrumb[2]?.nombre : undefined,
                 estado: 'En preparación' as ProyectoEstado,
                 codigo_sala: Math.random().toString(36).substring(2, 8).toUpperCase(),
                 fases: [
@@ -35,7 +44,8 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
                     { id: 'f3', nombre: 'Reflexión / Producto', estado: 'pendiente' },
                 ],
                 contexto_ia: contextoIA,
-                rubrica: rubricaIA
+                rubrica: rubricaIA,
+                asignatura: asignatura || undefined
             });
             onClose();
         }
@@ -49,8 +59,8 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-            <div className={`bg-white rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden transition-all duration-300 ${modo === 'ia' ? 'max-w-4xl' : ''}`}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 md:p-8 z-50 animate-in fade-in duration-300 backdrop-blur-sm">
+            <div className={`bg-white rounded-[2rem] w-full max-w-3xl shadow-2xl overflow-hidden transition-all duration-300 flex flex-col max-h-[90vh] md:max-h-[85vh]`}>
 
                 {/* Header Dinámico */}
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -82,125 +92,188 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
                     </div>
                 ) : (
                     /* MODO MANUAL (Formulario clásico + Botón IA) */
-                    <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    <>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <form id="project-form" onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4 md:space-y-6">
 
-                        {/* Iteración 4: Violet Magic - Premium, Claro y Vibrante */}
-                        {!contextoIA && (
-                            <div
-                                className="relative overflow-hidden bg-white border-2 border-indigo-50 rounded-2xl p-6 group cursor-pointer transition-all duration-500 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/10 active:scale-[0.98]"
-                                onClick={() => setModo('ia')}
-                            >
-                                {/* Shimmer Effect Animado (Sutil para fondo claro) */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
-
-                                <div className="relative flex items-center justify-between">
-                                    <div className="flex items-center gap-5">
-                                        <div className="relative">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:rotate-6 transition-all duration-300">
-                                                <Sparkles className="w-8 h-8 text-white" />
-                                            </div>
-                                            <div className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-xl shadow-md border border-indigo-50 animate-bounce-slow">
-                                                <Bot className="w-4 h-4 text-indigo-600" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-lg font-black text-slate-800 tracking-tight">
-                                                    Asistente Pedagógico
-                                                </h3>
-                                                <span className="bg-indigo-600 text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm">
-                                                    IA ✨
-                                                </span>
-                                            </div>
-                                            <p className="text-slate-500 text-sm font-medium">
-                                                ¿Sin tiempo? Deja que Tico diseñe el mapa del proyecto por ti.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="hidden md:flex items-center gap-3 bg-indigo-600 px-6 py-3 rounded-2xl group-hover:bg-indigo-700 transition-all duration-300 shadow-md shadow-indigo-600/20 group-hover:shadow-indigo-600/40">
-                                        <div className="text-center">
-                                            <div className="text-white font-black text-sm tracking-tight">Definir con IA</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Proyecto</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={nombre}
-                                    onChange={(e) => setNombre(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="Ej: Podcast Histórico"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Proyecto</label>
-                                    <select
-                                        value={tipo}
-                                        onChange={(e) => setTipo(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                {/* Botón IA más compacto */}
+                                {!contextoIA && (
+                                    <div
+                                        className="relative overflow-hidden bg-white border-2 border-indigo-50 rounded-2xl p-5 group cursor-pointer transition-all duration-500 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/10 active:scale-[0.98]"
+                                        onClick={() => setModo('ia')}
                                     >
-                                        <option>Aprendizaje Basado en Proyectos</option>
-                                        <option>Aprendizaje Basado en Problemas</option>
-                                        <option>Aprendizaje Servicio</option>
-                                        <option>Indagación</option>
-                                        <option>Proyecto Personalizado</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Clase / Grupo</label>
-                                    <input
-                                        type="text"
-                                        list="clases-list"
-                                        value={clase}
-                                        onChange={(e) => setClase(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                        placeholder="Ej: 4ºA"
-                                    />
-                                    <datalist id="clases-list">
-                                        {clasesExistentes.map(c => (
-                                            <option key={c} value={c} />
-                                        ))}
-                                    </datalist>
-                                </div>
-                            </div>
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                                <textarea
-                                    value={descripcion}
-                                    onChange={(e) => setDescripcion(e.target.value)}
-                                    rows={3}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="Describe brevemente el proyecto..."
-                                ></textarea>
-                            </div>
+                                        <div className="relative flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative shrink-0">
+                                                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg transform group-hover:rotate-6 transition-all duration-300">
+                                                        <Sparkles className="w-6 h-6 text-white" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2">
+                                                        Asistente Pedagógico
+                                                        <span className="bg-indigo-600 text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">IA ✨</span>
+                                                    </h3>
+                                                    <p className="text-slate-500 text-xs font-medium leading-tight">
+                                                        ¿Sin tiempo? Deja que Tico diseñe el mapa del proyecto por ti.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="hidden md:flex items-center gap-2 bg-indigo-600 px-5 py-2.5 rounded-xl group-hover:bg-indigo-700 transition-all shadow-md">
+                                                <div className="text-white font-black text-xs tracking-widest uppercase">Diseñar ahora</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                    {/* COLUMNA IZQUIERDA: Info General */}
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Nombre</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={nombre}
+                                                onChange={(e) => setNombre(e.target.value)}
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
+                                                placeholder="Ej: Podcast Histórico"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Asignatura</label>
+                                                <select
+                                                    value={asignatura}
+                                                    onChange={(e) => setAsignatura(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
+                                                >
+                                                    <option value="">Selecciona...</option>
+                                                    {Object.values(ASIGNATURAS).map((asig) => (
+                                                        <option key={asig.id} value={asig.nombre}>
+                                                            {asig.nombre}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Metodología</label>
+                                                <select
+                                                    value={tipo}
+                                                    onChange={(e) => setTipo(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm"
+                                                >
+                                                    <option>Aprendizaje Basado en Proyectos</option>
+                                                    <option>Aprendizaje Basado en Problemas</option>
+                                                    <option>Aprendizaje Servicio</option>
+                                                    <option>Indagación</option>
+                                                    <option>Proyecto Personalizado</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* COLUMNA DERECHA: Ubicación + Descripción */}
+                                    <div className="space-y-4 flex flex-col justify-between">
+                                        {/* Contexto Jerárquico o Campos Manuales */}
+                                        {organizacionContext ? (
+                                            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex-1 flex flex-col justify-center">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <GraduationCap className="w-4 h-4 text-indigo-600" />
+                                                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Ubicación del Proyecto</span>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                                                    {organizacionContext.breadcrumb.map((item) => (
+                                                        <React.Fragment key={item.id}>
+                                                            <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded shadow-sm">
+                                                                {item.nombre}
+                                                            </span>
+                                                            <span className="text-slate-300">/</span>
+                                                        </React.Fragment>
+                                                    ))}
+                                                    <span className="px-1.5 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded shadow-sm">
+                                                        {organizacionContext.clase.nombre}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Clase</label>
+                                                        <input
+                                                            type="text"
+                                                            list="clases-list"
+                                                            value={clase}
+                                                            onChange={(e) => setClase(e.target.value)}
+                                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
+                                                            placeholder="4ºA"
+                                                        />
+                                                        <datalist id="clases-list">
+                                                            {clasesExistentes.map(c => <option key={c} value={c} />)}
+                                                        </datalist>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Curso</label>
+                                                        <input
+                                                            type="text"
+                                                            value={curso}
+                                                            onChange={(e) => setCurso(e.target.value)}
+                                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
+                                                            placeholder="2024-2025"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Colegio</label>
+                                                    <input
+                                                        type="text"
+                                                        value={colegio}
+                                                        onChange={(e) => setColegio(e.target.value)}
+                                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
+                                                        placeholder="IES..."
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* DESCRIPCIÓN JUSTO DEBAJO DE LA UBICACIÓN */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Breve Descripción</label>
+                                            <textarea
+                                                value={descripcion}
+                                                onChange={(e) => setDescripcion(e.target.value)}
+                                                rows={2}
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm resize-none"
+                                                placeholder="Objetivo del proyecto..."
+                                            ></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
 
-                        <div className="flex justify-end pt-4 border-t border-gray-100">
+                        <div className="p-4 md:p-5 border-t border-gray-100 bg-gray-50/50 flex justify-end shrink-0">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="mr-3 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="mr-3 px-4 md:px-6 py-2.5 md:py-3 text-slate-500 hover:bg-slate-100 rounded-xl transition-all font-black uppercase text-[10px] md:text-xs tracking-widest"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
+                                form="project-form"
+                                className="px-6 md:px-8 py-2.5 md:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center gap-2 font-black uppercase text-[10px] md:text-xs tracking-widest"
                             >
-                                <Plus className="w-5 h-5" />
+                                <Plus className="w-4 h-4 md:w-5 md:h-5" />
                                 Crear Proyecto
                             </button>
                         </div>
-                    </form>
+                    </>
                 )}
             </div>
         </div>

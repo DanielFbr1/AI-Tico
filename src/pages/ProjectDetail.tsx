@@ -338,7 +338,11 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
                     codigo_sala: proyecto.codigo_sala,
                     clase: proyecto.clase,
                     fases: proyecto.fases,
-                    rubrica: proyecto.rubrica
+                    rubrica: proyecto.rubrica,
+                    organizacion_clase_id: proyecto.organizacion_clase_id,
+                    descripcion: proyecto.descripcion,
+                    contexto_ia: proyecto.contexto_ia,
+                    asignatura: proyecto.asignatura
                 }}
                 onUpdateProjectName={handleUpdateProjectName}
                 onOpenTicoFull={onOpenTicoFull}

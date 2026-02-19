@@ -3,8 +3,8 @@ import { TicoState } from '../types';
 import { INITIAL_TICO_STATE } from '../services/ticoLogic';
 import { supabase } from '../lib/supabase';
 
-export function useTicoGame(contextId: string = 'default') {
-    const storageKey = `tico-game-state-v3-${contextId}`;
+export function useTicoGame(contextId: string = 'default', contextType: 'project' | 'class' = 'project') {
+    const storageKey = `tico-game-state-v3-${contextType}-${contextId}`;
 
     // Load state from local storage or use initial state
     const [state, setState] = useState<TicoState>(() => {
@@ -29,19 +29,32 @@ export function useTicoGame(contextId: string = 'default') {
 
         const fetchTicoState = async () => {
             try {
-                const { data, error } = await supabase
-                    .from('proyectos')
-                    .select('tico_state')
-                    .eq('id', contextId)
-                    .single();
+                let query;
+                if (contextType === 'class') {
+                    // Fetch from profesor_organizacion
+                    query = supabase
+                        .from('profesor_organizacion')
+                        .select('tico_state')
+                        .eq('id', contextId)
+                        .single();
+                } else {
+                    // Fetch from proyectos (default)
+                    query = supabase
+                        .from('proyectos')
+                        .select('tico_state')
+                        .eq('id', contextId)
+                        .single();
+                }
+
+                const { data, error } = await query;
 
                 if (error) {
-                    console.warn("Could not fetch Tico state from Supabase (maybe column missing?):", error.message);
+                    console.warn(`Could not fetch Tico state from ${contextType} (maybe column missing?):`, error.message);
                     return;
                 }
 
                 if (data?.tico_state) {
-                    console.log("🎮 Syncing Tico state from Supabase...");
+                    console.log(`🎮 Syncing Tico state from Supabase (${contextType})...`);
                     const remoteState = { ...INITIAL_TICO_STATE, ...data.tico_state };
                     setState(remoteState);
                     localStorage.setItem(storageKey, JSON.stringify(remoteState));
@@ -52,7 +65,7 @@ export function useTicoGame(contextId: string = 'default') {
         };
 
         fetchTicoState();
-    }, [contextId, storageKey]);
+    }, [contextId, contextType, storageKey]);
 
     // SAVE TO LOCAL & DEBOUNCED SUPABASE
     useEffect(() => {
@@ -70,17 +83,27 @@ export function useTicoGame(contextId: string = 'default') {
         // Save to Supabase (Debounced)
         const timeoutId = setTimeout(async () => {
             try {
-                await supabase
-                    .from('proyectos')
-                    .update({ tico_state: state })
-                    .eq('id', contextId);
+                let updateQuery;
+                if (contextType === 'class') {
+                    updateQuery = supabase
+                        .from('profesor_organizacion')
+                        .update({ tico_state: state })
+                        .eq('id', contextId);
+                } else {
+                    updateQuery = supabase
+                        .from('proyectos')
+                        .update({ tico_state: state })
+                        .eq('id', contextId);
+                }
+
+                await updateQuery;
             } catch (e) {
                 console.error("Error saving Tico state to Supabase:", e);
             }
         }, 2000); // 2 second debounce
 
         return () => clearTimeout(timeoutId);
-    }, [state, contextId, storageKey]);
+    }, [state, contextId, contextType, storageKey]);
 
     const updateState = useCallback((newState: TicoState) => {
         setState(newState);
@@ -97,12 +120,13 @@ export function useTicoGame(contextId: string = 'default') {
         setState(INITIAL_TICO_STATE);
         localStorage.removeItem(storageKey);
         if (contextId && contextId !== 'default') {
+            const table = contextType === 'class' ? 'profesor_organizacion' : 'proyectos';
             await supabase
-                .from('proyectos')
+                .from(table)
                 .update({ tico_state: INITIAL_TICO_STATE })
                 .eq('id', contextId);
         }
-    }, [contextId, storageKey]);
+    }, [contextId, contextType, storageKey]);
 
     return {
         state,

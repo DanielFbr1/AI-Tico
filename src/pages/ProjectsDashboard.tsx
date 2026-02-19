@@ -1,35 +1,69 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Proyecto } from '../types';
-import { Layout, ArrowRight, Users, Key, Plus, Loader2, Sparkles, LogOut, RefreshCw, Trash2, Folder, BookOpen, GraduationCap, School, Search, X } from 'lucide-react';
+import { Proyecto, Organizacion } from '../types';
+import { Layout, ArrowRight, Users, Key, Plus, Loader2, Sparkles, LogOut, RefreshCw, Trash2, Folder, BookOpen, GraduationCap, School, Search, X, MessageCircle, ChevronLeft } from 'lucide-react';
 import { PROYECTOS_MOCK } from '../data/mockData';
 import { ModalCrearProyecto } from '../components/ModalCrearProyecto';
+import { MensajesFamiliasProfesor } from '../components/MensajesFamiliasProfesor';
+import { getAsignaturaStyles } from '../data/asignaturas';
 
 interface ProjectsDashboardProps {
     onSelectProject: (proyecto: Proyecto) => void;
+    organizacionContext?: { clase: Organizacion, breadcrumb: Organizacion[] };
+    onBack?: () => void;
 }
 
 import { useAuth } from '../context/AuthContext';
 
-export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
+export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack }: ProjectsDashboardProps) {
     const { signOut: authSignOut, session } = useAuth();
     const [proyectos, setProyectos] = useState<Proyecto[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSeeding, setIsSeeding] = useState(false);
     const [showModalProyecto, setShowModalProyecto] = useState(false);
     const [filtroBusqueda, setFiltroBusqueda] = useState('');
+    const [showMensajesFamilias, setShowMensajesFamilias] = useState(false);
+    const [unreadFamilyMessages, setUnreadFamilyMessages] = useState(0);
 
-    const proyectosFiltrados = proyectos.filter(p =>
-        p.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
-        (p.clase || '').toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
-        p.tipo.toLowerCase().includes(filtroBusqueda.toLowerCase())
-    );
+    const proyectosFiltrados = proyectos.filter(p => {
+        // Filtro de contexto jerárquico (si existe)
+        if (organizacionContext && p.organizacion_clase_id !== organizacionContext.clase.id) {
+            return false;
+        }
+
+        const matchTexto = p.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
+            (p.clase || '').toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
+            p.tipo.toLowerCase().includes(filtroBusqueda.toLowerCase());
+
+        return matchTexto;
+    });
 
     const clasesExistentes = Array.from(new Set(proyectos.map(p => p.clase).filter(Boolean))) as string[];
 
     useEffect(() => {
         fetchProyectos();
+        fetchUnreadFamilyMessages();
     }, []);
+
+    const fetchUnreadFamilyMessages = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data, error } = await supabase
+                .from('mensajes_familia_profesor')
+                .select('id')
+                .eq('profesor_user_id', user.id)
+                .neq('sender_id', user.id)
+                .eq('leido', false);
+
+            if (!error && data) {
+                setUnreadFamilyMessages(data.length);
+            }
+        } catch (err) {
+            console.error('Error fetching unread family messages:', err);
+        }
+    };
 
     const fetchProyectos = async () => {
         try {
@@ -201,6 +235,17 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
         return <Folder className="w-5 h-5" />;
     };
 
+    // Show family messages panel
+    if (showMensajesFamilias) {
+        return (
+            <MensajesFamiliasProfesor
+                profesorId={session?.user?.id || ''}
+                profesorNombre={session?.user?.email?.split('@')[0] || 'Profesor'}
+                onBack={() => { setShowMensajesFamilias(false); fetchUnreadFamilyMessages(); }}
+            />
+        );
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -221,14 +266,47 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                             <Layout className="w-4 h-4 md:w-7 md:h-7" />
                         </div>
                         <div className="overflow-hidden">
-                            <h1 className="text-base md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1 truncate">Proyectos</h1>
+                            <h1 className="text-base md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1 truncate">
+                                {organizacionContext ? organizacionContext.clase.nombre : 'Proyectos'}
+                            </h1>
                             <p className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1 md:gap-2">
-                                <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                {proyectos.length} total
+                                {organizacionContext && (
+                                    <span className="flex items-center gap-1">
+                                        {organizacionContext.breadcrumb.map(b => b.nombre).join(' > ')}
+                                    </span>
+                                )}
+                                {!organizacionContext && (
+                                    <>
+                                        <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                        {proyectos.length} total
+                                    </>
+                                )}
                             </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        {onBack && (
+                            <button
+                                onClick={onBack}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl font-bold transition-all text-xs uppercase tracking-wider"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                                Volver
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setShowMensajesFamilias(true)}
+                            className="relative flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl md:rounded-2xl font-black transition-all border-2 border-emerald-200 hover:border-emerald-400 shadow-sm"
+                            title="Mensajes de Familias"
+                        >
+                            <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
+                            <span className="text-[10px] md:text-xs uppercase tracking-widest">Familias</span>
+                            {unreadFamilyMessages > 0 && (
+                                <span className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                                    {unreadFamilyMessages}
+                                </span>
+                            )}
+                        </button>
                         <button
                             onClick={() => setShowModalProyecto(true)}
                             className="flex items-center justify-center gap-2 px-4 md:px-7 py-2.5 md:py-3.5 bg-blue-600 text-white rounded-xl md:rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all text-[10px] md:text-sm uppercase tracking-widest"
@@ -268,6 +346,8 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                         )}
                     </div>
                 </div>
+
+                {/* Filtros dropdown de Colegio y Curso eliminados en favor de navegación jerárquica */}
             </header>
 
 
@@ -302,49 +382,63 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {proyectosClase.filter(p => p.created_by === session?.user?.id).map((proyecto) => (
-                                    <div
-                                        key={proyecto.id}
-                                        onClick={() => onSelectProject(proyecto)}
-                                        className="group relative bg-white rounded-[1.25rem] p-8 flex flex-col border border-slate-200 hover:border-blue-400 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden"
-                                    >
-                                        <div className="flex justify-between items-start mb-6 relative z-10">
-                                            <span className={`px-3 py-1 text-[10px] font-bold rounded-md uppercase tracking-widest border
-                                                ${proyecto.estado === 'En curso' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                    proyecto.estado === 'Finalizado' ? 'bg-slate-50 text-slate-400 border-slate-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                                                {proyecto.estado}
-                                            </span>
-                                            <button
-                                                onClick={(e) => handleDeleteProject(e, proyecto.id, proyecto.nombre)}
-                                                className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                {proyectosClase
+                                    .filter(p => p.created_by === session?.user?.id)
+                                    .map((proyecto) => {
+                                        const asigStyles = getAsignaturaStyles(proyecto.asignatura);
+                                        return (
+                                            <div
+                                                key={proyecto.id}
+                                                onClick={() => onSelectProject(proyecto)}
+                                                className={`group relative ${proyecto.asignatura ? asigStyles.lightBgClass : 'bg-white'} rounded-[1.25rem] p-8 flex flex-col border-2 ${asigStyles.borderClass} hover:border-blue-400 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden`}
                                             >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        <div className="flex flex-col mb-4 relative z-10">
-                                            <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors tracking-tight leading-tight">{proyecto.nombre}</h3>
-                                            <p className="text-slate-400 font-medium text-[11px] uppercase tracking-widest mt-1 opacity-70">{proyecto.tipo}</p>
-                                        </div>
-
-                                        <p className="text-slate-500 font-medium text-sm mb-8 line-clamp-2 leading-relaxed relative z-10">{proyecto.descripcion}</p>
-
-                                        <div className="mt-auto pt-6 border-t border-slate-50 flex justify-between items-center relative z-10">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-slate-50 rounded-lg">
-                                                    <Users className="w-4 h-4 text-slate-400" />
+                                                <div className="flex justify-between items-start mb-6 relative z-10">
+                                                    <span className={`px-3 py-1 text-[10px] font-bold rounded-md uppercase tracking-widest border
+                                                        ${proyecto.estado === 'En curso' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                            proyecto.estado === 'Finalizado' ? 'bg-slate-50 text-slate-400 border-slate-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                                        {proyecto.estado}
+                                                    </span>
+                                                    <button
+                                                        onClick={(e) => handleDeleteProject(e, proyecto.id, proyecto.nombre)}
+                                                        className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gestionar</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 font-bold text-[10px] text-blue-600 bg-blue-50 px-3 py-1 rounded-md border border-blue-100 group-hover:bg-blue-100 transition-colors tracking-widest uppercase">
-                                                <Key className="w-3 h-3" />
-                                                {proyecto.codigo_sala}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
 
+                                                <div className="flex flex-col mb-4 relative z-10">
+                                                    <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors tracking-tight leading-tight">{proyecto.nombre}</h3>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <p className="text-slate-400 font-medium text-[11px] uppercase tracking-widest opacity-70">{proyecto.tipo}</p>
+                                                        {proyecto.asignatura && (
+                                                            <>
+                                                                <span className="text-slate-200">•</span>
+                                                                <span className={`text-[10px] font-black uppercase tracking-widest ${asigStyles.textClass}`}>
+                                                                    {proyecto.asignatura}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <p className="text-slate-500 font-medium text-sm mb-8 line-clamp-2 leading-relaxed relative z-10">{proyecto.descripcion}</p>
+
+                                                <div className="mt-auto pt-6 border-t border-slate-50 flex justify-between items-center relative z-10">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="p-1.5 bg-slate-50 rounded-lg">
+                                                            <Users className="w-4 h-4 text-slate-400" />
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gestionar</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 font-bold text-[10px] text-blue-600 bg-blue-50 px-3 py-1 rounded-md border border-blue-100 group-hover:bg-blue-100 transition-colors tracking-widest uppercase">
+                                                        <Key className="w-3 h-3" />
+                                                        {proyecto.codigo_sala}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
                         </section>
                     ))
                 ) : (
@@ -379,6 +473,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                     onCrear={handleCrearProyecto}
                     nombreUsuario={session?.user?.email || 'Docente'}
                     clasesExistentes={clasesExistentes}
+                    organizacionContext={organizacionContext}
                 />
             )}
         </div>

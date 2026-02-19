@@ -1,8 +1,6 @@
 import { LayoutList, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices, Gamepad2, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
-import { Card_Metrica } from './Card_Metrica';
 import { Card_Grupo } from './Card_Grupo';
-import { InteraccionesIA } from './InteraccionesIA';
 import { EvaluacionRubricas } from './EvaluacionRubricas';
 import { ModalCrearGrupo } from './ModalCrearGrupo';
 import { ModalSubirRecurso } from './ModalSubirRecurso';
@@ -24,6 +22,7 @@ import { ModalAsistencia } from './ModalAsistencia';
 import { HitoGrupo } from '../types';
 import { supabase } from '../lib/supabase';
 import { useEffect } from 'react';
+import { getAsignaturaStyles } from '../data/asignaturas';
 
 interface DashboardDocenteProps {
     onSelectGrupo: (grupo: Grupo) => void;
@@ -220,7 +219,10 @@ export function DashboardDocente({
                         >
                             <X className="w-8 h-8" />
                         </button>
-                        <TicoGameWidget projectId={proyectoActual?.id} />
+                        <TicoGameWidget
+                            projectId={proyectoActual?.id}
+                            organizacionId={proyectoActual?.organizacion_clase_id}
+                        />
                     </div>
                 </div>
             )}
@@ -286,22 +288,6 @@ export function DashboardDocente({
 
             {/* Modal Asignar Tareas (Profesor) */}
             {grupoEditando && modalCrearGrupoAbierto === false && (
-                // We use 'grupoEditando' state to track which group we are assigning tasks to (hacky reuse or new state?)
-                // Better use a new state 'grupoParaTareas' or just differentiate via a boolean flag?
-                // Let's reuse 'grupoEditando' but have a different boolean 'modalAsignarAbierto'.
-                // Wait, I haven't added 'modalAsignarAbierto' state yet. I need to add it in the main component.
-                // Since I can't add state within this replace block efficiently without context, I will skip adding the modal JSX here and do it in a Full File View/Replace or assume I added state.
-                // Actually, I can add the state in a previous step? No, I must do it in one go if possible.
-                // Limitation: 'replace_file_content' targets specific blocks.
-
-                // I will ADD the state definition at the top of the file in a separate step, and then ADD the modal here.
-                // For now, let's just add the modal rendering assuming state exists, but I CANNOT do that if state doesn't exist.
-                // So I must add state first.
-
-                // Step 1: Add import and state.
-                // Step 2: Add modal rendering.
-                // Step 3: Add trigger in Card_Grupo (prop passing).
-
                 null
             )}
 
@@ -389,7 +375,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            v3.2.1 (Performance & Control)
+                            v3.6.2 (Mobile Chat Refined)
                         </div>
                     </div>
                 </aside>
@@ -407,7 +393,6 @@ export function DashboardDocente({
                             >
                                 <LayoutDashboard className="w-6 h-6" />
                             </button>
-                            {/* Oculto en móvil para ganar espacio */}
                             {/* Oculto en móvil para ganar espacio */}
                             <div className="hidden md:flex flex-col gap-1">
                                 {proyectoActual ? (
@@ -455,6 +440,11 @@ export function DashboardDocente({
                                                         >
                                                             <Pencil className="w-4 h-4" />
                                                         </button>
+                                                        {proyectoActual.asignatura && (
+                                                            <div className={`px-2 py-0.5 rounded-full border ${getAsignaturaStyles(proyectoActual.asignatura).borderClass} ${getAsignaturaStyles(proyectoActual.asignatura).lightBgClass} ${getAsignaturaStyles(proyectoActual.asignatura).textClass} text-[10px] font-black uppercase tracking-widest`}>
+                                                                {proyectoActual.asignatura}
+                                                            </div>
+                                                        )}
                                                     </h1>
                                                     <button
                                                         onClick={onCambiarProyecto}
@@ -466,7 +456,7 @@ export function DashboardDocente({
                                                 </div>
 
                                                 <div className="flex items-center gap-2">
-                                                    <span className="bg-blue-600 text-white text-sm font-black px-4 py-1.5 rounded-xl shadow-lg shadow-blue-200 tracking-wider flex items-center gap-2">
+                                                    <span className={`bg-blue-600 text-white text-sm font-black px-4 py-1.5 rounded-xl shadow-lg ${proyectoActual.asignatura ? `shadow-${getAsignaturaStyles(proyectoActual.asignatura).borderClass.split('-')[1]}-200` : 'shadow-blue-200'} tracking-wider flex items-center gap-2`}>
                                                         <Key className="w-4 h-4" />
                                                         CÓDIGO: <span className="text-lg">{proyectoActual.codigo_sala}</span>
                                                     </span>
@@ -561,9 +551,6 @@ export function DashboardDocente({
                             </button>
                         </div>
                     </div>
-
-
-
                 </header>
 
                 {/* Main scroll area */}
@@ -751,6 +738,7 @@ export function DashboardDocente({
                                             onRevisar={() => setModalRevisionAbierto(true)}
                                             mostrarBotonEditar={true}
                                             mostrarBotonBorrar={true}
+                                            asignatura={proyectoActual?.asignatura}
                                         />
                                     ))}
                                     {grupos.length === 0 && (
@@ -762,16 +750,15 @@ export function DashboardDocente({
                             </div>
                         )}
 
-                        {currentSection === 'interacciones' && <InteraccionesIA grupos={grupos} onSelectGrupo={onSelectGrupo} />}
 
                         {currentSection === 'trabajo-compartido' && (
                             <div className="relative">
                                 <div className="flex justify-end mb-4">
                                     <button
                                         onClick={() => setModalSubirRecursoAbierto(true)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-700 transition-all shadow-lg hover:shadow-xl active:scale-95"
+                                        className="flex items-center gap-3 px-6 py-3.5 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-700 transition-all shadow-lg hover:shadow-xl active:scale-95 border-2 border-slate-700"
                                     >
-                                        <Upload className="w-4 h-4" />
+                                        <Upload className="w-5 h-5" />
                                         Subir Archivo Docente
                                     </button>
                                 </div>
@@ -802,7 +789,7 @@ export function DashboardDocente({
                         {currentSection === 'evaluacion' && <EvaluacionRubricas grupos={grupos} rubrica={proyectoActual?.rubrica} proyectoId={proyectoActual?.id} />}
                     </div>
                 </div>
-            </div >
+            </div>
 
             {/* Modal código sala */}
             {mostrarCodigoSala && (
@@ -817,12 +804,10 @@ export function DashboardDocente({
                         </div>
                     </div>
                 </div>
-            )
-            }
+            )}
 
-            {/* Modal Evaluación Individual */}
             {alumnoParaEvaluar && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
                     <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
                         <PerfilAlumno
                             alumno={alumnoParaEvaluar.nombre}
@@ -833,6 +818,7 @@ export function DashboardDocente({
                     </div>
                 </div>
             )}
+
             {/* Bottom Navigation (Mobile Only) - Hidden if any main modal is open to avoid overlapping */}
             {!modalCrearGrupoAbierto && !modalAsignarAbierto && !modalRevisionAbierto && !modalAsistenciaOpen && !modalAjustesIAAbierto && !alumnoParaEvaluar && (
                 <nav className="md:hidden fixed bottom-1 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 px-2 py-3 flex items-center justify-around z-[100] shadow-[0_10px_40px_rgb(0,0,0,0.1)] rounded-[2.5rem] animate-in slide-in-from-bottom-5 duration-300">

@@ -5,7 +5,7 @@ import { Session, User } from '@supabase/supabase-js';
 interface Perfil {
     id: string;
     nombre: string;
-    rol: 'profesor' | 'alumno';
+    rol: 'profesor' | 'alumno' | 'familia';
     clase?: string;
     grupo_id?: number;
     proyecto_id?: string;

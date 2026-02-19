@@ -13,8 +13,12 @@ import { ticoAudio } from '../../lib/audio/TicoAudioEngine';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
-export function TicoGameWidget({ projectId, onBack }: { projectId?: string | number, onBack?: () => void }) {
-    const { state, updateState, equipOutfit, reset } = useTicoGame(String(projectId || 'default'));
+export function TicoGameWidget({ projectId, organizacionId, onBack }: { projectId?: string | number, organizacionId?: string, onBack?: () => void }) {
+    // Si hay organizacionId, usamos contexto 'class', si no, 'project' (para compatibilidad)
+    const contextType = organizacionId ? 'class' : 'project';
+    const contextId = organizacionId || String(projectId || 'default');
+
+    const { state, updateState, equipOutfit, reset } = useTicoGame(contextId, contextType);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isTicoBusy, setIsTicoBusy] = useState(false);
     const [activeResponse, setActiveResponse] = useState<string | null>(null);

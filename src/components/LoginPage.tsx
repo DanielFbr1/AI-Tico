@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Brain, User, GraduationCap, ArrowRight, Key, Check } from 'lucide-react';
+import { Brain, User, GraduationCap, ArrowRight, Key, Check, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function LoginPage() {
     const { refreshPerfil } = useAuth();
-    const [view, setView] = useState<'selection' | 'teacher-auth' | 'student-verify' | 'student-auth'>('selection');
+    const [view, setView] = useState<'selection' | 'teacher-auth' | 'student-verify' | 'student-auth' | 'family-auth'>('selection');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [roomCode, setRoomCode] = useState('');
@@ -22,7 +22,7 @@ export function LoginPage() {
         setError('');
 
         try {
-            const targetRole = (view === 'teacher-auth') ? 'profesor' : 'alumno';
+            const targetRole = (view === 'teacher-auth') ? 'profesor' : (view === 'family-auth') ? 'familia' : 'alumno';
             let authEmail = email;
 
             // Lógica para Alumnos: Generar Email Sintético
@@ -42,6 +42,8 @@ export function LoginPage() {
                 // Flags para onboarding
                 if (targetRole === 'profesor') {
                     localStorage.setItem('isNewTeacher', 'true');
+                } else if (targetRole === 'familia') {
+                    localStorage.setItem('isNewFamily', 'true');
                 } else {
                     localStorage.setItem('isNewStudent', 'true');
                 }
@@ -49,7 +51,7 @@ export function LoginPage() {
                 // Prepare metadata
                 const metaData: any = {
                     rol: targetRole,
-                    nombre: targetRole === 'alumno' ? studentName : (email.split('@')[0])
+                    nombre: targetRole === 'alumno' ? studentName : (studentName || email.split('@')[0])
                 };
 
                 // Only add codigo_sala if provided
@@ -68,6 +70,7 @@ export function LoginPage() {
                 if (error) {
                     localStorage.removeItem('isNewTeacher');
                     localStorage.removeItem('isNewStudent');
+                    localStorage.removeItem('isNewFamily');
                     throw error;
                 }
 
@@ -100,16 +103,18 @@ export function LoginPage() {
             }
 
             if (sessionData) {
-                // Validar Rol
+                // Actualizar el rol al panel elegido (permite multi-rol con un mismo email)
                 const currentRole = sessionData.user?.user_metadata?.rol;
-                if (currentRole && currentRole !== targetRole) {
-                    // Si intenta entrar como alumno con cuenta de profe o viceversa
-                    if (targetRole === 'alumno' && currentRole === 'profesor') {
-                        throw new Error("Esta cuenta es de Profesor. Usa el acceso de Profesores.");
-                    }
-                    if (targetRole === 'profesor' && currentRole === 'alumno') {
-                        throw new Error("Esta cuenta es de Alumno. Usa el acceso de Alumnos.");
-                    }
+                if (currentRole !== targetRole) {
+                    // Actualizar metadata del usuario con el nuevo rol
+                    await supabase.auth.updateUser({
+                        data: { rol: targetRole }
+                    });
+
+                    // Actualizar tabla profiles también
+                    await supabase.from('profiles').update({
+                        rol: targetRole
+                    }).eq('id', sessionData.user.id);
                 }
 
                 setSessionData(sessionData);
@@ -121,6 +126,9 @@ export function LoginPage() {
                 setError("🛑 Límite de seguridad alcanzado. Espera unos segundos.");
             } else if (error.message?.includes("Invalid login")) {
                 setError("Usuario o contraseña incorrectos.");
+            } else if (error.message?.toLowerCase().includes("already registered") || error.message?.toLowerCase().includes("already been registered")) {
+                setError("Este email ya tiene cuenta. Usa 'Iniciar sesión' en su lugar.");
+                setIsSignUp(false);
             } else {
                 setError(error.message || 'Error desconocido al iniciar sesión.');
             }
@@ -231,6 +239,27 @@ export function LoginPage() {
                                 </div>
                             </div>
                         </button>
+
+                        {/* Familia */}
+                        <button
+                            onClick={() => {
+                                setView('family-auth');
+                                setIsSignUp(false);
+                            }}
+                            className="group relative bg-white rounded-3xl p-6 md:p-8 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all duration-100 hover:bg-gray-50 overflow-hidden text-left md:col-span-2"
+                        >
+                            <div className="relative z-10">
+                                <div className="w-16 h-16 md:w-20 md:h-20 bg-[#10b981] rounded-2xl flex items-center justify-center mb-4 md:mb-6 shadow-[0_4px_0_#059669]">
+                                    <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-700 mb-2 md:mb-3 tracking-tight">Soy Familia</h2>
+                                <p className="text-slate-500 mb-4 md:mb-6 font-bold leading-relaxed text-sm md:text-base">Consulta las notas y el progreso de tus hijos.</p>
+                                <div className="flex items-center justify-end gap-2 text-[#10b981] font-black uppercase tracking-widest group-hover:gap-4 transition-all text-sm md:text-base">
+                                    <span>Acceso Familia</span>
+                                    <ArrowRight className="w-5 h-5" />
+                                </div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -238,6 +267,8 @@ export function LoginPage() {
     }
 
     const isTeacher = view === 'teacher-auth';
+    const isFamily = view === 'family-auth';
+    const isTeacherOrFamily = isTeacher || isFamily;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center p-4">
@@ -257,24 +288,26 @@ export function LoginPage() {
                 </button>
 
                 <div className="flex justify-center mb-6">
-                    <div className={`w-16 h-16 bg-gradient-to-br rounded-2xl flex items-center justify-center shadow-lg ${isTeacher ? 'from-blue-500 to-purple-600' : 'from-pink-500 to-rose-600'}`}>
-                        {isTeacher ? <GraduationCap className="w-8 h-8 text-white" /> : <User className="w-8 h-8 text-white" />}
+                    <div className={`w-16 h-16 bg-gradient-to-br rounded-2xl flex items-center justify-center shadow-lg ${isFamily ? 'from-emerald-500 to-teal-600' : isTeacher ? 'from-blue-500 to-purple-600' : 'from-pink-500 to-rose-600'}`}>
+                        {isFamily ? <Users className="w-8 h-8 text-white" /> : isTeacher ? <GraduationCap className="w-8 h-8 text-white" /> : <User className="w-8 h-8 text-white" />}
                     </div>
                 </div>
 
                 <h1 className="text-2xl font-black text-gray-900 text-center mb-2 uppercase tracking-tight">
-                    {isTeacher ? 'Panel Docente' : 'Acceso Alumno'}
+                    {isFamily ? 'Panel Familia' : isTeacher ? 'Panel Docente' : 'Acceso Alumno'}
                 </h1>
                 <p className="text-gray-500 text-center mb-6 font-medium leading-relaxed text-sm">
-                    {isTeacher
-                        ? (isSignUp ? 'Crea tu cuenta profesional' : 'Inicia sesión en tu cuenta')
-                        : (isSignUp ? 'Crea tu cuenta (Código opcional)' : 'Entra con tu usuario')}
+                    {isFamily
+                        ? (isSignUp ? 'Crea tu cuenta familiar' : 'Inicia sesión en tu cuenta')
+                        : isTeacher
+                            ? (isSignUp ? 'Crea tu cuenta profesional' : 'Inicia sesión en tu cuenta')
+                            : (isSignUp ? 'Crea tu cuenta (Código opcional)' : 'Entra con tu usuario')}
                 </p>
 
                 <form onSubmit={handleAuth} className="space-y-4">
 
                     {/* Campos para ALUMNOS */}
-                    {!isTeacher && (
+                    {!isTeacherOrFamily && (
                         <>
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Nombre de Usuario</label>
@@ -292,12 +325,10 @@ export function LoginPage() {
                     )}
 
                     {/* Campos para PROFESORES */}
-                    {isTeacher && (
+                    {isTeacherOrFamily && (
                         <>
-                            {/* Social Login solo para profes (opcional, o para todos?) 
-                                El usuario solo pidió login sin email para ALUMNOS. Profes siguen igual.
-                            */}
-                            {!isSignUp && (
+                            {/* Social Login solo para profes */}
+                            {isTeacher && !isSignUp && (
                                 <div className="grid grid-cols-2 gap-3 mb-4">
                                     <button
                                         type="button"
@@ -323,23 +354,23 @@ export function LoginPage() {
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Tu Nombre</label>
                                     <input
                                         type="text"
-                                        value={studentName} // Reutilizamos studentName para nombre del profe
+                                        value={studentName}
                                         onChange={(e) => setStudentName(e.target.value)}
                                         className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all font-bold text-sm"
-                                        placeholder="Profesor García"
+                                        placeholder={isFamily ? 'María López' : 'Profesor García'}
                                         required
                                     />
                                 </div>
                             )}
 
                             <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Email Profesional</label>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">{isFamily ? 'Email' : 'Email Profesional'}</label>
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all font-bold text-sm"
-                                    placeholder="profe@escuela.edu"
+                                    placeholder={isFamily ? 'mama@gmail.com' : 'profe@escuela.edu'}
                                     required
                                 />
                             </div>
@@ -363,7 +394,7 @@ export function LoginPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] ${isTeacher ? 'bg-blue-600' : 'bg-rose-600'} text-white`}
+                        className={`w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] ${isFamily ? 'bg-emerald-600' : isTeacher ? 'bg-blue-600' : 'bg-rose-600'} text-white`}
                     >
                         {loading ? 'Procesando...' : sessionData ? 'Entrando...' : isSignUp ? 'Crear Cuenta' : 'Entrar'}
                     </button>

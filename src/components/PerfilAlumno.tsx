@@ -1,4 +1,4 @@
-import { X, Award, TrendingUp, MessageSquare, Target, Brain, CheckCircle2, AlertCircle, Trophy, Star, Calendar, Clock, Flame, Users, FileText, Lightbulb, Pencil, Save, Info, Loader2 } from 'lucide-react';
+import { X, Award, TrendingUp, MessageSquare, Target, Brain, CheckCircle2, AlertCircle, Trophy, Star, Calendar, Clock, Flame, Users, FileText, Lightbulb, Pencil, Save, Info, Loader2, Plus, Trash2 } from 'lucide-react';
 import { Grupo, Rubrica } from '../types';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
@@ -17,30 +17,85 @@ interface EvaluacionIndividual {
   comentario: string;
 }
 
-interface ActividadReciente {
-  fecha: string;
-  tipo: 'pregunta_ia' | 'aportacion' | 'colaboracion';
-  descripcion: string;
+interface ComentarioAlumno {
+  id: string;
+  contenido: string;
+  created_at: string;
+  autor_id?: string;
 }
-
-const CRITERIOS_DEFAULT: EvaluacionIndividual[] = [
-  { nombre: 'Colaboración y trabajo en equipo', puntos: 5, comentario: '' },
-  { nombre: 'Creatividad e Innovación', puntos: 5, comentario: '' },
-  { nombre: 'Uso de Herramientas TIC', puntos: 5, comentario: '' }
-];
 
 export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoProps) {
   const [asistenciaStats, setAsistenciaStats] = useState({ present: 0, total: 0, percentage: 100 });
   const [loading, setLoading] = useState(true);
   const [evaluacion, setEvaluacion] = useState<EvaluacionIndividual[]>([]);
   const [notaGrupal, setNotaGrupal] = useState<number | null>(null);
+  const [comentarios, setComentarios] = useState<ComentarioAlumno[]>([]);
+  const [nuevoComentario, setNuevoComentario] = useState('');
+  const [isSavingComentario, setIsSavingComentario] = useState(false);
 
   useEffect(() => {
-    // 1. Fetch criteria (which are now always inherited from group)
     fetchEvaluacion();
     fetchAsistenciaData();
     fetchNotaGrupal();
+    fetchComentarios();
   }, [alumno, grupo.id]);
+
+  const fetchComentarios = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('comentarios_alumno')
+        .select('*')
+        .eq('proyecto_id', grupo.proyecto_id)
+        .eq('alumno_nombre', alumno)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setComentarios(data || []);
+    } catch (e) {
+      console.error("Error fetching comments:", e);
+    }
+  };
+
+  const handleSaveComentario = async () => {
+    if (!nuevoComentario.trim()) return;
+    setIsSavingComentario(true);
+    try {
+      const { error } = await supabase
+        .from('comentarios_alumno')
+        .insert({
+          proyecto_id: grupo.proyecto_id,
+          alumno_nombre: alumno,
+          contenido: nuevoComentario
+        });
+
+      if (error) throw error;
+      toast.success("Comentario añadido");
+      setNuevoComentario('');
+      fetchComentarios();
+    } catch (e) {
+      console.error("Error saving comment:", e);
+      toast.error("Error al guardar comentario");
+    } finally {
+      setIsSavingComentario(false);
+    }
+  };
+
+  const handleDeleteComentario = async (id: string) => {
+    if (!confirm("¿Borrar este comentario?")) return;
+    try {
+      const { error } = await supabase
+        .from('comentarios_alumno')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success("Comentario eliminado");
+      setComentarios(prev => prev.filter(c => c.id !== id));
+    } catch (e) {
+      console.error("Error deleting comment:", e);
+      toast.error("Error al eliminar");
+    }
+  };
 
   const fetchNotaGrupal = async () => {
     try {
@@ -265,77 +320,134 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
               </div>
             </section>
 
-            <div className="bg-white rounded-2xl p-6 shadow-md border-2 border-gray-200">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Target className="w-6 h-6 text-blue-600" />
-                Evaluación del Proyecto
-              </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* EVALUACIÓN */}
+              <div className="bg-white rounded-2xl p-6 shadow-md border-2 border-gray-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <Target className="w-6 h-6 text-blue-600" />
+                  Evaluación del Proyecto
+                </h3>
 
-              {loading ? (
-                <div className="flex flex-col items-center py-10 gap-3">
-                  <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-                  <p className="text-slate-500 font-bold">Cargando criterios...</p>
-                </div>
-              ) : evaluacion.length > 0 ? (
-                <div className="space-y-5">
-                  {evaluacion.map((item, index) => {
-                    const cleanComment = (item.comentario || '').replace('Nota sincronizada con grupo: ', '').trim();
-                    const hasComment = cleanComment.length > 0;
+                {loading ? (
+                  <div className="flex flex-col items-center py-10 gap-3">
+                    <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                    <p className="text-slate-500 font-bold">Cargando criterios...</p>
+                  </div>
+                ) : evaluacion.length > 0 ? (
+                  <div className="space-y-5">
+                    {evaluacion.map((item, index) => {
+                      const cleanComment = (item.comentario || '').replace('Nota sincronizada con grupo: ', '').trim();
+                      const hasComment = cleanComment.length > 0;
 
-                    return (
-                      <div key={index} className={`bg-gray-50 rounded-xl border-2 border-gray-200 transition-all hover:bg-white hover:shadow-md ${hasComment ? 'p-6' : 'p-4 items-center'}`}>
-                        <div className={`flex justify-between ${hasComment ? 'items-start' : 'items-center'}`}>
-                          <div className="flex-1 mr-6">
-                            <h4 className={`font-bold text-gray-900 text-lg ${hasComment ? 'mb-2' : 'mb-0'}`}>{item.nombre}</h4>
-                            {hasComment && (
-                              <p className="text-gray-700 font-medium text-base leading-relaxed bg-white p-3 rounded-lg border border-gray-100 shadow-sm inline-block">
-                                {cleanComment}
-                              </p>
-                            )}
-                          </div>
+                      return (
+                        <div key={index} className={`bg-gray-50 rounded-xl border-2 border-gray-200 transition-all hover:bg-white hover:shadow-md ${hasComment ? 'p-6' : 'p-4 items-center'}`}>
+                          <div className={`flex justify-between ${hasComment ? 'items-start' : 'items-center'}`}>
+                            <div className="flex-1 mr-6">
+                              <h4 className={`font-bold text-gray-900 text-lg ${hasComment ? 'mb-2' : 'mb-0'}`}>{item.nombre}</h4>
+                              {hasComment && (
+                                <p className="text-gray-700 font-medium text-base leading-relaxed bg-white p-3 rounded-lg border border-gray-100 shadow-sm inline-block">
+                                  {cleanComment}
+                                </p>
+                              )}
+                            </div>
 
-                          <div className="text-right flex flex-col items-end gap-2 min-w-[120px]">
-                            <span className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-bold rounded-lg shadow-sm border border-white/20 uppercase tracking-wider ${getNivelColor(item.puntos)}`}>
-                              {getNivelIcon(item.puntos)}
-                              {getNivelFromPuntos(item.puntos)}
-                            </span>
-                            <div className="text-3xl font-black text-gray-900 leading-none flex items-baseline gap-1">
-                              {Number(item.puntos).toFixed(1)}
-                              <span className="text-sm text-gray-400 font-bold">/10</span>
+                            <div className="text-right flex flex-col items-end gap-2 min-w-[120px]">
+                              <span className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-bold rounded-lg shadow-sm border border-white/20 uppercase tracking-wider ${getNivelColor(item.puntos)}`}>
+                                {getNivelIcon(item.puntos)}
+                                {getNivelFromPuntos(item.puntos)}
+                              </span>
+                              <div className="text-3xl font-black text-gray-900 leading-none flex items-baseline gap-1">
+                                {Number(item.puntos).toFixed(1)}
+                                <span className="text-sm text-gray-400 font-bold">/10</span>
+                              </div>
                             </div>
                           </div>
+
+                          {hasComment && (
+                            <div className="w-full h-3 bg-gray-300 rounded-full overflow-hidden mt-4">
+                              <div
+                                className={`h-full transition-all duration-500 ${getBarColor(item.puntos)}`}
+                                style={{ width: `${(Number(item.puntos) / 10) * 100}%` }}
+                              />
+                            </div>
+                          )}
+                          {!hasComment && (
+                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-3">
+                              <div
+                                className={`h-full transition-all duration-500 opacity-50 ${getBarColor(item.puntos)}`}
+                                style={{ width: `${(Number(item.puntos) / 10) * 100}%` }}
+                              />
+                            </div>
+                          )}
                         </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 p-8 rounded-3xl border-2 border-dashed border-blue-200 text-center">
+                    <Info className="w-10 h-10 text-blue-400 mx-auto mb-3" />
+                    <p className="text-blue-900 font-bold">El grupo aún no ha sido evaluado.</p>
+                  </div>
+                )}
+              </div>
 
-                        {hasComment && (
-                          <div className="w-full h-3 bg-gray-300 rounded-full overflow-hidden mt-4">
-                            <div
-                              className={`h-full transition-all duration-500 ${getBarColor(item.puntos)}`}
-                              style={{ width: `${(Number(item.puntos) / 10) * 100}%` }}
-                            />
-                          </div>
-                        )}
-                        {!hasComment && (
-                          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-3">
-                            <div
-                              className={`h-full transition-all duration-500 opacity-50 ${getBarColor(item.puntos)}`}
-                              style={{ width: `${(Number(item.puntos) / 10) * 100}%` }}
-                            />
-                          </div>
-                        )}
+              {/* COMENTARIOS Y OBSERVACIONES */}
+              <div className="flex flex-col gap-6">
+                <div className="bg-white rounded-2xl p-6 shadow-md border-2 border-gray-200 flex-1">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <FileText className="w-6 h-6 text-purple-600" />
+                    Observaciones y Notas
+                  </h3>
+
+                  <div className="mb-6">
+                    <textarea
+                      value={nuevoComentario}
+                      onChange={(e) => setNuevoComentario(e.target.value)}
+                      placeholder="Escribe una observación privada sobre el alumno..."
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none transition-all text-sm font-medium"
+                      rows={3}
+                    />
+                    <div className="flex justify-end mt-2">
+                      <button
+                        onClick={handleSaveComentario}
+                        disabled={!nuevoComentario.trim() || isSavingComentario}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-purple-200"
+                      >
+                        {isSavingComentario ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Guardar Nota
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {comentarios.length === 0 ? (
+                      <div className="text-center py-10 opacity-50">
+                        <MessageSquare className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm font-bold text-gray-400">Sin observaciones registradas</p>
                       </div>
-                    );
-                  })}
+                    ) : (
+                      comentarios.map((comentario) => (
+                        <div key={comentario.id} className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 relative group animate-in fade-in slide-in-from-bottom-2">
+                          <p className="text-gray-700 font-medium text-sm leading-relaxed whitespace-pre-wrap">{comentario.contenido}</p>
+                          <div className="flex justify-between items-center mt-3 pt-3 border-t border-yellow-100/50">
+                            <span className="text-[10px] uppercase font-bold text-yellow-600 opacity-60">
+                              {new Date(comentario.created_at).toLocaleDateString()} • {new Date(comentario.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <button
+                              onClick={() => handleDeleteComentario(comentario.id)}
+                              className="p-1.5 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                              title="Eliminar nota"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <div className="bg-blue-50 p-8 rounded-3xl border-2 border-dashed border-blue-200 text-center">
-                  <Info className="w-10 h-10 text-blue-400 mx-auto mb-3" />
-                  <p className="text-blue-900 font-bold">El grupo aún no ha sido evaluado.</p>
-                </div>
-              )}
+              </div>
             </div>
-
-
-
 
           </div>
         </div>

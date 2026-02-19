@@ -6,8 +6,10 @@ import { ProjectsDashboard } from './pages/ProjectsDashboard';
 import { ProjectDetail } from './pages/ProjectDetail';
 import { GroupDetail } from './pages/GroupDetail';
 import { DashboardAlumno } from './components/DashboardAlumno';
-import { Proyecto, Grupo } from './types';
+import { DashboardFamilia } from './components/DashboardFamilia';
+import { Proyecto, Grupo, Organizacion } from './types';
 import { TicoFullScreenPage } from './pages/TicoGame/TicoFullScreenPage';
+import { SessionPanel } from './components/SessionPanel';
 import { supabase } from './lib/supabase';
 import { Toaster } from 'sonner';
 
@@ -72,6 +74,12 @@ function AppContent() {
   const [selectedProject, setSelectedProject] = useState<Proyecto | null>(null);
   const [selectedGrupo, setSelectedGrupo] = useState<Grupo | null>(null);
 
+  // Contexto de organización del profesor (Ruta: Curso -> Colegio -> Ciclo -> Clase)
+  const [organizacionContext, setOrganizacionContext] = useState<{ clase: Organizacion, breadcrumb: Organizacion[] } | null>(null);
+
+  // Estado para preservar la navegación en el panel de sesión
+  const [sessionPath, setSessionPath] = useState<Organizacion[]>([]);
+
   const handleOpenTicoFull = () => {
     setCurrentScreen('tico-full');
   };
@@ -86,9 +94,22 @@ function AppContent() {
       // Si el usuario se desconecta, limpiamos el estado visual
       setSelectedProject(null);
       setSelectedGrupo(null);
+      setOrganizacionContext(null);
+      setSessionPath([]);
       setCurrentScreen('projects');
     }
   }, [user]);
+
+  const handleSelectClase = (clase: Organizacion, breadcrumb: Organizacion[]) => {
+    setSessionPath(breadcrumb); // Guardamos el camino para poder volver
+    setOrganizacionContext({ clase, breadcrumb });
+  };
+
+  const handleBackToSession = () => {
+    setOrganizacionContext(null);
+    setSelectedProject(null);
+    // sessionPath se mantiene
+  };
 
   const handleSelectProject = (proyecto: Proyecto) => {
     setSelectedProject(proyecto);
@@ -148,10 +169,32 @@ function AppContent() {
     );
   }
 
+  // Si es familia
+  if (perfil && perfil.rol === 'familia') {
+    return (
+      <DashboardFamilia
+        familia={perfil as any}
+        onLogout={signOut}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {currentScreen === 'projects' && (
-        <ProjectsDashboard onSelectProject={handleSelectProject} />
+      {currentScreen === 'projects' && !organizacionContext && (
+        <SessionPanel
+          nombreProfesor={user?.email?.split('@')[0] || 'Profesor'}
+          onSelectClase={handleSelectClase}
+          initialPath={sessionPath}
+        />
+      )}
+
+      {currentScreen === 'projects' && organizacionContext && (
+        <ProjectsDashboard
+          onSelectProject={handleSelectProject}
+          organizacionContext={organizacionContext}
+          onBack={handleBackToSession}
+        />
       )}
 
       {currentScreen === 'project-detail' && selectedProject && (
@@ -167,6 +210,7 @@ function AppContent() {
       {currentScreen === 'tico-full' && selectedProject && (
         <TicoFullScreenPage
           projectId={selectedProject.id}
+          organizacionId={selectedProject.organizacion_clase_id || selectedProject.clase} // Prefer organization ID
           onBack={handleCloseTicoFull}
         />
       )}

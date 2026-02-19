@@ -88,12 +88,17 @@ export interface Proyecto {
     fases: ProyectoFase[];
     codigo_sala: string;
     clase?: string;
+    colegio?: string;
+    curso?: string;
+    etapa?: string;
+    organizacion_clase_id?: string;
     grupos?: Grupo[];
     created_by?: string;
     contexto_ia?: string;
     config_ia_global?: any;
     instrucciones_ia_global?: string;
     rubrica?: Rubrica;
+    asignatura?: string;
 }
 
 export interface AlumnoConectado {
@@ -128,9 +133,13 @@ export interface ProyectoActivo {
     tipo: string;
     codigo_sala: string;
     clase?: string;
+    colegio?: string;
+    curso?: string;
     fases: ProyectoFase[];
     grupos?: Grupo[];
     rubrica?: Rubrica;
+    organizacion_clase_id?: string;
+    asignatura?: string;
 }
 
 // --- TICO-AI TYPES ---
@@ -168,4 +177,12 @@ export interface TicoResourceAnalysis {
     confidence: number;
     reasoning: string;
     suggested_outfit_unlock?: string; // ID of outfit if applicable
+}
+
+export interface Organizacion {
+    id: string;
+    nombre: string;
+    tipo: 'curso' | 'colegio' | 'etapa' | 'clase';
+    parent_id: string | null;
+    created_at?: string;
 }

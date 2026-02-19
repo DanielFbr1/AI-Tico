@@ -26,6 +26,7 @@ interface DetalleGrupoProps {
 export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, onAssignTask, onEditGroup, onViewStudent, onDeleteHito }: DetalleGrupoProps) {
   const [vistaActiva, setVistaActiva] = useState<'detalle' | 'compartir' | 'chat' | 'tareas' | 'evaluacion'>('detalle');
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [chatMode, setChatMode] = useState<'menu' | 'mentor' | 'group'>('menu');
 
   // Asegurar que empezamos arriba al entrar al detalle
   useEffect(() => {
@@ -206,50 +207,124 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
               </div>
             </div>
           ) : vistaActiva === 'chat' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full max-w-[1600px] mx-auto">
-
-              {/* Left Column: AI Mentor (PURPLE) */}
-              <div className="lg:col-span-1 bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col relative">
-                <div className="absolute top-0 left-0 w-full z-10 bg-white/95 backdrop-blur-sm pt-5 px-6 pb-2">
-                  <div className="flex items-center justify-between border-b-2 border-indigo-500 pb-2">
-                    <div className="flex items-center gap-2">
-                      <Brain className="w-5 h-5 text-indigo-600" />
-                      <span className="text-sm font-black text-indigo-900 uppercase tracking-widest">Mentor IA</span>
+            <div className="h-full flex flex-col animate-in fade-in duration-500">
+              {/* VISTA DESKTOP: Ambos chats en paralelo */}
+              <div className="hidden md:grid grid-cols-2 gap-8 h-full max-w-[1600px] mx-auto p-4 lg:p-8">
+                {/* Columna Mentor IA (Tico) */}
+                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col relative">
+                  <div className="p-5 border-b-2 border-indigo-500 bg-white/95 backdrop-blur-sm shadow-sm z-10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-100 rounded-xl text-indigo-600">
+                          <Brain className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-black text-indigo-900 uppercase tracking-widest">Chat con Tico</span>
+                      </div>
+                      <button
+                        onClick={() => setShowConfigModal(true)}
+                        className="p-2 hover:bg-indigo-50 text-indigo-500 rounded-xl transition-colors"
+                        title="Configurar Mentor"
+                      >
+                        <Bot className="w-5 h-5" />
+                      </button>
                     </div>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <MentorChat grupo={grupo} readOnly={true} />
+                  </div>
+                </div>
+
+                {/* Columna Chat Equipo */}
+                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col relative">
+                  <div className="p-5 border-b-2 border-emerald-500 bg-white/95 backdrop-blur-sm shadow-sm z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <span className="text-sm font-black text-emerald-900 uppercase tracking-widest">Chat del Equipo</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <ChatGrupo
+                      grupoId={String(grupo.id)}
+                      miembroActual="Profesor"
+                      esProfesor={true}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* VISTA MÓVIL: Menú de selección minimalista o chat individual */}
+              <div className="md:hidden h-full flex flex-col p-4">
+                {chatMode === 'menu' ? (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-6">
+                    {/* Botón Tico Minimalista */}
                     <button
-                      onClick={() => setShowConfigModal(true)}
-                      className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors"
-                      title="Configurar Mentor IA"
+                      onClick={() => setChatMode('mentor')}
+                      className="w-full group bg-white border-2 border-slate-200 hover:border-indigo-500 p-8 rounded-[2.5rem] transition-all flex flex-col items-center gap-4 active:scale-95 shadow-xl hover:shadow-indigo-100"
                     >
-                      <Bot className="w-5 h-5" />
+                      <div className="p-5 bg-indigo-600 text-white rounded-[1.5rem] shadow-lg shadow-indigo-200">
+                        <Bot className="w-10 h-10" />
+                      </div>
+                      <div className="text-2xl font-black text-slate-800 uppercase tracking-tight">Chat con Tico</div>
+                    </button>
+
+                    {/* Botón Equipo Minimalista */}
+                    <button
+                      onClick={() => setChatMode('group')}
+                      className="w-full group bg-white border-2 border-slate-200 hover:border-emerald-500 p-8 rounded-[2.5rem] transition-all flex flex-col items-center gap-4 active:scale-95 shadow-xl hover:shadow-emerald-100"
+                    >
+                      <div className="p-5 bg-emerald-500 text-white rounded-[1.5rem] shadow-lg shadow-emerald-200">
+                        <Users className="w-10 h-10" />
+                      </div>
+                      <div className="text-2xl font-black text-slate-800 uppercase tracking-tight">Chat Equipo</div>
                     </button>
                   </div>
-                </div>
-                <div className="pt-14 h-full flex flex-col">
-                  <MentorChat
-                    grupo={grupo}
-                    readOnly={true}
-                  />
-                </div>
-              </div>
+                ) : (
+                  <div className="flex-1 flex flex-col bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-2xl relative animate-in slide-in-from-right-10 duration-500">
+                    {/* Header Chat Móvil con botón Volver */}
+                    <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => setChatMode('menu')}
+                          className="p-3 bg-slate-100 text-slate-500 rounded-2xl active:scale-90 transition-all"
+                          title="Volver"
+                        >
+                          <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2.5 rounded-xl text-white shadow-sm ${chatMode === 'mentor' ? 'bg-indigo-600' : 'bg-emerald-500'}`}>
+                            {chatMode === 'mentor' ? <Bot className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                          </div>
+                          <div className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                            {chatMode === 'mentor' ? 'Chat con Tico' : 'Chat Equipo'}
+                          </div>
+                        </div>
+                      </div>
+                      {chatMode === 'mentor' && (
+                        <button
+                          onClick={() => setShowConfigModal(true)}
+                          className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl active:rotate-12 transition-transform"
+                        >
+                          <Bot className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
 
-              {/* Right Column: Group Chat (GREEN) */}
-              <div className="lg:col-span-1 bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col relative">
-                <div className="absolute top-0 left-0 w-full z-10 bg-white/95 backdrop-blur-sm pt-5 px-6 pb-2">
-                  <div className="flex items-center gap-2 border-b-2 border-green-500 pb-2">
-                    <Users className="w-5 h-5 text-green-600" />
-                    <span className="text-sm font-black text-green-900 uppercase tracking-widest">Chat del Equipo</span>
+                    <div className="flex-1 overflow-hidden">
+                      {chatMode === 'mentor' ? (
+                        <MentorChat grupo={grupo} />
+                      ) : (
+                        <ChatGrupo
+                          grupoId={String(grupo.id)}
+                          miembroActual="Profesor"
+                          esProfesor={true}
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="pt-14 h-full flex flex-col">
-                  <ChatGrupo
-                    grupoId={String(grupo.id)}
-                    miembroActual="Profesor"
-                    esProfesor={true}
-                  />
-                </div>
+                )}
               </div>
-
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 animate-in fade-in">

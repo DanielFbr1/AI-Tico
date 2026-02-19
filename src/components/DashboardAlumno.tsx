@@ -1,5 +1,6 @@
 import {
   Users,
+  FileText,
   Layout,
   Globe,
   MessageSquare,
@@ -38,6 +39,7 @@ import { LivingTree } from './LivingTree';
 import { PROYECTOS_MOCK, getMockEvaluacion, PASOS_TUTORIAL_ALUMNO } from '../data/mockData'; // Keep this for now, as getMockEvaluacion is not in the original
 import { toast } from 'sonner';
 import { ModalProponerHitos } from './ModalProponerHitos';
+import { getAsignaturaStyles } from '../data/asignaturas';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,7 +55,7 @@ interface DashboardAlumnoProps {
   alumno: {
     id: string;
     nombre: string;
-    rol: 'profesor' | 'alumno';
+    rol: 'profesor' | 'alumno' | 'familia';
     clase?: string;
     grupo_id?: number;
     proyecto_id?: string;
@@ -73,6 +75,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
   const [grupoReal, setGrupoReal] = useState<Grupo | null>(null);
   const [nombreProyecto, setNombreProyecto] = useState<string>(''); // New state for AI context
+  const [asignaturaProyecto, setAsignaturaProyecto] = useState<string>('');
   const [contextoProyecto, setContextoProyecto] = useState<string>(''); // NEW: AI Context from Project
   const [rubricaProyecto, setRubricaProyecto] = useState<Rubrica | null>(null);
   const [fasesProyecto, setFasesProyecto] = useState<ProyectoFase[]>([]);
@@ -97,7 +100,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   });
 
   const [historialClases, setHistorialClases] = useState<any[]>([]);
-  const [notaGrupal, setNotaGrupal] = useState<number | null>(null); // State for group grade
+  const [notaGrupal, setNotaGrupal] = useState<number | null>(null);
+  const [comentarios, setComentarios] = useState<{ id: string, contenido: string, created_at: string }[]>([]);
 
   useEffect(() => {
     if (alumno?.nombre) {
@@ -113,7 +117,9 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               proyecto_id,
               proyectos (
                 nombre,
-                codigo_sala
+                codigo_sala,
+                asignatura,
+                curso
               )
             `);
 
@@ -137,6 +143,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               id: g.proyecto_id,
               nombre: g.proyectos?.nombre || g.nombre, // Prefer project name, fallback group name
               codigo: g.proyectos?.codigo_sala || '???',
+              asignatura: g.proyectos?.asignatura || '', // Capture asignatura
+              curso: g.proyectos?.curso || 'Sin Curso', // Capture curso
               grupo_interno_id: g.id
             }));
 
@@ -198,7 +206,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       if (!targetProjectId && roomCode) {
         const { data: proyecto, error: errorProyecto } = await supabase
           .from('proyectos')
-          .select('id, nombre, contexto_ia, rubrica, fases')
+          .select('id, nombre, asignatura, contexto_ia, rubrica, fases')
           .eq('codigo_sala', roomCode)
           .single();
 
@@ -208,6 +216,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         }
         targetProjectId = proyecto.id;
         setNombreProyecto(proyecto.nombre); // Capture name from Room Code resolution
+        setAsignaturaProyecto(proyecto.asignatura || '');
         setContextoProyecto(proyecto.contexto_ia || ''); // Capture AI context
         setRubricaProyecto(proyecto.rubrica as Rubrica);
         setFasesProyecto(proyecto.fases as ProyectoFase[] || []);
@@ -215,9 +224,10 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
       if (targetProjectId && !nombreProyecto) {
         // Fetch project details if we have ID but not details (e.g. login via profile)
-        const { data: pData } = await supabase.from('proyectos').select('nombre, contexto_ia, rubrica, fases').eq('id', targetProjectId).single();
+        const { data: pData } = await supabase.from('proyectos').select('nombre, asignatura, contexto_ia, rubrica, fases').eq('id', targetProjectId).single();
         if (pData) {
           setNombreProyecto(pData.nombre);
+          setAsignaturaProyecto(pData.asignatura || '');
           setContextoProyecto(pData.contexto_ia || '');
           setRubricaProyecto(pData.rubrica as Rubrica);
           setFasesProyecto(pData.fases as ProyectoFase[] || []);
@@ -296,6 +306,16 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           setNotaGrupal(null);
         }
       }
+
+      // Fetch Comments
+      const { data: commentsData } = await supabase
+        .from('comentarios_alumno')
+        .select('id, contenido, created_at')
+        .eq('proyecto_id', targetProjectId)
+        .eq('alumno_nombre', alumno.nombre)
+        .order('created_at', { ascending: false });
+
+      if (commentsData) setComentarios(commentsData);
 
       // Fetch Assistance
       const { data: attendanceData } = await supabase
@@ -598,7 +618,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[9px] text-slate-300 font-bold uppercase tracking-wider bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">v3.5.2 (Chat UI Polish)</span>
+                  <span className="text-[9px] text-slate-300 font-bold uppercase tracking-wider bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">v4.0.1 (Multi-Rol Login)</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -665,20 +685,46 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       <p className="text-[10px] uppercase text-slate-300 font-bold tracking-widest">Sin historial reciente</p>
                     </div>
                   ) : (
-                    <div className="space-y-1">
-                      {historialClases.map((hist, i) => (
-                        <DropdownMenuItem
-                          key={i}
-                          onClick={() => handleSwitchClass(hist)}
-                          className="group flex flex-col items-start gap-1 p-3 rounded-xl cursor-pointer hover:bg-indigo-50 data-[highlighted]:bg-indigo-50 transition-colors"
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="font-bold text-slate-700 text-xs group-hover:text-indigo-700">{hist.nombre}</span>
-                            {alumno.codigo_sala === hist.codigo && <span className="w-2 h-2 rounded-full bg-emerald-500"></span>}
+                    <div className="max-h-[70vh] overflow-y-auto px-1 space-y-4 custom-scrollbar">
+                      {Object.entries(
+                        historialClases.reduce((acc: any, curr: any) => {
+                          const year = curr.curso || 'Sin Curso';
+                          if (!acc[year]) acc[year] = [];
+                          acc[year].push(curr);
+                          return acc;
+                        }, {})
+                      ).sort(([a], [b]) => b.localeCompare(a)) // Ordenar años descendente
+                        .map(([year, clases]: [string, any]) => (
+                          <div key={year} className="space-y-1">
+                            <div className="flex items-center gap-2 px-2 py-1">
+                              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{year}</span>
+                              <div className="h-px flex-1 bg-indigo-50"></div>
+                            </div>
+                            {clases.map((hist: any, i: number) => {
+                              const asigStyles = getAsignaturaStyles(hist.asignatura);
+                              return (
+                                <DropdownMenuItem
+                                  key={`${year}-${i}`}
+                                  onClick={() => handleSwitchClass(hist)}
+                                  className={`group flex flex-col items-start gap-1 p-3 rounded-xl cursor-pointer border-2 ${hist.asignatura ? `${asigStyles.borderClass} ${asigStyles.lightBgClass}` : 'border-transparent hover:bg-indigo-50'} data-[highlighted]:bg-indigo-50 transition-colors mb-1`}
+                                >
+                                  <div className="flex items-center justify-between w-full">
+                                    <span className={`font-bold text-xs ${hist.asignatura ? asigStyles.textClass : 'text-slate-700 group-hover:text-indigo-700'}`}>{hist.nombre}</span>
+                                    {alumno.codigo_sala === hist.codigo && <span className="w-2 h-2 rounded-full bg-emerald-500"></span>}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-widest group-hover:bg-indigo-100 group-hover:text-indigo-500">{hist.codigo}</span>
+                                    {hist.asignatura && (
+                                      <span className={`text-[10px] font-black uppercase tracking-widest ${asigStyles.textClass}`}>
+                                        • {hist.asignatura}
+                                      </span>
+                                    )}
+                                  </div>
+                                </DropdownMenuItem>
+                              );
+                            })}
                           </div>
-                          <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-widest group-hover:bg-indigo-100 group-hover:text-indigo-500">{hist.codigo}</span>
-                        </DropdownMenuItem>
-                      ))}
+                        ))}
                     </div>
                   )}
                 </DropdownMenuContent>
@@ -819,43 +865,51 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
             ) : (
               <>
                 {/* COLUMNA 1: Tarjeta de Grupo - Full Width */}
-                <div className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200 relative overflow-hidden">
-                  {/* ... (Contenido Tarjeta Grupo Existente) ... */}
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -translate-y-1/2 translate-x-1/2 -z-0"></div>
-                  <div className="relative z-10 flex flex-col h-full justify-between">
-                    <div>
-                      <div className="flex items-start justify-between mb-6">
+                {(() => {
+                  const asigStyles = getAsignaturaStyles(asignaturaProyecto);
+                  return (
+                    <div className={`bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border-2 ${asigStyles.borderClass} relative overflow-hidden`}>
+                      {/* ... (Contenido Tarjeta Grupo Existente) ... */}
+                      <div className={`absolute top-0 right-0 w-64 h-64 ${asigStyles.lightBgClass} rounded-full -translate-y-1/2 translate-x-1/2 -z-0 opacity-50`}></div>
+                      <div className="relative z-10 flex flex-col h-full justify-between">
                         <div>
-                          <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase leading-none mb-2">{grupoDisplay.nombre}</h2>
-                        </div>
-                        <button
-                          onClick={() => setModalSubirRecursoOpen(true)}
-                          className="bg-slate-900 text-white w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all group"
-                          title="Subir aportación"
-                        >
-                          <Upload className="w-6 h-6 group-hover:text-purple-400 transition-colors" />
-                        </button>
-                      </div>
-
-
-
-                      {/* Members */}
-                      <div className="mb-6">
-                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Compañeros</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-                          {(grupoDisplay.miembros || []).map((miembro: string, index: number) => (
-                            <div key={index} className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                              <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-purple-600 font-bold text-xs">
-                                {miembro.charAt(0).toUpperCase()}
-                              </div>
-                              <span className="font-bold text-slate-700 text-xs tracking-tight truncate">{miembro}</span>
+                          <div className="flex items-start justify-between mb-6">
+                            <div>
+                              <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase leading-none mb-2">{grupoDisplay.nombre}</h2>
+                              {asignaturaProyecto && (
+                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${asigStyles.textClass} px-3 py-1 ${asigStyles.lightBgClass} rounded-full border ${asigStyles.borderClass} opacity-80 inline-block mt-1`}>
+                                  {asignaturaProyecto}
+                                </span>
+                              )}
                             </div>
-                          ))}
+                            <button
+                              onClick={() => setModalSubirRecursoOpen(true)}
+                              className="bg-slate-900 text-white w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all group"
+                              title="Subir aportación"
+                            >
+                              <Upload className="w-6 h-6 group-hover:text-purple-400 transition-colors" />
+                            </button>
+                          </div>
+
+                          {/* Members */}
+                          <div className="mb-6">
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Compañeros</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                              {(grupoDisplay.miembros || []).map((miembro: string, index: number) => (
+                                <div key={index} className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                  <div className={`w-8 h-8 bg-white border ${asigStyles.borderClass} rounded-lg flex items-center justify-center ${asigStyles.textClass} font-bold text-xs`}>
+                                    {miembro.charAt(0).toUpperCase()}
+                                  </div>
+                                  <span className="font-bold text-slate-700 text-xs tracking-tight truncate">{miembro}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
 
 
 
@@ -1010,19 +1064,20 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       const hitosTotales = proyecto.fases.flatMap(f => f.hitos || []);
                       const hitosCompletadosLabels = (g.hitos || []).filter(h => h.estado === 'aprobado').map(h => h.titulo);
                       const hitosPendientes = hitosTotales.filter(h => !hitosCompletadosLabels.includes(h)).slice(0, 2);
+                      const asigStyles = getAsignaturaStyles(asignaturaProyecto);
 
                       return (
-                        <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-all">
+                        <div key={idx} className={`p-4 bg-slate-50 rounded-2xl border-2 ${asigStyles.borderClass} group hover:border-indigo-400 transition-all shadow-sm`}>
                           <div className="flex items-center justify-between mb-3">
-                            <div className="font-bold text-slate-700 text-sm truncate max-w-[120px]" title={g.nombre}>{g.nombre}</div>
-                            <div className="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[9px] font-black text-indigo-600 shadow-sm">
+                            <div className={`font-bold ${asigStyles.textClass} text-sm truncate max-w-[120px]`} title={g.nombre}>{g.nombre}</div>
+                            <div className={`w-7 h-7 rounded-full bg-white border ${asigStyles.borderClass} flex items-center justify-center text-[9px] font-black ${asigStyles.textClass} shadow-sm`}>
                               {g.progreso}%
                             </div>
                           </div>
 
                           <div className="flex -space-x-2 mb-3 overflow-hidden py-1 pl-1">
                             {g.miembros?.slice(0, 4).map((m, i) => (
-                              <div key={i} title={m} className="w-5 h-5 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-[7px] font-bold text-indigo-800 uppercase ring-1 ring-slate-100">
+                              <div key={i} title={m} className={`w-5 h-5 rounded-full ${asigStyles.lightBgClass} border-2 border-white flex items-center justify-center text-[7px] font-bold ${asigStyles.textClass} uppercase ring-1 ring-slate-100`}>
                                 {m.charAt(0)}
                               </div>
                             ))}
@@ -1037,7 +1092,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                             {(g.hitos && g.hitos.length > 0) ? (
                               hitosPendientes.map((h, i) => (
                                 <div key={i} className="flex items-center gap-1.5 opacity-70">
-                                  <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                                  <div className={`w-1 h-1 rounded-full ${asigStyles.bgClass}`}></div>
                                   <span className="text-[9px] font-medium truncate text-slate-500 max-w-full block" title={h}>
                                     {h}
                                   </span>
@@ -1254,6 +1309,35 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                   )}
                 </div>
               </div>
+              {/* SECCION COMENTARIOS */}
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <FileText className="w-6 h-6 text-purple-600" />
+                  Observaciones del Profesor
+                </h3>
+
+                <div className="space-y-4">
+                  {comentarios.length === 0 ? (
+                    <div className="text-center py-10 opacity-50">
+                      <MessageSquare className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm font-bold text-gray-400">Sin observaciones registradas</p>
+                    </div>
+                  ) : (
+                    comentarios.map((comentario) => (
+                      <div key={comentario.id} className="bg-yellow-50 p-6 rounded-2xl border border-yellow-100/50 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-100 rounded-full -mr-8 -mt-8 opacity-50 blur-xl"></div>
+                        <p className="text-gray-700 font-medium text-sm leading-relaxed whitespace-pre-wrap relative z-10">{comentario.contenido}</p>
+                        <div className="mt-4 flex justify-end relative z-10">
+                          <span className="text-[10px] uppercase font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full shadow-sm border border-yellow-200/50">
+                            {new Date(comentario.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
             </div>
           )
         }
