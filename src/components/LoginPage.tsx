@@ -197,7 +197,7 @@ export function LoginPage() {
                     <picture>
                         <source
                             media="(max-width: 768px)"
-                            srcSet="/main_menu_bg_mobile_v2_1771544396609.png"
+                            srcSet="/tico/main_menu_bg_mobile.png"
                         />
                         <img
                             src="/tico/Main_menu_bg4.jpg"
