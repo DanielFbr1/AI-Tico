@@ -189,23 +189,51 @@ export function LoginPage() {
         }
     };
 
+    const BackgroundDesign = () => (
+        <div className="absolute inset-0 overflow-hidden bg-[#0A0F1D] z-0">
+            {/* Base deep indigo layer */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#141B33_0%,#0A0F1D_100%)]" />
+
+            {/* Animated Glowing Orbs */}
+            <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-cyan-500/10 rounded-full blur-[120px] animate-pulse duration-[8s]" />
+            <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-indigo-600/15 rounded-full blur-[140px] animate-pulse duration-[10s] delay-1000" />
+            <div className="absolute top-[20%] right-[-5%] w-[30vw] h-[30vw] bg-violet-600/10 rounded-full blur-[100px] animate-pulse duration-[12s] delay-2000" />
+
+            {/* Tech Grid Pattern */}
+            <div
+                className="absolute inset-0 opacity-[0.03]"
+                style={{
+                    backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`,
+                    backgroundSize: '40px 40px'
+                }}
+            />
+
+            {/* Subtle "Light Beams" (Nature focus) */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-cyan-500/5 to-transparent rotate-45 transform translate-y-[-20%] md:translate-y-[-40%]" />
+
+            {/* Digital Particles (Subtle dots) */}
+            <div className="absolute inset-0 opacity-20">
+                {[...Array(20)].map((_, i) => (
+                    <div
+                        key={i}
+                        className="absolute w-1 h-1 bg-white rounded-full"
+                        style={{
+                            top: `${Math.random() * 100}%`,
+                            left: `${Math.random() * 100}%`,
+                            opacity: Math.random() * 0.5,
+                            animation: `ping ${3 + Math.random() * 5}s cubic-bezier(0, 0, 0.2, 1) infinite`
+                        }}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+
     if (view === 'selection') {
         return (
             <div className="h-[100dvh] w-full bg-[#0B101E] flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
-                {/* Capa 1: Fondo (Imagen 3D / Gradiente) */}
-                <div className="absolute inset-0 z-0 select-none pointer-events-none">
-                    {/* Desktop Background */}
-                    <img
-                        src="/tico/Main_menu_bg4.jpg"
-                        alt="Digital Learning Forest Background"
-                        className="hidden md:block w-full h-full object-cover object-center scale-[1.08] translate-x-12 contrast-[1.01] [image-rendering:high-quality]"
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/tico/bg_nido_digital.jpg';
-                        }}
-                    />
-                    {/* Mobile Background - Clean Gradient to avoid blurriness */}
-                    <div className="md:hidden w-full h-full bg-gradient-to-b from-[#0B1026] via-[#111827] to-[#0B101E]" />
-                </div>
+                {/* Custom Design Background */}
+                <BackgroundDesign />
 
                 {/* Capa 2: Tico (Desktop Absolute - Sobre el pedestal) */}
                 <div className="hidden md:block absolute z-10 bottom-[-2%] md:left-[8%] lg:left-[13%] w-[450px] lg:w-[580px] pointer-events-none transition-all duration-500">
@@ -298,7 +326,7 @@ export function LoginPage() {
                             </div>
 
                             <div className="mt-6 md:mt-8 text-center md:text-right">
-                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase">Sistema Unificado V1.3.3</span>
+                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase">Sistema Unificado V1.3.4</span>
                             </div>
                         </div>
                     </div>
@@ -321,8 +349,8 @@ export function LoginPage() {
 
     return (
         <div className="h-[100dvh] w-full bg-[#0B101E] flex items-center justify-center p-4 relative overflow-hidden font-sans">
-            {/* Background glowing orbs */}
-            <div className="absolute top-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none" />
+            {/* Custom Design Background */}
+            <BackgroundDesign />
 
             <div className="w-full max-w-sm relative z-10">
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative">
