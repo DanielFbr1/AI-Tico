@@ -111,7 +111,7 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                 </div>
 
                 {/* Main View - Simplified for Mobile */}
-                <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-slate-50/50">
+                <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-slate-50/50 min-h-0">
 
                     {/* Column 1: The Wheel */}
                     <div className={`flex-1 flex flex-col items-center justify-center p-4 md:p-12 relative border-b md:border-b-0 md:border-r border-slate-200/60 overflow-hidden ${mobileTab === 'wheel' ? 'flex' : 'hidden md:flex'}`}>
@@ -128,7 +128,7 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                 <p className="text-slate-500 text-sm">Los alumnos deben entrar con el código para aparecer aquí.</p>
                             </div>
                         ) : (
-                            <div className="relative w-full max-w-[280px] md:max-w-[420px] aspect-square flex items-center justify-center my-4 md:my-0">
+                            <div className="relative w-full max-w-[260px] xs:max-w-[320px] md:max-w-[420px] aspect-square flex items-center justify-center my-auto">
                                 {/* Pointer - More Stylized */}
                                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-30 drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
                                     <div className="w-10 h-12 bg-slate-900 rounded-b-lg flex items-center justify-center p-1">

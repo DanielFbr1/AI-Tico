@@ -192,17 +192,22 @@ export function LoginPage() {
     if (view === 'selection') {
         return (
             <div className="h-[100dvh] w-full bg-[#0B101E] flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
-                {/* Capa 1: Fondo (Imagen 3D) - Sin filtros para máxima nitidez */}
+                {/* Capa 1: Fondo (Imagen 3D) - Responsivo */}
                 <div className="absolute inset-0 z-0 select-none pointer-events-none">
-                    <img
-                        src="/tico/Main_menu_bg4.jpg"
-                        alt="Digital Learning Forest Background"
-                        className="w-full h-full object-cover object-center scale-[1.05] translate-x-4 translate-y-4 md:scale-[1.08] md:translate-x-12 md:translate-y-0 contrast-[1.01] md:contrast-[1.01] md:[image-rendering:high-quality]"
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/tico/bg_nido_digital.jpg';
-                            (e.target as HTMLImageElement).classList.add('opacity-50', 'mix-blend-luminosity');
-                        }}
-                    />
+                    <picture>
+                        <source
+                            media="(max-width: 768px)"
+                            srcSet="/main_menu_bg_mobile_v2_1771544396609.png"
+                        />
+                        <img
+                            src="/tico/Main_menu_bg4.jpg"
+                            alt="Digital Learning Forest Background"
+                            className="w-full h-full object-cover object-center scale-[1.05] translate-x-4 translate-y-4 md:scale-[1.08] md:translate-x-12 md:translate-y-0 contrast-[1.01] md:contrast-[1.01] md:[image-rendering:high-quality]"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/tico/bg_nido_digital.jpg';
+                            }}
+                        />
+                    </picture>
                 </div>
 
                 {/* Capa 2: Tico (Desktop Absolute - Sobre el pedestal) */}
@@ -296,7 +301,7 @@ export function LoginPage() {
                             </div>
 
                             <div className="mt-6 md:mt-8 text-center md:text-right">
-                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase">Sistema Unificado V1.3.0</span>
+                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase">Sistema Unificado V1.3.2</span>
                             </div>
                         </div>
                     </div>
