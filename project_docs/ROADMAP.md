@@ -7,13 +7,13 @@ Este documento detalla los pasos futuros para mejorar la aplicación, basado en 
 ### Funcionalidades Docente (Core)
 - [x] **Chat Creativo (Co-Creación):** Implementar una interfaz donde el profesor pueda chatear con la IA para idear y estructurar nuevos proyectos ABP desde cero.
 -  **Dashboard Visual (Roadmap):** Desarrollar una vista de "Mapa Mental" o "Timeline" interactivo para visualizar las fases del proyecto de manera más gráfica.
-- [ ] **Configuración Avanzada de IA:** Permitir al docente definir "Prompts del Sistema" personalizados para ajustar el contexto pedagógico de Tico (ej. "Eres un experto en Historia Medieval").
-- [ ] **Evaluación Grupal:** Habilitar rubricas y herramientas para evaluar al grupo como entidad, no solo a individuos.
+- [x] **Configuración Avanzada de IA:** Permitir al docente definir "Prompts del Sistema" personalizados para ajustar el contexto pedagógico de Tico (ej. "Eres un experto en Historia Medieval").
+- [x] **Evaluación Grupal:** Habilitar rubricas y herramientas para evaluar al grupo como entidad, no solo a individuos.
 
 ### Funcionalidades Alumno & Gamificación
-- [ ] **Gamificación ("Cuidar a Tico"):** Implementar el sistema de puntos y el minijuego estilo "Pou" donde el alumno cuida de su mascota Tico a medida que avanza en el proyecto.
-- [ ] **Personalización de Tico:** Permitir desbloquear accesorios o skins para Tico con los puntos ganados.
-- [ ] **Ruleta de Alumnos:** Una herramienta visual divertida para seleccionar alumnos al azar en clase.
+- [x] **Gamificación ("Cuidar a Tico"):** Implementar el sistema de puntos y el minijuego estilo "Pou" donde el alumno cuida de su mascota Tico a medida que avanza en el proyecto.
+- [x] **Personalización de Tico:** Permitir desbloquear accesorios o skins para Tico con los puntos ganados.
+- [x] **Ruleta de Alumnos:** Una herramienta visual divertida para seleccionar alumnos al azar en clase.
 
 ### Inclusión y Accesibilidad
 - [ ] **Pictogramas Automáticos:** Integrar una IA generativa de imágenes (o usar una librería de iconos) para generar pictogramas de apoyo cognitivo junto con las instrucciones.

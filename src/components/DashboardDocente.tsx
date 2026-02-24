@@ -375,7 +375,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            v3.6.2 (Mobile Chat Refined)
+                            v3.6.3 (Audio Fix)
                         </div>
                     </div>
                 </aside>
@@ -678,6 +678,7 @@ export function DashboardDocente({
                                                 health={100}
                                                 size={200}
                                                 showLabels={false}
+                                                variant="nexus"
                                             />
                                         </div>
 

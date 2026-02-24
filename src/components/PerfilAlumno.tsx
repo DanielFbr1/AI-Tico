@@ -3,6 +3,7 @@ import { Grupo, Rubrica } from '../types';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { fetchPuntosProyecto } from '../lib/puntos';
 
 interface PerfilAlumnoProps {
   alumno: string;
@@ -32,13 +33,25 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
   const [comentarios, setComentarios] = useState<ComentarioAlumno[]>([]);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [isSavingComentario, setIsSavingComentario] = useState(false);
+  const [puntosTotales, setPuntosTotales] = useState<number>(0);
 
   useEffect(() => {
     fetchEvaluacion();
     fetchAsistenciaData();
     fetchNotaGrupal();
     fetchComentarios();
+    fetchMisPuntos();
   }, [alumno, grupo.id]);
+
+  const fetchMisPuntos = async () => {
+    try {
+      const puntosProyecto = await fetchPuntosProyecto(grupo.proyecto_id!);
+      const match = puntosProyecto.find((p: any) => p.alumno_nombre === alumno);
+      setPuntosTotales(match ? match.puntos : 0);
+    } catch (e) {
+      console.error("Error fetching points:", e);
+    }
+  };
 
   const fetchComentarios = async () => {
     try {
@@ -277,44 +290,44 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
               <h3 className="text-lg font-black text-slate-800 mb-5 uppercase tracking-tight flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-indigo-600" /> Rendimiento Clave
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
-                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-5 hover:scale-[1.02] transition-transform">
-                  <div className="w-10 h-10 md:w-16 md:h-16 bg-indigo-50 rounded-xl md:rounded-2xl flex items-center justify-center text-indigo-600 shrink-0">
-                    <Users className="w-5 h-5 md:w-8 md:h-8" />
-                  </div>
-                  <div>
-                    <div className="text-xl md:text-4xl font-black text-slate-900 leading-none mb-1">{notaGrupal !== null ? notaGrupal : '-'}</div>
-                    <div className="text-[8px] md:text-xs font-bold text-slate-400 uppercase tracking-wider leading-none">Nota Grupal</div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-5 hover:scale-[1.02] transition-transform">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
                   <div className="w-10 h-10 md:w-16 md:h-16 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
                     <Calendar className="w-5 h-5 md:w-8 md:h-8" />
                   </div>
-                  <div>
-                    <div className="text-xl md:text-4xl font-black text-slate-900 leading-none mb-1">{asistenciaStats.percentage}%</div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-slate-900 leading-none mb-1">{asistenciaStats.percentage}%</div>
                     <div className="text-[8px] md:text-xs font-bold text-slate-400 uppercase tracking-wider leading-none">Asist.</div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-5 hover:scale-[1.02] transition-transform">
+                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
                   <div className="w-10 h-10 md:w-16 md:h-16 bg-purple-50 rounded-xl md:rounded-2xl flex items-center justify-center text-purple-600 shrink-0">
                     <MessageSquare className="w-5 h-5 md:w-8 md:h-8" />
                   </div>
-                  <div>
-                    <div className="text-xl md:text-4xl font-black text-slate-900 leading-none mb-1">{Math.floor(grupo.interacciones_ia / Math.max(1, grupo.miembros.length))}</div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-slate-900 leading-none mb-1">{Math.floor(grupo.interacciones_ia / Math.max(1, grupo.miembros.length))}</div>
                     <div className="text-[8px] md:text-xs font-bold text-slate-400 uppercase tracking-wider leading-none">IA</div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-5 hover:scale-[1.02] transition-transform">
+                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
                   <div className="w-10 h-10 md:w-16 md:h-16 bg-pink-50 rounded-xl md:rounded-2xl flex items-center justify-center text-pink-600 shrink-0">
                     <Clock className="w-5 h-5 md:w-8 md:h-8" />
                   </div>
-                  <div>
-                    <div className="text-xl md:text-4xl font-black text-slate-900 leading-none mb-1">{horasReales}h</div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-slate-900 leading-none mb-1">{horasReales}h</div>
                     <div className="text-[8px] md:text-xs font-bold text-slate-400 uppercase tracking-wider leading-none">Tiempo</div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 rounded-2xl p-3 md:p-6 shadow-sm border border-amber-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                  <div className="w-10 h-10 md:w-16 md:h-16 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-amber-500 shrink-0 shadow-sm">
+                    <Star className="w-5 h-5 md:w-8 md:h-8" fill="currentColor" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-amber-600 leading-none mb-1">{puntosTotales}</div>
+                    <div className="text-[8px] md:text-xs font-bold text-amber-500 uppercase tracking-wider leading-none">Puntos</div>
                   </div>
                 </div>
               </div>

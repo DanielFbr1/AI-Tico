@@ -7,35 +7,33 @@ export function BackgroundMusic() {
     const [isPlaying, setIsPlaying] = useState(false);
 
     useEffect(() => {
-        const startMusic = async () => {
-            try {
-                await ticoAudio.init();
-                ticoAudio.play();
-                setIsPlaying(true);
-            } catch (e) {
-                console.warn("Autoplay blocked, waiting for interaction");
-            }
-        };
+        // En navegadores modernos, no podemos iniciar el audio sin una interacción previa.
+        // En lugar de intentar reproducir inmediatamente, esperamos al primer clic en cualquier parte de la ventana.
 
-        startMusic();
-
-        // Interaction fallback
-        const handleInteraction = () => {
+        const handleInteraction = async () => {
             if (!isPlaying) {
-                ticoAudio.init().then(() => {
+                try {
+                    await ticoAudio.init();
                     ticoAudio.play();
                     setIsPlaying(true);
-                });
+                    // Remove listener once audio is started
+                    window.removeEventListener('click', handleInteraction);
+                    window.removeEventListener('touchstart', handleInteraction);
+                } catch (e) {
+                    console.warn("Interaction failed to start audio:", e);
+                }
             }
         };
 
-        window.addEventListener('click', handleInteraction, { once: true });
+        window.addEventListener('click', handleInteraction);
+        window.addEventListener('touchstart', handleInteraction);
 
         return () => {
             ticoAudio.stop();
             window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('touchstart', handleInteraction);
         };
-    }, []);
+    }, [isPlaying]);
 
     const toggleMute = () => {
         if (isMuted) {

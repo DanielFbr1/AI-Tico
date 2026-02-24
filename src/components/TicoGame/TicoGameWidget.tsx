@@ -202,7 +202,7 @@ export function TicoGameWidget({ projectId, organizacionId, onBack }: { projectI
 
             {/* VERSION TAG */}
             <div className="absolute bottom-4 left-6 text-[10px] font-black text-slate-400/50 uppercase tracking-widest z-10 pointer-events-none">
-                Tico AI v3.2.5 - UX Polish ✨🎓
+                Tico AI v3.2.6 - Audio Fix ✨🎓
             </div>
 
             <div className="flex flex-col md:flex-row w-full h-full z-10 relative">

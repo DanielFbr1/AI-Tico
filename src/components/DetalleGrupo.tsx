@@ -167,9 +167,10 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
                   health={100}
                   size={320}
                   showLabels={true}
+                  variant="satellite"
                 />
                 <div className="mt-4 text-center">
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Crecimiento</div>
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">En Órbita</div>
                 </div>
               </div>
             </div>

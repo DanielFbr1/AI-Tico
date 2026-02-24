@@ -4,6 +4,7 @@ import { Grupo, Rubrica } from '../types';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { PerfilAlumno } from './PerfilAlumno';
+import { fetchPuntosProyecto, updatePuntosAlumno } from '../lib/puntos';
 
 interface ModalAsistenciaProps {
     grupos: Grupo[];
@@ -17,6 +18,7 @@ interface AlumnoAsistencia {
     grupo: string;
     grupoCompleto: Grupo;
     presente: boolean;
+    puntos: number;
 }
 
 export function ModalAsistencia({ grupos, proyectoId, rubrica, onClose }: ModalAsistenciaProps) {
@@ -37,7 +39,8 @@ export function ModalAsistencia({ grupos, proyectoId, rubrica, onClose }: ModalA
                         nombre: m,
                         grupo: g.nombre,
                         grupoCompleto: g,
-                        presente: false // Default to false until checked against DB
+                        presente: false, // Default to false until checked against DB
+                        puntos: 0
                     }))
                 ).reduce((acc, current) => {
                     const x = acc.find(item => item.nombre === current.nombre);
@@ -55,10 +58,15 @@ export function ModalAsistencia({ grupos, proyectoId, rubrica, onClose }: ModalA
                     .eq('proyecto_id', proyectoId)
                     .eq('fecha', fecha);
 
-                // 3. Merge data
+                // 3. Obtener puntos
+                const puntosExistentes = await fetchPuntosProyecto(proyectoId);
+                const mapPuntos = new Map(puntosExistentes.map((p: any) => [p.alumno_nombre, p.puntos]));
+
+                // 4. Merge data
                 if (asistenciaExistente && asistenciaExistente.length > 0) {
                     const mapAsistencia = new Map(asistenciaExistente.map(a => [a.alumno_nombre, a.presente]));
                     listaAlumnos.forEach(a => {
+                        a.puntos = mapPuntos.get(a.nombre) || 0;
                         if (mapAsistencia.has(a.nombre)) {
                             a.presente = mapAsistencia.get(a.nombre)!;
                         } else {
@@ -71,7 +79,10 @@ export function ModalAsistencia({ grupos, proyectoId, rubrica, onClose }: ModalA
                     });
                 } else {
                     // Si no hay registros para este día, marcamos todos como PRESENTES por defecto para ahorrar clicks
-                    listaAlumnos.forEach(a => a.presente = true);
+                    listaAlumnos.forEach(a => {
+                        a.presente = true;
+                        a.puntos = mapPuntos.get(a.nombre) || 0;
+                    });
                 }
 
                 setAlumnos(listaAlumnos);
@@ -85,12 +96,33 @@ export function ModalAsistencia({ grupos, proyectoId, rubrica, onClose }: ModalA
         };
 
         cargarAlumnosYAsistencia();
-    }, [fecha, grupos, proyectoId]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fecha, proyectoId]);
 
     const handleToggle = (index: number) => {
         const updated = [...alumnos];
         updated[index].presente = !updated[index].presente;
         setAlumnos(updated);
+    };
+
+    const handlePuntos = async (e: React.MouseEvent, index: number, delta: number) => {
+        e.stopPropagation();
+        const alumno = alumnos[index];
+        // Optimistic update
+        const updated = [...alumnos];
+        updated[index].puntos += delta;
+        setAlumnos(updated);
+
+        const result = await updatePuntosAlumno(proyectoId, alumno.nombre, delta);
+        if (!result) {
+            // Revert
+            toast.error("Error al actualizar puntos");
+            const reverted = [...alumnos];
+            reverted[index].puntos -= delta;
+            setAlumnos(reverted);
+        } else {
+            toast.success(`${delta > 0 ? '+1' : '-1'} punto para ${alumno.nombre}`);
+        }
     };
 
     const handleSave = async () => {
@@ -191,41 +223,48 @@ export function ModalAsistencia({ grupos, proyectoId, rubrica, onClose }: ModalA
                                         }
                                     `}
                                 >
-                                    <div className="flex items-center justify-between relative z-10">
+                                    <div className="flex flex-col gap-3 relative z-10 w-full">
                                         <div
-                                            className="flex items-center gap-3 cursor-pointer flex-1"
-                                            onClick={() => handleToggle(idx)}
+                                            className="flex items-center gap-3 cursor-pointer w-full"
+                                            onClick={() => setAlumnoSeleccionado(alumno)}
                                         >
                                             <div className={`
-                                                w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-colors
+                                                w-10 h-10 rounded-full flex shrink-0 items-center justify-center font-bold text-sm border-2 transition-colors
                                                 ${alumno.presente ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-gray-200 text-gray-500 border-gray-300'}
                                             `}>
                                                 {alumno.nombre.charAt(0)}
                                             </div>
-                                            <div>
-                                                <h4 className={`font-bold text-sm ${alumno.presente ? 'text-gray-900' : 'text-gray-500'}`}>{alumno.nombre}</h4>
-                                                <p className="text-[10px] uppercase font-bold text-gray-400">{alumno.grupo}</p>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className={`font-bold text-sm leading-tight break-words ${alumno.presente ? 'text-gray-900' : 'text-gray-500'}`} title={alumno.nombre}>{alumno.nombre}</h4>
+                                                <p className="text-[10px] uppercase font-bold text-gray-400 break-words">{alumno.grupo}</p>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setAlumnoSeleccionado(alumno);
-                                                }}
-                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                                title="Ver perfil detallado"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </button>
+                                        <div className="flex items-center justify-between mt-1 pt-3 border-t border-gray-100/60">
+                                            <div className="flex items-center gap-1 bg-white/50 px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
+                                                <button
+                                                    onClick={(e) => handlePuntos(e, idx, -1)}
+                                                    className="w-8 h-8 flex items-center justify-center rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                                                    title="Restar punto"
+                                                >
+                                                    <span className="text-sm font-black">-1</span>
+                                                </button>
+                                                <span className="w-8 text-center font-black text-base text-gray-700">{alumno.puntos}</span>
+                                                <button
+                                                    onClick={(e) => handlePuntos(e, idx, 1)}
+                                                    className="w-8 h-8 flex items-center justify-center rounded-md bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
+                                                    title="Sumar punto"
+                                                >
+                                                    <span className="text-sm font-black">+1</span>
+                                                </button>
+                                            </div>
                                             <div
                                                 onClick={() => handleToggle(idx)}
                                                 className={`
-                                                cursor-pointer w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all
-                                                ${alumno.presente ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300 bg-transparent'}
+                                                cursor-pointer w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0
+                                                ${alumno.presente ? 'bg-emerald-500 border-emerald-500 shadow-sm shadow-emerald-200' : 'border-gray-300 bg-white hover:bg-gray-50'}
                                             `}>
-                                                {alumno.presente && <Check className="w-4 h-4 text-white" />}
+                                                {alumno.presente && <Check className="w-5 h-5 text-white" />}
                                             </div>
                                         </div>
                                     </div>

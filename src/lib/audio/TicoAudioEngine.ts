@@ -19,7 +19,11 @@ export class TicoAudioEngine {
     public async init() {
         if (this.audioContext && this.audioContext.state !== 'closed') {
             if (this.audioContext.state === 'suspended') {
-                await this.audioContext.resume();
+                try {
+                    await this.audioContext.resume();
+                } catch (e) {
+                    console.warn("Could not resume AudioContext directly:", e);
+                }
             }
             return;
         }
@@ -31,7 +35,10 @@ export class TicoAudioEngine {
             this.masterGain.gain.setValueAtTime(0, this.audioContext.currentTime);
 
             if (this.audioContext.state === 'suspended') {
-                await this.audioContext.resume();
+                // We don't await here because it might fail due to autoplay policy
+                this.audioContext.resume().catch(e => {
+                    console.warn("AudioContext resume failed on init. Waiting for user gesture.", e);
+                });
             }
         } catch (e) {
             console.error("Failed to init Soft Extended Audio Engine:", e);
@@ -45,6 +52,19 @@ export class TicoAudioEngine {
             return;
         }
 
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume().then(() => {
+                this.startPlayback();
+            }).catch(err => {
+                console.warn("Playback failed: AudioContext still suspended.", err);
+            });
+        } else {
+            this.startPlayback();
+        }
+    }
+
+    private startPlayback() {
+        if (!this.audioContext || this.isPlaying) return;
         this.isPlaying = true;
         this.currentNoteIndex = 0;
         this.nextNoteTime = this.audioContext.currentTime + 0.1;
@@ -71,6 +91,7 @@ export class TicoAudioEngine {
 
     public playUnlockSFX() {
         if (!this.audioContext || !this.masterGain) return;
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
         const now = this.audioContext.currentTime;
 
         // Softer Happy Arpeggio: Pentatonic Run up and down (Double Length)
@@ -98,6 +119,7 @@ export class TicoAudioEngine {
 
     public playStickerSFX() {
         if (!this.audioContext || !this.masterGain) return;
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
         const now = this.audioContext.currentTime;
 
         // "Sweet Shimmer Bubble" Cascade
@@ -129,6 +151,7 @@ export class TicoAudioEngine {
 
     public playClickSFX() {
         if (!this.audioContext || !this.masterGain) return;
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
         const now = this.audioContext.currentTime;
         const osc = this.audioContext.createOscillator();
         const g = this.audioContext.createGain();
@@ -150,6 +173,7 @@ export class TicoAudioEngine {
 
     public playCuriositySFX() {
         if (!this.audioContext || !this.masterGain) return;
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
         const now = this.audioContext.currentTime;
 
         // Friendly "Double-Chirp" for Tico's voice

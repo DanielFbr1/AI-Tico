@@ -25,6 +25,7 @@ interface ProyectoNotas {
     notaGrupal: number | null;
     asistencia: { present: number; total: number; percentage: number };
     comentarios: { id: string, contenido: string, created_at: string }[];
+    puntos: number;
     curso?: string;
     asignatura?: string;
 }
@@ -142,6 +143,16 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     .eq('alumno_nombre', alumno.alumno_nombre)
                     .order('created_at', { ascending: false });
 
+                // Fetch points
+                const { data: puntosData } = await supabase
+                    .from('alumno_puntos')
+                    .select('puntos')
+                    .eq('proyecto_id', proyectoId)
+                    .eq('alumno_nombre', alumno.alumno_nombre)
+                    .maybeSingle();
+
+                const puntos = puntosData ? puntosData.puntos : 0;
+
                 proyectosData.push({
                     proyecto_id: proyectoId,
                     proyecto_nombre: (grupo as any).proyectos?.nombre || 'Proyecto',
@@ -156,6 +167,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                         total,
                         percentage: total > 0 ? Math.round((present / total) * 100) : 0
                     },
+                    puntos,
                     comentarios: commentsData || [],
                     curso: (grupo as any).proyectos?.curso || 'Sin curso',
                     asignatura: (grupo as any).proyectos?.asignatura || ''
@@ -337,7 +349,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                     {isExpanded && (
                                                         <div className="px-5 pb-5 border-t border-slate-50 pt-5 animate-in fade-in zoom-in-95 duration-200">
                                                             {/* Stats Summary */}
-                                                            <div className="grid grid-cols-3 gap-3 mb-5">
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                                                                 <div className="bg-slate-50 rounded-xl p-3">
                                                                     <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">MÉDIA</span>
                                                                     <div className="text-xl font-black text-slate-800">{proyecto.notaMedia.toFixed(1)}</div>
@@ -350,6 +362,12 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                     <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">GRUPAL</span>
                                                                     <div className="text-xl font-black text-slate-800">
                                                                         {proyecto.notaGrupal !== null ? proyecto.notaGrupal.toFixed(1) : '—'}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
+                                                                    <span className="text-[8px] text-amber-500 font-black uppercase tracking-widest block mb-1">PUNTOS</span>
+                                                                    <div className="text-xl font-black text-amber-600 flex items-center gap-1">
+                                                                        {proyecto.puntos} <Star className="w-4 h-4 text-amber-500" fill="currentColor" />
                                                                     </div>
                                                                 </div>
                                                             </div>

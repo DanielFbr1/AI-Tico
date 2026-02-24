@@ -38,6 +38,7 @@ import { RoadmapView } from './RoadmapView';
 import { LivingTree } from './LivingTree';
 import { PROYECTOS_MOCK, getMockEvaluacion, PASOS_TUTORIAL_ALUMNO } from '../data/mockData'; // Keep this for now, as getMockEvaluacion is not in the original
 import { toast } from 'sonner';
+import { fetchPuntosProyecto } from '../lib/puntos';
 import { ModalProponerHitos } from './ModalProponerHitos';
 import { getAsignaturaStyles } from '../data/asignaturas';
 import {
@@ -69,6 +70,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [vistaActiva, setVistaActiva] = useState<'grupo' | 'tareas' | 'comunidad' | 'chat' | 'perfil'>('grupo');
   const [chatTab, setChatTab] = useState<'ia' | 'equipo'>('ia');
   const [mobileChatTab, setMobileChatTab] = useState<'menu' | 'ia' | 'equipo'>('menu');
+  const [puntosTotales, setPuntosTotales] = useState<number>(0);
 
   // Custom Hook for Tracking
   useGroupTracking(alumno.grupo_id ? Number(alumno.grupo_id) : 0);
@@ -316,6 +318,17 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         .order('created_at', { ascending: false });
 
       if (commentsData) setComentarios(commentsData);
+
+      // Fetch Puntos Totales
+      try {
+        if (targetProjectId) {
+          const puntosProyecto = await fetchPuntosProyecto(targetProjectId);
+          const match = puntosProyecto.find((p: any) => p.alumno_nombre === alumno.nombre);
+          setPuntosTotales(match ? match.puntos : 0);
+        }
+      } catch (pointsErr) {
+        console.error("Error fetching points:", pointsErr);
+      }
 
       // Fetch Assistance
       const { data: attendanceData } = await supabase
@@ -945,14 +958,14 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 {/* Árbol (Ocupa 1/3) */}
                 <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[280px] md:min-h-[400px]">
                   <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-green-500"></div>
-                  <h2 className="text-sm md:text-xl font-black text-slate-800 tracking-tight uppercase mb-2 md:mb-4 z-10 w-full text-center">Nuestro Árbol</h2>
+                  <h2 className="text-sm md:text-xl font-black text-slate-800 tracking-tight uppercase mb-2 md:mb-4 z-10 w-full text-center">Nuestro Satélite</h2>
                   <div className="relative z-10 transform scale-[0.7] md:scale-100 -my-10 md:my-0">
-                    <LivingTree progress={grupoDisplay.progreso || 0} health={100} size={240} />
+                    <LivingTree progress={grupoDisplay.progreso || 0} health={100} size={240} variant="satellite" />
                   </div>
                   <div className="mt-2 md:mt-8 flex gap-8 text-center">
                     <div>
                       <div className="text-2xl font-black text-slate-800">{grupoDisplay.progreso}%</div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Crecimiento</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">En Órbita</div>
                     </div>
                   </div>
                 </div>
@@ -1033,7 +1046,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                   <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-400 to-purple-500"></div>
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100 mb-6">
                     <Globe className="w-3 h-3 text-indigo-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Jardín de la Clase</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Nexo Global</span>
                   </div>
 
                   <div className="relative z-10 transform scale-100">
@@ -1214,40 +1227,44 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           vistaActiva === 'perfil' && grupoDisplay && (
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Header de Rendimiento */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200 group hover:border-emerald-200 transition-all">
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
-                      <Trophy className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-black text-slate-800 tracking-tight">{notaMedia.toFixed(1)}</div>
-                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nota media</div>
-                    </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+                <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-200 group hover:border-emerald-200 transition-all flex items-center gap-3 md:gap-4 min-w-0">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform shrink-0">
+                    <Trophy className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{notaMedia.toFixed(1)}</div>
+                    <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Nota media</div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200 group hover:border-indigo-200 transition-all">
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                      <MessageSquare className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-black text-slate-800 tracking-tight">{Math.floor((grupoDisplay.interacciones_ia || 0) / Math.max(1, grupoDisplay.miembros?.length || 1))}</div>
-                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Preguntas IA</div>
-                    </div>
+                <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-200 group hover:border-indigo-200 transition-all flex items-center gap-3 md:gap-4 min-w-0">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform shrink-0">
+                    <MessageSquare className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{Math.floor((grupoDisplay.interacciones_ia || 0) / Math.max(1, grupoDisplay.miembros?.length || 1))}</div>
+                    <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Preguntas IA</div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200 group hover:border-purple-200 transition-all">
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
-                      <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-black text-slate-800 tracking-tight">{asistenciaStats.percentage}%</div>
-                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Asistencia</div>
-                    </div>
+                <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-200 group hover:border-purple-200 transition-all flex items-center gap-3 md:gap-4 min-w-0">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform shrink-0">
+                    <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{asistenciaStats.percentage}%</div>
+                    <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Asistencia</div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-amber-200 group hover:border-amber-300 transition-all flex items-center gap-3 md:gap-4 min-w-0">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform shrink-0 shadow-sm border border-amber-100">
+                    <Star className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xl md:text-3xl font-black text-amber-600 tracking-tight leading-none mb-1 truncate">{puntosTotales}</div>
+                    <div className="text-[8px] md:text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none truncate">Puntos</div>
                   </div>
                 </div>
               </div>

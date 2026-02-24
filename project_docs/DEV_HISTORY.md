@@ -4,6 +4,21 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.4.1: Mejoras Visuales y Temáticas (SVGs)
+*   **Objetivo:** Refinar la calidad visual de la representación del progreso (Nexo / Satélite) y actualizar la terminología.
+*   **Cambios:**
+    *   **Nexo (Proyecto General):** Integración de cuadrícula holográfica, anillos orbitales más complejos, núcleo multinivel resplandeciente, texturas y partículas rediseñadas con mayor luminosidad y animaciones CSS avanzadas.
+    *   **Satélite (Grupos):** Rediseño total de la estructura base del satélite, incluyendo paneles solares detallados (modo rejilla/reflejo), luces de advertencia activas (rojas), estelas de datos y una onda escáner tipo radar visible al 100% de progreso.
+    *   **Textos:** Reemplazo de cadenas antiguas ("Jardín de la Clase") por términología temática ("Nexo Global") en el `DashboardAlumno`. Modificación del texto local de `DetalleGrupo` para sincronizar con la visualización del Satélite ("En Órbita").
+
+### Versión 1.4.0: Sistema de Puntos para Alumnos
+*   **Objetivo:** Permitir al docente otorgar y restar puntos a los alumnos durante la evaluación de asistencia.
+*   **Cambios:**
+    *   Creación de la tabla `alumno_puntos` en Supabase con RLS habilitado.
+    *   Implementación de controles interactivos (+1, -1) en el `ModalAsistencia`.
+    *   Visualización del total de puntos en el `PerfilAlumno` (tarjeta de Rendimiento Clave).
+    *   Visualización del total de puntos en la vista `FamiliaNotasAlumno` para los tutores legales.
+
 ### 1. Refactorización de "Detalle de Grupo"
 *   **Objetivo:** Mejorar la usabilidad y estética del panel de control del profesor para un grupo específico.
 *   **Cambios:**
