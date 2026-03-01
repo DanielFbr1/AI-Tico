@@ -69,6 +69,9 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
         else if (generatedGroups.length === 0) setMobileTab('controls');
     }, [mode, generatedGroups.length]);
 
+    // Mobile: combined view state
+    const [mobileSubView, setMobileSubView] = useState<'wheel' | 'controls'>('wheel');
+
     const spinWheel = () => {
         if (managedMembers.length < 1) return;
         if (spinning) return;
@@ -195,11 +198,295 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                     </div>
                 )}
 
-                {/* Main View - Simplified for Mobile */}
+                {/* Main View */}
                 <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-slate-50/50 min-h-0">
 
-                    {/* Column 1: The Wheel / Dice / Groups Results */}
-                    <div className={`flex-1 flex flex-col items-center justify-center p-4 md:p-12 relative border-b md:border-b-0 md:border-r border-slate-200/60 overflow-hidden ${mobileTab === 'wheel' ? 'flex' : 'hidden md:flex'}`}>
+                    {/* === MOBILE COMBINED VIEW === */}
+                    <div className="md:hidden flex-1 flex flex-col min-h-0 overflow-y-auto">
+                        {/* Mobile Mode Switcher */}
+                        <div className="sticky top-0 z-20 bg-white border-b border-slate-100 p-2">
+                            <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1">
+                                <button
+                                    onClick={() => setMode('single')}
+                                    className={`flex-1 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${mode === 'single'
+                                        ? 'bg-blue-600 text-white shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)]'
+                                        : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Shuffle className="w-4 h-4" />
+                                        Ruleta
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => setMode('groups')}
+                                    className={`flex-1 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${mode === 'groups'
+                                        ? 'bg-blue-600 text-white shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)]'
+                                        : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Users className="w-4 h-4" />
+                                        Equipos
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => setMode('dice')}
+                                    className={`flex-1 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${mode === 'dice'
+                                        ? 'bg-blue-600 text-white shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)]'
+                                        : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Dices className="w-4 h-4" />
+                                        Dados
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Mobile Content: single combined scrollable area */}
+                        <div className="flex-1 p-4 space-y-4">
+                            {mode === 'single' ? (
+                                <>
+                                    {/* Wheel */}
+                                    <div className="relative w-full max-w-[280px] aspect-square flex items-center justify-center mx-auto">
+                                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-30 drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
+                                            <div className="w-10 h-12 bg-slate-900 rounded-b-lg flex items-center justify-center p-1">
+                                                <div className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[18px] border-t-yellow-400" />
+                                            </div>
+                                        </div>
+                                        <div className={`absolute inset-0 rounded-full bg-blue-500/10 blur-3xl transition-opacity duration-1000 ${spinning ? 'opacity-100' : 'opacity-0'}`} />
+                                        <div
+                                            className="w-[90%] h-[90%] rounded-full border-[10px] border-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.2)] relative overflow-hidden transition-transform duration-[5s] cubic-bezier(0.1, 0, 0.1, 1)"
+                                            style={{ transform: `rotate(${rotation}deg)` }}
+                                        >
+                                            <svg viewBox="-100 -100 200 200" className="w-full h-full">
+                                                {managedMembers.map((alumno, i) => {
+                                                    const total = managedMembers.length;
+                                                    const angle = 2 * Math.PI / total;
+                                                    const startAngle = i * angle - Math.PI / 2 - (total > 0 ? (2 * Math.PI / total / 2) : 0);
+                                                    const endAngle = (i + 1) * angle - Math.PI / 2 - (total > 0 ? (2 * Math.PI / total / 2) : 0);
+                                                    const x1 = 100 * Math.cos(startAngle);
+                                                    const y1 = 100 * Math.sin(startAngle);
+                                                    const x2 = 100 * Math.cos(endAngle);
+                                                    const y2 = 100 * Math.sin(endAngle);
+                                                    const largeArc = angle > Math.PI ? 1 : 0;
+                                                    const d = `M 0 0 L ${x1} ${y1} A 100 100 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                                                    const midAngle = startAngle + angle / 2;
+                                                    const textX = 75 * Math.cos(midAngle);
+                                                    const textY = 75 * Math.sin(midAngle);
+                                                    const rotationDeg = (midAngle * 180 / Math.PI);
+                                                    const fontSize = total > 20 ? "6.5" : total > 15 ? "8.5" : total > 8 ? "11" : "13";
+                                                    return (
+                                                        <g key={`${alumno.id}-${i}`}>
+                                                            <path d={d} fill={colors[i % colors.length]} stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+                                                            <rect x={textX - 25} y={textY - (parseFloat(fontSize) / 2) - 2} width={50} height={parseFloat(fontSize) + 4} rx="4" fill="rgba(255,255,255,0.2)" transform={`rotate(${rotationDeg + 90}, ${textX}, ${textY})`} className="pointer-events-none" />
+                                                            <text x={textX} y={textY} fill="white" fontSize={fontSize} fontWeight="900" textAnchor="middle" alignmentBaseline="middle" transform={`rotate(${rotationDeg + 90}, ${textX}, ${textY})`} className="pointer-events-none tracking-tight" style={{ paintOrder: 'stroke fill', stroke: 'rgba(0,0,0,0.3)', strokeWidth: '1px', strokeLinejoin: 'round' }}>
+                                                                {alumno.nombre.length > 15 ? alumno.nombre.slice(0, 13) + '..' : alumno.nombre}
+                                                            </text>
+                                                        </g>
+                                                    );
+                                                })}
+                                            </svg>
+                                        </div>
+                                        <button
+                                            onClick={spinWheel}
+                                            disabled={spinning || !managedMembers.length}
+                                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-slate-900 rounded-full border-[4px] border-white shadow-[0_0_40px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center z-40 transition-all active:scale-90"
+                                        >
+                                            <Shuffle className={`w-6 h-6 text-white ${spinning ? 'animate-spin' : ''}`} />
+                                            <span className="text-[9px] font-black text-white uppercase">{spinning ? 'SORTEO' : 'GIRAR'}</span>
+                                        </button>
+                                    </div>
+                                    {/* Participants list compact */}
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Participantes</h3>
+                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{managedMembers.length}</span>
+                                        </div>
+                                        <div className="flex gap-2 mb-3">
+                                            <input
+                                                type="text"
+                                                placeholder="Añadir nombre..."
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const val = e.currentTarget.value.trim();
+                                                        if (val) {
+                                                            setManagedMembers([...managedMembers, { id: Math.random().toString(), nombre: val }]);
+                                                            e.currentTarget.value = '';
+                                                        }
+                                                    }
+                                                }}
+                                                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                            />
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {managedMembers.map((m, idx) => (
+                                                <div key={m.id} className="flex items-center gap-1 bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg">
+                                                    <span className="text-xs font-bold text-slate-700">{m.nombre}</span>
+                                                    <button
+                                                        onClick={() => setManagedMembers(managedMembers.filter((_, i) => i !== idx))}
+                                                        className="w-5 h-5 rounded-full text-slate-300 flex items-center justify-center hover:text-red-500"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            ) : mode === 'groups' ? (
+                                <>
+                                    {/* Groups Controls */}
+                                    <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-5 text-center">
+                                        <h3 className="text-base font-black text-slate-900 mb-1 uppercase tracking-tight">Formador de Equipos</h3>
+                                        <p className="text-slate-500 text-[11px] mb-4">
+                                            Divide a tus <span className="text-blue-600 font-bold">{managedMembers.length} alumnos</span> en equipos.
+                                        </p>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center px-1">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Número de Equipos</label>
+                                                <span className="bg-white text-blue-600 text-xs font-black px-3 py-1 rounded-lg border border-blue-100">{numGroups}</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="1"
+                                                max={Math.min(10, Math.max(1, managedMembers.length))}
+                                                value={numGroups}
+                                                onChange={(e) => setNumGroups(parseInt(e.target.value) || 1)}
+                                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={createGroups}
+                                            disabled={!managedMembers.length}
+                                            className="mt-4 w-full py-4 bg-blue-600 text-white font-black rounded-2xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            <Shuffle className="w-5 h-5" />
+                                            GENERAR EQUIPOS
+                                        </button>
+                                    </div>
+                                    {/* Generated Groups */}
+                                    {generatedGroups.length > 0 && (
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center">
+                                                <h3 className="text-sm font-black text-slate-900 uppercase flex items-center gap-2">
+                                                    <Users className="w-4 h-4 text-blue-600" />
+                                                    Equipos Generados
+                                                </h3>
+                                                <button onClick={copyGroups} className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl font-black text-[10px] uppercase flex items-center gap-1">
+                                                    <Copy className="w-3 h-3" /> Copiar
+                                                </button>
+                                            </div>
+                                            {generatedGroups.map((grupo, i) => (
+                                                <div key={i} className="bg-white border border-slate-200 p-4 rounded-2xl relative overflow-hidden">
+                                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
+                                                    <h4 className="font-black text-slate-900 text-xs uppercase tracking-widest mb-3">Equipo {i + 1}</h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {grupo.map((alumno, idx) => (
+                                                            <div key={`${alumno}-${idx}`} className="flex items-center gap-1">
+                                                                <span className="px-3 py-1.5 bg-slate-50 border border-slate-100 text-slate-700 rounded-xl text-[11px] font-bold">{alumno}</span>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setGeneratedGroups(prev => {
+                                                                            const newGroups = [...prev];
+                                                                            if (newGroups[i]) newGroups[i] = newGroups[i].filter((_, index) => index !== idx);
+                                                                            return newGroups;
+                                                                        });
+                                                                    }}
+                                                                    className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center hover:bg-red-500 hover:text-white active:scale-90"
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    {/* Dice Mobile */}
+                                    <div className="flex flex-col items-center gap-6">
+                                        <div className={`flex flex-wrap items-center justify-center gap-4 ${numDice > 3 ? 'scale-75' : 'scale-90'}`}>
+                                            {diceValues.slice(0, numDice).map((val, idx) => (
+                                                <div key={idx} className="perspective-1000">
+                                                    {diceType === 6 ? (
+                                                        <div
+                                                            className={`w-24 h-24 relative preserve-3d transition-transform duration-500 ${isRollingDice ? 'animate-rolling-dice' : ''}`}
+                                                            style={{
+                                                                transform: !isRollingDice ? (
+                                                                    val === 1 ? 'rotateX(0deg) rotateY(0deg)' :
+                                                                        val === 2 ? 'rotateX(-90deg) rotateY(0deg)' :
+                                                                            val === 3 ? 'rotateY(-90deg) rotateX(0deg)' :
+                                                                                val === 4 ? 'rotateY(90deg) rotateX(0deg)' :
+                                                                                    val === 5 ? 'rotateX(90deg) rotateY(0deg)' :
+                                                                                        'rotateX(180deg) rotateY(0deg)'
+                                                                ) : undefined
+                                                            }}
+                                                        >
+                                                            {[1, 2, 3, 4, 5, 6].map((v) => (
+                                                                <div key={v} className="absolute inset-0 bg-white border-4 border-slate-900 rounded-2xl flex items-center justify-center shadow-inner" style={{ transform: v === 1 ? 'translateZ(48px)' : v === 2 ? 'rotateX(90deg) translateZ(48px)' : v === 3 ? 'rotateY(90deg) translateZ(48px)' : v === 4 ? 'rotateY(-90deg) translateZ(48px)' : v === 5 ? 'rotateX(-90deg) translateZ(48px)' : 'rotateX(180deg) translateZ(48px)', backfaceVisibility: 'hidden' }}>
+                                                                    <div className="grid grid-cols-3 gap-1 p-3 w-full h-full">
+                                                                        {v === 1 && <div className="col-start-2 row-start-2 w-3 h-3 bg-slate-900 rounded-full" />}
+                                                                        {v === 2 && <><div className="col-start-1 row-start-1 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-3 row-start-3 w-3 h-3 bg-slate-900 rounded-full" /></>}
+                                                                        {v === 3 && <><div className="col-start-1 row-start-1 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-2 row-start-2 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-3 row-start-3 w-3 h-3 bg-slate-900 rounded-full" /></>}
+                                                                        {v === 4 && <><div className="col-start-1 row-start-1 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-3 row-start-1 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-1 row-start-3 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-3 row-start-3 w-3 h-3 bg-slate-900 rounded-full" /></>}
+                                                                        {v === 5 && <><div className="col-start-1 row-start-1 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-3 row-start-1 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-2 row-start-2 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-1 row-start-3 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-3 row-start-3 w-3 h-3 bg-slate-900 rounded-full" /></>}
+                                                                        {v === 6 && <><div className="col-start-1 row-start-1 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-3 row-start-1 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-1 row-start-2 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-3 row-start-2 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-1 row-start-3 w-3 h-3 bg-slate-900 rounded-full" /><div className="col-start-3 row-start-3 w-3 h-3 bg-slate-900 rounded-full" /></>}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className={`w-24 h-24 relative text-slate-900 flex items-center justify-center transition-all duration-[1.5s] ${isRollingDice ? 'animate-spin scale-90 blur-[1px]' : 'scale-100'}`}>
+                                                            <svg viewBox="0 0 24 24" fill="white" stroke="currentColor" strokeWidth="1" className="w-full h-full drop-shadow-xl">
+                                                                <polygon points="12 2 19 6 21 14 16 21 8 21 3 14 5 6" />
+                                                                <text x="12" y="12.5" fontSize="4.5" fontWeight="900" textAnchor="middle" fill="currentColor" stroke="none">{val}</text>
+                                                            </svg>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="inline-block px-8 py-4 bg-slate-900 rounded-[2rem] shadow-2xl">
+                                            <span className="text-4xl font-black text-white">
+                                                {numDice === 1 ? diceValues[0] : diceValues.slice(0, numDice).reduce((a, b) => a + b, 0)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {/* Dice controls mobile */}
+                                    <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-5">
+                                        <div className="flex gap-2 justify-center bg-white p-1 rounded-2xl shadow-sm border border-slate-100 mb-4">
+                                            <button onClick={() => setDiceType(6)} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all ${diceType === 6 ? 'bg-blue-100 text-blue-700' : 'text-slate-400'}`}>
+                                                <Dices className="w-4 h-4" /> D6
+                                            </button>
+                                            <button onClick={() => setDiceType(12)} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all ${diceType === 12 ? 'bg-purple-100 text-purple-700' : 'text-slate-400'}`}>
+                                                <D12Icon className="w-4 h-4" /> D12
+                                            </button>
+                                        </div>
+                                        <div className="flex gap-2 justify-center mb-4">
+                                            {[1, 2, 3, 4, 5, 6].map(n => (
+                                                <button key={n} onClick={() => setNumDice(n)} className={`w-10 h-10 rounded-xl font-black text-xs transition-all ${numDice === n ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                                                    {n}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button onClick={rollDice} disabled={isRollingDice} className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+                                            <Dices className={`w-5 h-5 ${isRollingDice ? 'animate-spin' : ''}`} />
+                                            {isRollingDice ? 'LANZANDO...' : 'LANZAR DADOS'}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* === DESKTOP Column 1: The Wheel / Dice / Groups Results === */}
+                    <div className={`hidden md:flex flex-1 flex-col items-center justify-center p-12 relative border-r border-slate-200/60 overflow-hidden`}>
 
                         {loading ? (
                             <div className="flex flex-col items-center gap-4">
@@ -535,8 +822,8 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                         )}
                     </div>
 
-                    {/* Column 2: Controls */}
-                    <div className={`w-full md:w-[400px] flex flex-col p-6 md:p-8 bg-white shrink-0 overflow-y-auto ${mobileTab === 'controls' ? 'flex' : 'hidden md:flex'}`}>
+                    {/* Column 2: Controls (Desktop only) */}
+                    <div className="hidden md:flex w-[400px] flex-col p-8 bg-white shrink-0 overflow-y-auto">
 
                         {/* Mode Switcher */}
                         <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 mb-8">
@@ -561,7 +848,7 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                             >
                                 <span className="flex items-center justify-center gap-2">
                                     <Users className="w-4 h-4" />
-                                    Grupos
+                                    Equipos
                                 </span>
                             </button>
                             <button
@@ -713,44 +1000,14 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                     </button>
 
                                     <div className="mt-auto pt-8 text-center opacity-20">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Gestión de Grupos v1.5.13</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Gestión de Equipos v1.5.16</p>
                                     </div>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Mobile Bottom Navigation Bar */}
-                    <div className="md:hidden flex border-t border-slate-100 bg-white p-2 safe-bottom">
-                        <button
-                            onClick={() => { setMode('single'); setMobileTab('wheel'); }}
-                            className={`flex-1 flex flex-col items-center py-2 gap-1 rounded-xl transition-all ${mode === 'single' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
-                        >
-                            <Shuffle className="w-5 h-5" />
-                            <span className="text-[10px] font-black uppercase tracking-tighter">Ruleta</span>
-                        </button>
-                        <button
-                            onClick={() => { setMode('groups'); setMobileTab('controls'); }}
-                            className={`flex-1 flex flex-col items-center py-2 gap-1 rounded-xl transition-all ${mode === 'groups' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
-                        >
-                            <Users className="w-5 h-5" />
-                            <span className="text-[10px] font-black uppercase tracking-tighter">Grupos</span>
-                        </button>
-                        <button
-                            onClick={() => { setMode('dice'); setMobileTab('wheel'); }}
-                            className={`flex-1 flex flex-col items-center py-2 gap-1 rounded-xl transition-all ${mode === 'dice' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
-                        >
-                            <Dices className="w-5 h-5" />
-                            <span className="text-[10px] font-black uppercase tracking-tighter">Dados</span>
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="flex-1 flex flex-col items-center py-2 gap-1 text-slate-400 hover:text-red-500 transition-all"
-                        >
-                            <X className="w-5 h-5" />
-                            <span className="text-[10px] font-black uppercase tracking-tighter">Cerrar</span>
-                        </button>
-                    </div>
+                    {/* Mobile Bottom Navigation Bar is now replaced by the top mode switcher */}
                 </div>
             </div>
         </div>
