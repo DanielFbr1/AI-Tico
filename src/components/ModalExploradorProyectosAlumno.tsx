@@ -13,13 +13,7 @@ import {
 } from 'lucide-react';
 import { getAsignaturaStyles } from '../data/asignaturas';
 
-// Array de cursos para el filtro
-const CURSOS = [
-    "1º Primaria", "2º Primaria", "3º Primaria",
-    "4º Primaria", "5º Primaria", "6º Primaria",
-    "1º ESO", "2º ESO", "3º ESO", "4º ESO",
-    "1º Bachillerato", "2º Bachillerato"
-];
+// Array estático eliminado, los años vendrán de los propios proyectos del alumno
 
 // Asignaturas comunes
 const ASIGNATURAS_COMUNES = [
@@ -68,17 +62,8 @@ export function ModalExploradorProyectosAlumno({
 
     // Derivar listas únicas para los selectores a partir de los proyectos donde estoy
     const cursosUnicos = useMemo(() => {
-        const cursosEnMisProyectos = new Set(proyectos.map(p => p.curso).filter(c => c && c !== 'Sin Curso'));
-        const combined = Array.from(new Set([...CURSOS, ...cursosEnMisProyectos]));
-        // Intentar orden lógico si son los predefinidos, si no alfabetico
-        return combined.sort((a, b) => {
-            const ia = CURSOS.indexOf(a);
-            const ib = CURSOS.indexOf(b);
-            if (ia !== -1 && ib !== -1) return ia - ib;
-            if (ia !== -1) return -1;
-            if (ib !== -1) return 1;
-            return a.localeCompare(b);
-        });
+        const anosEnMisProyectos = new Set(proyectos.map(p => p.curso).filter(c => c && c !== 'Sin Curso'));
+        return Array.from(anosEnMisProyectos).sort((a, b) => b.localeCompare(a)); // Más recientes primero
     }, [proyectos]);
 
     const asignaturasUnicas = useMemo(() => {
@@ -199,19 +184,21 @@ export function ModalExploradorProyectosAlumno({
                             {/* Filters */}
                             <div className={`w-full md:w-auto flex flex-col sm:flex-row items-center gap-3 ${showFilters ? 'flex' : 'hidden md:flex'}`}>
                                 {/* Curso Filter */}
-                                <div className="relative w-full sm:w-auto group">
-                                    <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-purple-500 transition-colors" />
+                                <div className="flex-1 min-w-[140px]">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block flex items-center gap-1.5">
+                                        <GraduationCap className="w-3.5 h-3.5" />
+                                        Año Escolar
+                                    </label>
                                     <select
                                         value={cursoFilter}
                                         onChange={(e) => setCursoFilter(e.target.value)}
-                                        className="w-full sm:min-w-[180px] pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-medium text-slate-700 appearance-none hover:border-slate-300 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all text-sm cursor-pointer"
+                                        className="w-full bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 appearance-none cursor-pointer transition-all hover:border-indigo-300"
                                     >
-                                        <option value="">Todos los cursos</option>
+                                        <option value="">Todos los años</option>
                                         {cursosUnicos.map(c => (
-                                            <option key={`filter-curso-${c}`} value={c}>{c}</option>
+                                            <option key={c} value={c}>{c}</option>
                                         ))}
                                     </select>
-                                    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
                                 </div>
 
                                 {/* Asignatura Filter */}
@@ -278,6 +265,15 @@ export function ModalExploradorProyectosAlumno({
                             </div>
                         ) : (
                             <div className="space-y-8 max-w-7xl mx-auto">
+                                {cursoFilter && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-bold text-slate-600 w-fit">
+                                        <GraduationCap className="w-4 h-4 text-slate-400" />
+                                        <span>Año: {cursoFilter}</span>
+                                        <button onClick={() => setCursoFilter('')} className="ml-1 p-0.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-700">
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                )}
                                 {sortedYears.map((year) => (
                                     <div key={year} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/60">
                                         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">

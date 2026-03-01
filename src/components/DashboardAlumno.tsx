@@ -1206,10 +1206,9 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                   <div className="space-y-4">
                     {todosLosGrupos.map((g, idx) => {
                       const proyecto = PROYECTOS_MOCK.find(p => p.id === g.proyecto_id) || PROYECTOS_MOCK[0];
-                      const hitosTotales = proyecto.fases.flatMap(f => f.hitos || []);
-                      const hitosCompletadosLabels = (g.hitos || []).filter(h => h.estado === 'aprobado').map(h => h.titulo);
-                      const hitosPendientes = hitosTotales.filter(h => !hitosCompletadosLabels.includes(h)).slice(0, 2);
                       const asigStyles = getAsignaturaStyles(asignaturaProyecto);
+                      const hitosDelGrupo = g.hitos || [];
+                      const hitosParaMostrar = hitosDelGrupo.slice(0, 3); // Mostrar hasta 3 hitos
 
                       return (
                         <div key={idx} className={`p-4 bg-slate-50 rounded-2xl border-2 ${asigStyles.borderClass} group hover:border-indigo-400 transition-all shadow-sm`}>
@@ -1234,17 +1233,20 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                           </div>
 
                           <div className="space-y-1">
-                            {(g.hitos && g.hitos.length > 0) ? (
-                              hitosPendientes.map((h, i) => (
-                                <div key={i} className="flex items-center gap-1.5 opacity-70">
-                                  <div className={`w-1 h-1 rounded-full ${asigStyles.bgClass}`}></div>
-                                  <span className="text-[9px] font-medium truncate text-slate-500 max-w-full block" title={h}>
-                                    {h}
-                                  </span>
-                                </div>
-                              ))
+                            {hitosParaMostrar.length > 0 ? (
+                              hitosParaMostrar.map((h, i) => {
+                                const completado = h.estado === 'aprobado' || h.estado === 'completado';
+                                return (
+                                  <div key={i} className={`flex items-center gap-1.5 ${completado ? 'opacity-50' : 'opacity-80'}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${completado ? 'bg-slate-300' : asigStyles.bgClass}`}></div>
+                                    <span className={`text-[10px] font-medium truncate max-w-full block ${completado ? 'text-slate-400 line-through' : 'text-slate-600'}`} title={h.titulo}>
+                                      {h.titulo}
+                                    </span>
+                                  </div>
+                                );
+                              })
                             ) : (
-                              <span className="text-[9px] text-slate-300 italic">Sin actividad</span>
+                              <span className="text-[9px] text-slate-400 italic">Sin tareas documentadas</span>
                             )}
                           </div>
                         </div>

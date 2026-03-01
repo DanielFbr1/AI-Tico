@@ -137,6 +137,18 @@ REGLAS:
     const formato = configuracion?.formato_respuesta || 'Detallado';
     const instruccionesExtra = configuracion?.instrucciones_comportamiento || '';
 
+    // Instrucciones imperativas basadas en configuración
+    let restricciones = "";
+    if (configuracion?.usar_emojis === false) {
+        restricciones += "\n- INSTRUCCIÓN CRÍTICA: PROHIBIDO USAR EMOJIS EN LA RESPUESTA.";
+    }
+    if (configuracion?.tono === 'estricto/agresivo') {
+        restricciones += "\n- INSTRUCCIÓN CRÍTICA: Debes responder de forma seca, estricta y cortante.";
+    }
+    if (configuracion?.formato_respuesta === 'breve') {
+        restricciones += "\n- INSTRUCCIÓN CRÍTICA: Debes responder en 1 o 2 frases cortas como máximo.";
+    }
+
     const systemPrompt = `Eres Tico, un Mentor IA amigable y sabio para niños/estudiantes.
     Estás guiando al grupo "${grupoNombre}" en su proyecto "${proyectoNombre}".
     Contexto del proyecto: ${contextoIA || "No definido"}
@@ -149,6 +161,7 @@ REGLAS:
     
     INSTRUCCIONES ADICIONALES DEL PROFESOR:
     "${instruccionesExtra}"
+    ${restricciones}
 
     Tus REGLAS DE ORO:
     1. LENGUAJE: Usa un lenguaje sencillo y motivador para niños de 8 a 12 años. ¡Usa emojis!

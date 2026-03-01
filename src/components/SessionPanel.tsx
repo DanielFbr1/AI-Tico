@@ -26,6 +26,7 @@ export function SessionPanel({ onSelectClase, nombreProfesor, initialPath = [] }
     const [searchTerm, setSearchTerm] = useState('');
     const [showMensajesFamilias, setShowMensajesFamilias] = useState(false);
     const [unreadFamilyMessages, setUnreadFamilyMessages] = useState(0);
+    const [unreadStudentMessages, setUnreadStudentMessages] = useState(0);
 
     // Nivel actual basado en la profundidad del path
     const currentLevel = path.length;
@@ -76,7 +77,41 @@ export function SessionPanel({ onSelectClase, nombreProfesor, initialPath = [] }
 
     useEffect(() => {
         fetchUnreadFamilyMessages();
-    }, []);
+        fetchUnreadStudentMessages();
+
+        if (!user) return;
+
+        // Suscripción a mensajes de familias
+        const familySub = supabase.channel(`family_msgs_panel_${user.id}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'mensajes_familia_profesor',
+                filter: `profesor_user_id=eq.${user.id}`
+            }, payload => {
+                if (payload.new.sender_id !== user.id && !payload.new.leido) {
+                    fetchUnreadFamilyMessages();
+                }
+            }).subscribe();
+
+        // Suscripción a mensajes de alumnos
+        const studentSub = supabase.channel(`student_msgs_panel_${user.id}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'mensajes_profesor_alumno',
+                filter: `profesor_user_id=eq.${user.id}`
+            }, payload => {
+                if (payload.new.sender_id !== user.id && !payload.new.leido) {
+                    fetchUnreadStudentMessages();
+                }
+            }).subscribe();
+
+        return () => {
+            supabase.removeChannel(familySub);
+            supabase.removeChannel(studentSub);
+        };
+    }, [user]);
 
     const fetchUnreadFamilyMessages = async () => {
         try {
@@ -93,6 +128,24 @@ export function SessionPanel({ onSelectClase, nombreProfesor, initialPath = [] }
             }
         } catch (err) {
             console.error('Error fetching unread family messages:', err);
+        }
+    };
+
+    const fetchUnreadStudentMessages = async () => {
+        try {
+            if (!user) return;
+            const { data, error } = await supabase
+                .from('mensajes_profesor_alumno')
+                .select('id')
+                .eq('profesor_user_id', user.id)
+                .neq('sender_id', user.id)
+                .eq('leido', false);
+
+            if (!error && data) {
+                setUnreadStudentMessages(data.length);
+            }
+        } catch (err) {
+            console.error('Error fetching unread student messages:', err);
         }
     };
 

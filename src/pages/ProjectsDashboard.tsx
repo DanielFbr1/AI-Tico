@@ -452,13 +452,6 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                             )}
                         </button>
                         <button
-                            onClick={() => setShowModalProyecto(true)}
-                            className="flex items-center justify-center gap-2 px-4 md:px-7 py-2.5 md:py-3.5 bg-blue-600 text-white rounded-xl md:rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all text-[10px] md:text-sm uppercase tracking-widest"
-                        >
-                            <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                            <span className="hidden sm:inline">Nuevo</span>
-                        </button>
-                        <button
                             onClick={handleLogout}
                             className="p-2.5 md:p-3.5 bg-rose-50 text-rose-400 hover:text-rose-600 rounded-xl md:rounded-2xl transition-all border border-transparent"
                         >

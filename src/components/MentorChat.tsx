@@ -85,7 +85,19 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
   const vozPermitidaAdmin = grupo.configuracion?.voz_activada ?? true;
   const microPermitidoAdmin = grupo.configuracion?.microfono_activado ?? true;
 
-  const [isMuted, setIsMuted] = useState(voiceService.isMuted());
+  // Inicializar estado muteado dependiendo del servicio PERO forzar mute si el Admin no permite voz
+  const [isMuted, setIsMuted] = useState(!vozPermitidaAdmin || voiceService.isMuted());
+
+  // Sincronizar cambios en config para mutear si el admin lo apaga en caliente
+  useEffect(() => {
+    if (!vozPermitidaAdmin) {
+      setIsMuted(true);
+      if (typeof voiceService.setMuted === 'function') {
+        voiceService.setMuted(true);
+      }
+    }
+  }, [vozPermitidaAdmin]);
+
   /* --- MODIFICACIÓN: USO DE GROQ WHISPER (Grabación de Audio) --- */
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);

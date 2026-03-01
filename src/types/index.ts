@@ -19,7 +19,7 @@ export interface HitoGrupo {
     id: string;
     fase_id: string;
     titulo: string;
-    estado: 'propuesto' | 'pendiente' | 'en_progreso' | 'revision' | 'aprobado' | 'rechazado';
+    estado: 'propuesto' | 'pendiente' | 'en_progreso' | 'revision' | 'aprobado' | 'rechazado' | 'completado';
     comentario_docente?: string;
     descripcion?: string;
 }
@@ -34,11 +34,12 @@ export interface Grupo {
     configuracion?: {
         voz_activada?: boolean;
         microfono_activado?: boolean;
+        usar_emojis?: boolean;
         instrucciones_comportamiento?: string;
-        tono?: 'Divertido' | 'Serio' | 'Socrático';
+        tono?: 'Divertido' | 'Serio' | 'Socrático' | 'estricto/agresivo';
         nivel_exigencia?: 'Bajo' | 'Medio' | 'Alto';
         nivel_apoyo?: 'Guía' | 'Retador';
-        formato_respuesta?: 'Conciso' | 'Detallado';
+        formato_respuesta?: 'Conciso' | 'Detallado' | 'breve';
     };
     nombre_ia?: string;
     personalidad_ia?: string;
