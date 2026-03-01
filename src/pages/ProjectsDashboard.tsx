@@ -426,14 +426,6 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                     </div>
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={() => setShowModalProyecto(true)}
-                            className="relative flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl md:rounded-2xl font-black transition-all shadow-md shadow-blue-200"
-                            title="Crear Nuevo Proyecto"
-                        >
-                            <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                            <span className="text-[10px] md:text-xs uppercase tracking-widest hidden md:inline">Nuevo</span>
-                        </button>
-                        <button
                             onClick={() => setShowMensajesFamilias(true)}
                             className="relative flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl md:rounded-2xl font-black transition-all border-2 border-emerald-200 hover:border-emerald-400 shadow-sm"
                             title="Mensajes de Familias"
@@ -458,6 +450,14 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                                     {unreadStudentMessages}
                                 </span>
                             )}
+                        </button>
+                        <button
+                            onClick={() => setShowModalProyecto(true)}
+                            className="relative flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl md:rounded-2xl font-black transition-all shadow-md shadow-blue-200"
+                            title="Crear Nuevo Proyecto"
+                        >
+                            <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                            <span className="text-[10px] md:text-xs uppercase tracking-widest hidden md:inline">Nuevo</span>
                         </button>
                         <button
                             onClick={handleLogout}
