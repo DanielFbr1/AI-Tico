@@ -14,17 +14,49 @@ export function ListaAlumnosEnLinea({ proyectoId, grupos = [], onAlumnoClick }: 
 
   const handleClick = async (alumnoNombre: string) => {
     if (!onAlumnoClick) return;
-    const grupo = grupos.find(g => g.miembros.includes(alumnoNombre));
-    if (!grupo) return;
 
-    if (grupo.pedir_ayuda) {
+    // Búsqueda flexible (ignora mayúsculas y espacios extremos)
+    const normalizedClickName = alumnoNombre.toLowerCase().trim();
+    let grupo = grupos.find(g =>
+      g.miembros.some(m => m.toLowerCase().trim() === normalizedClickName)
+    );
+
+    // Si a pesar de todo no se encuentra un grupo asociado, pasamos un grupo mock 
+    // para que la interfaz del Perfil no se rompa y el modal logre abrirse
+    if (!grupo) {
+      grupo = {
+        id: 'mock-id',
+        proyecto_id: proyectoId || '',
+        nombre: 'Sin Grupo Asignado',
+        miembros: [alumnoNombre],
+        puntos: 0,
+        racha: 0,
+        ultima_interaccion: new Date().toISOString(),
+        pedir_ayuda: false,
+        hitos: [],
+        configuracion: {
+          tono: 'Divertido',
+          nivel_exigencia: 'Medio',
+          nivel_apoyo: 'Guía',
+          formato_respuesta: 'breve',
+          microfono_activado: true,
+          voz_activada: true,
+          usar_emojis: true,
+          instrucciones_comportamiento: ''
+        }
+      } as unknown as Grupo;
+    }
+
+    if (grupo && grupo.pedir_ayuda) {
       try {
-        await supabase.from('grupos').update({ pedir_ayuda: false }).eq('id', grupo.id);
+        if (grupo.id !== 'mock-id') {
+          await supabase.from('grupos').update({ pedir_ayuda: false }).eq('id', grupo.id);
+        }
       } catch (err) {
         console.error('Error dismissing help:', err);
       }
     } else {
-      onAlumnoClick({ nombre: alumnoNombre, grupo });
+      onAlumnoClick({ nombre: alumnoNombre, grupo: grupo as Grupo });
     }
   };
 

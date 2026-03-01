@@ -17,7 +17,9 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
     const [tono, setTono] = useState<string>(grupo?.configuracion?.tono || 'Divertido');
     const [nivelApoyo, setNivelApoyo] = useState<string>(grupo?.configuracion?.nivel_apoyo || 'Guía');
     const [formatoRespuesta, setFormatoRespuesta] = useState<string>(grupo?.configuracion?.formato_respuesta || 'Detallado');
-    const [frecuenciaEmojis, setFrecuenciaEmojis] = useState<boolean>(grupo?.configuracion?.usar_emojis ?? true);
+    const [frecuenciaEmojis, setFrecuenciaEmojis] = useState<boolean>(
+        grupo?.configuracion?.usar_emojis !== undefined ? grupo.configuracion.usar_emojis : true
+    );
 
     // NUEVOS ESTADOS para Voz y Micro
     const [vozActivada, setVozActivada] = useState(grupo?.configuracion?.voz_activada ?? true);

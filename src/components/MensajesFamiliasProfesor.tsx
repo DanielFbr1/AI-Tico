@@ -76,10 +76,16 @@ export function MensajesFamiliasProfesor({ profesorId, profesorNombre, onBack }:
 
             const profileMap = new Map<string, string>();
             (profiles || []).forEach((p: any) => {
-                profileMap.set(p.id, p.nombre || p.email?.split('@')[0] || 'Familia');
+                let displayName = p.nombre;
+                if (!displayName || displayName === p.email) {
+                    displayName = p.email?.split('@')[0] || 'Familia';
+                    // Capitalizar primera letra del prefijo del email para que se vea como un nombre
+                    displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+                }
+                profileMap.set(p.id, displayName);
             });
 
-            const convList = [...convMap.values()].map(c => ({
+            const convList = Array.from(convMap.values()).map(c => ({
                 ...c,
                 familia_nombre: profileMap.get(c.familia_user_id) || 'Familia'
             }));

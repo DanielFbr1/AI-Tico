@@ -85,13 +85,19 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
                     proyectosData.forEach(proy => {
                         if (!proy.created_by || seenProfs.has(proy.created_by)) return;
 
-                        const perfil = perfilesData.find(p => p.id === proy.created_by);
+                        const perfil = perfilesData.find(p => p.id === proy.created_by) as any;
                         if (perfil?.nombre?.trim().toLowerCase().includes('profesor general')) return; // Excluir al profesor por defecto
+
+                        let displayName = perfil?.nombre;
+                        if (!displayName || displayName === perfil?.email) {
+                            displayName = perfil?.email?.split('@')[0] || 'Profesor';
+                            displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+                        }
 
                         seenProfs.add(proy.created_by);
                         profesEncontrados.push({
                             id: proy.created_by,
-                            nombre: perfil?.nombre || 'Profesor',
+                            nombre: displayName,
                             asignatura: proy.asignatura || 'General'
                         });
                     });
