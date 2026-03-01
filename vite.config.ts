@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['favicon-96x96-tech.png', 'apple-touch-icon-tech.png', 'favicon.svg'],
       manifest: {
         name: 'AI-Tico Mentor',
         short_name: 'AI-Tico',
@@ -17,12 +17,12 @@ export default defineConfig({
         theme_color: '#ffffff',
         icons: [
           {
-            src: 'web-app-manifest-192x192.png',
+            src: 'web-app-manifest-192x192-tech.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'web-app-manifest-512x512.png',
+            src: 'web-app-manifest-512x512-tech.png',
             sizes: '512x512',
             type: 'image/png'
           }

@@ -41,41 +41,57 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Extraer e hidratar profesores únicos disponibles para este alumno
+    // Cargar profesores REALES que crearon los proyectos del alumno
     useEffect(() => {
         if (isOpen && historialClases.length > 0) {
             const cargarProfesores = async () => {
                 try {
-                    // Obtener los IDs de organización de los proyectos en los que está el alumno
                     const proyIds = historialClases.map(hc => hc.id);
-                    const orgIds = [...new Set(historialClases.map(hc => hc.codigo))]; // O usar un campo adecuado de organizacion si existe
 
-                    // Por simplicidad en la demo, vamos a buscar usuarios con rol docente 
-                    // que estén vinculados a alguna de estas clases (esto dependería de la estructura exacta de DB).
-                    // Para no bloquearnos con esquemas complejos, extraemos los profesores si ya vienen en el historial
-                    // o simulamos consultando usuarios
+                    // Buscar los proyectos para obtener created_by (UUID del profesor)
+                    const { data: proyectosData, error: proyError } = await supabase
+                        .from('proyectos')
+                        .select('id, created_by, asignatura, nombre')
+                        .in('id', proyIds);
 
-                    let profesEncontrados: { id: string, nombre: string, asignatura: string }[] = [];
-
-                    // Solución fallback: consultar todos los docentes (ajustar query según necesidades exactas)
-                    const { data: userData, error } = await supabase
-                        .from('profiles')
-                        .select('id, nombre, rol')
-                        .eq('rol', 'profesor');
-
-                    if (!error && userData) {
-                        // Simulamos que estos docentes imparten algunas de las clases del alumno
-                        // Idealmente se filtra por los que sean dueños de las clases (organizaciones)
-                        profesEncontrados = userData.map((u, i) => {
-                            // Intentar emparejar con asignaturas para dar contexto
-                            const asigRelacionada = historialClases[i % historialClases.length]?.asignatura || 'General';
-                            return {
-                                id: u.id,
-                                nombre: u.nombre || 'Profesor',
-                                asignatura: asigRelacionada
-                            };
-                        });
+                    if (proyError || !proyectosData) {
+                        console.error("Error al cargar proyectos para profesores", proyError);
+                        return;
                     }
+
+                    // Obtener UUIDs únicos de profesores
+                    const profesorIds = [...new Set(proyectosData.map(p => p.created_by).filter(Boolean))];
+
+                    if (profesorIds.length === 0) {
+                        setProfesores([]);
+                        return;
+                    }
+
+                    // Buscar los perfiles de esos profesores
+                    const { data: perfilesData, error: perfilError } = await supabase
+                        .from('profiles')
+                        .select('id, nombre')
+                        .in('id', profesorIds);
+
+                    if (perfilError || !perfilesData) {
+                        console.error("Error al cargar perfiles de profesores", perfilError);
+                        return;
+                    }
+
+                    // Crear lista de profesores con su asignatura asociada
+                    const profesEncontrados: { id: string, nombre: string, asignatura: string }[] = [];
+                    const seenProfs = new Set<string>();
+
+                    proyectosData.forEach(proy => {
+                        if (!proy.created_by || seenProfs.has(proy.created_by)) return;
+                        seenProfs.add(proy.created_by);
+                        const perfil = perfilesData.find(p => p.id === proy.created_by);
+                        profesEncontrados.push({
+                            id: proy.created_by,
+                            nombre: perfil?.nombre || 'Profesor',
+                            asignatura: proy.asignatura || 'General'
+                        });
+                    });
 
                     setProfesores(profesEncontrados);
                 } catch (error) {
@@ -176,6 +192,27 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
         }
     };
 
+    // Marcar mensajes recibidos como leídos al abrir una conversación
+    const marcarComoLeido = async (profesorId: string) => {
+        await supabase
+            .from('mensajes_profesor_alumno')
+            .update({ leido: true })
+            .eq('alumno_user_id', alumnoId)
+            .eq('profesor_user_id', profesorId)
+            .neq('sender_id', alumnoId)
+            .eq('leido', false);
+
+        // Actualizar estado local también
+        setMensajes(prev => {
+            const thread = prev[profesorId];
+            if (!thread) return prev;
+            return {
+                ...prev,
+                [profesorId]: thread.map(m => m.sender_id !== alumnoId ? { ...m, leido: true } : m)
+            };
+        });
+    };
+
     const getTiempoTranscurrido = (createdString: string) => {
         const timestamp = new Date(createdString).getTime();
         const ahora = Date.now();
@@ -234,7 +271,7 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
                                 return (
                                     <button
                                         key={profe.id}
-                                        onClick={() => setProfesorSeleccionado(profe.id)}
+                                        onClick={() => { setProfesorSeleccionado(profe.id); marcarComoLeido(profe.id); }}
                                         className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all border-2 text-left group ${profesorSeleccionado === profe.id
                                             ? 'bg-fuchsia-50 border-fuchsia-200'
                                             : 'bg-white border-transparent hover:border-slate-100'

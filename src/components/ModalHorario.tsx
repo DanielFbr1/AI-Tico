@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar as CalendarIcon, Save, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
 import { getAsignaturaStyles } from '../data/asignaturas';
 
 interface ModalHorarioProps {
@@ -26,22 +27,27 @@ export function ModalHorario({ isOpen, onClose, alumnoId }: ModalHorarioProps) {
     // Representación de las horas para poder editarlas
     const [horas, setHoras] = useState<string[]>([]);
 
+    const [guardando, setGuardando] = useState(false);
+
     useEffect(() => {
-        if (isOpen) {
-            const savedHorario = localStorage.getItem(`horario_alumno_${alumnoId}`);
-            const savedHoras = localStorage.getItem(`horas_alumno_${alumnoId}`);
+        if (isOpen && alumnoId) {
+            const cargarHorario = async () => {
+                const { data, error } = await supabase
+                    .from('horarios_alumno')
+                    .select('horario, horas')
+                    .eq('alumno_user_id', alumnoId)
+                    .maybeSingle();
 
-            let initialHoras = HORAS_PREDEFINIDAS;
-            if (savedHoras) {
-                initialHoras = JSON.parse(savedHoras);
-            }
-            setHoras(initialHoras);
-
-            if (savedHorario) {
-                setHorario(JSON.parse(savedHorario));
-            } else {
-                setHorario(initialHoras.map(() => Array(DIAS.length).fill('')));
-            }
+                if (!error && data) {
+                    setHoras(data.horas || HORAS_PREDEFINIDAS);
+                    setHorario(data.horario || (data.horas || HORAS_PREDEFINIDAS).map(() => Array(DIAS.length).fill('')));
+                } else {
+                    // No existe aún, usar valores predeterminados
+                    setHoras(HORAS_PREDEFINIDAS);
+                    setHorario(HORAS_PREDEFINIDAS.map(() => Array(DIAS.length).fill('')));
+                }
+            };
+            cargarHorario();
         }
     }, [isOpen, alumnoId]);
 
@@ -74,11 +80,32 @@ export function ModalHorario({ isOpen, onClose, alumnoId }: ModalHorarioProps) {
         setHorario(nuevoHorario);
     };
 
-    const guardarHorario = () => {
-        localStorage.setItem(`horario_alumno_${alumnoId}`, JSON.stringify(horario));
-        localStorage.setItem(`horas_alumno_${alumnoId}`, JSON.stringify(horas));
-        toast.success('Horario guardado correctamente');
-        onClose();
+    const guardarHorario = async () => {
+        setGuardando(true);
+        try {
+            // Intentar upsert (insertar o actualizar si ya existe)
+            const { error } = await supabase
+                .from('horarios_alumno')
+                .upsert({
+                    alumno_user_id: alumnoId,
+                    horario: horario,
+                    horas: horas,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'alumno_user_id' });
+
+            if (error) {
+                console.error('Error al guardar horario:', error);
+                toast.error('Error al guardar el horario');
+            } else {
+                toast.success('Horario guardado correctamente');
+                onClose();
+            }
+        } catch (err) {
+            console.error('Error al guardar horario:', err);
+            toast.error('Error al guardar el horario');
+        } finally {
+            setGuardando(false);
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent, horaIndex: number, diaIndex: number) => {

@@ -37,29 +37,48 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Extraer alumnos de los grupos actuales
+    // Extraer alumnos de los grupos y resolver sus UUIDs reales
     useEffect(() => {
         if (isOpen && grupos.length > 0) {
-            const extraerAlumnos = () => {
-                const alumnosExtraidos: AlumnoChatInfo[] = [];
-                const seenIds = new Set<string>();
+            const extraerAlumnos = async () => {
+                // Extraer todos los nombres de miembros únicos
+                const allNames = new Set<string>();
+                const nameToGroup: Record<string, string> = {};
 
                 grupos.forEach(grupo => {
                     grupo.miembros.forEach(miembro => {
-                        const asigId = typeof miembro === 'object' && (miembro as any).id ? (miembro as any).id : `temp-${miembro}`;
                         const nombreStr = typeof miembro === 'string' ? miembro : (miembro as any).nombre;
-
-                        if (!seenIds.has(asigId)) {
-                            seenIds.add(asigId);
-                            alumnosExtraidos.push({
-                                id: asigId,
-                                nombre: nombreStr,
-                                grupoNombre: grupo.nombre
-                            });
+                        if (nombreStr && !allNames.has(nombreStr)) {
+                            allNames.add(nombreStr);
+                            nameToGroup[nombreStr] = grupo.nombre;
                         }
                     });
                 });
-                setAlumnos(alumnosExtraidos.sort((a, b) => a.nombre.localeCompare(b.nombre)));
+
+                if (allNames.size === 0) {
+                    setAlumnos([]);
+                    return;
+                }
+
+                // Resolver los nombres a UUIDs reales consultando profiles
+                const namesArray = Array.from(allNames);
+                const { data: perfilesData, error } = await supabase
+                    .from('profiles')
+                    .select('id, nombre')
+                    .in('nombre', namesArray);
+
+                if (error) {
+                    console.error("Error al resolver perfiles de alumnos:", error);
+                    return;
+                }
+
+                const alumnosResueltos: AlumnoChatInfo[] = (perfilesData || []).map(p => ({
+                    id: p.id,
+                    nombre: p.nombre,
+                    grupoNombre: nameToGroup[p.nombre] || ''
+                }));
+
+                setAlumnos(alumnosResueltos.sort((a, b) => a.nombre.localeCompare(b.nombre)));
             };
 
             extraerAlumnos();
@@ -157,6 +176,27 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
         }
     };
 
+    // Marcar mensajes recibidos como leídos al abrir conversación
+    const marcarComoLeido = async (alumnoId: string) => {
+        await supabase
+            .from('mensajes_profesor_alumno')
+            .update({ leido: true })
+            .eq('alumno_user_id', alumnoId)
+            .eq('profesor_user_id', docenteId)
+            .neq('sender_id', docenteId)
+            .eq('leido', false);
+
+        // Actualizar estado local
+        setMensajes(prev => {
+            const thread = prev[alumnoId];
+            if (!thread) return prev;
+            return {
+                ...prev,
+                [alumnoId]: thread.map(m => m.sender_id !== docenteId ? { ...m, leido: true } : m)
+            };
+        });
+    };
+
     const getTiempoTranscurrido = (createdString: string) => {
         const timestamp = new Date(createdString).getTime();
         const ahora = Date.now();
@@ -215,7 +255,7 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
                                 return (
                                     <button
                                         key={alum.id}
-                                        onClick={() => setAlumnoSeleccionado(alum.id)}
+                                        onClick={() => { setAlumnoSeleccionado(alum.id); marcarComoLeido(alum.id); }}
                                         className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left ${alumnoSeleccionado === alum.id ? 'bg-fuchsia-100/50 outline outline-2 outline-fuchsia-200' : 'hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm'}`}
                                     >
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${alumnoSeleccionado === alum.id ? 'bg-fuchsia-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
