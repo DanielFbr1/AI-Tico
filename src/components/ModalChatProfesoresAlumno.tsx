@@ -86,7 +86,7 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
                         if (!proy.created_by || seenProfs.has(proy.created_by)) return;
 
                         const perfil = perfilesData.find(p => p.id === proy.created_by);
-                        if (perfil?.nombre === 'Profesor General') return; // Excluir al profesor por defecto
+                        if (perfil?.nombre?.trim().toLowerCase().includes('profesor general')) return; // Excluir al profesor por defecto
 
                         seenProfs.add(proy.created_by);
                         profesEncontrados.push({

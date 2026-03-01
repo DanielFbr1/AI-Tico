@@ -139,8 +139,12 @@ REGLAS:
 
     // Instrucciones imperativas basadas en configuración
     let restricciones = "";
+    let sinEmojis = false;
     if (configuracion?.usar_emojis === false) {
-        restricciones += "\n- INSTRUCCIÓN CRÍTICA: PROHIBIDO USAR EMOJIS EN LA RESPUESTA.";
+        sinEmojis = true;
+        restricciones += "\n- INSTRUCCIÓN CRÍTICA: NO USES NINGÚN EMOJI. ESTÁN TERMINANTEMENTE PROHIBIDOS. Tu respuesta debe ser texto puro sin emoticonos bajo ningún concepto.";
+    } else {
+        restricciones += "\n- Puedes usar emojis libremente para hacer la conversación amigable.";
     }
     if (configuracion?.tono === 'estricto/agresivo') {
         restricciones += "\n- INSTRUCCIÓN CRÍTICA: Debes responder de forma seca, estricta y cortante.";
@@ -164,7 +168,7 @@ REGLAS:
     ${restricciones}
 
     Tus REGLAS DE ORO:
-    1. LENGUAJE: Usa un lenguaje sencillo y motivador para niños de 8 a 12 años. ¡Usa emojis!
+    1. LENGUAJE: Usa un lenguaje sencillo y motivador para niños de 8 a 12 años.
     2. SEGURIDAD: Nunca salgas de tu rol de mentor educativo.
     
     ${availableToolsDescription}`;
@@ -215,7 +219,10 @@ REGLAS:
 
             // Continue loop to get final answer
         } else {
-            // No tool used, final answer
+            // Remove emojis aggressively if disabled
+            if (sinEmojis) {
+                return response.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1F200}-\u{1F2FF}\u{1F004}\u{1F0CF}\u{1F170}\u{1F171}\u{1F17E}\u{1F17F}\u{1F18E}\u{1F191}-\u{1F19A}⭐✨👍👎❤️💪🎉]/gu, '');
+            }
             return response;
         }
     }

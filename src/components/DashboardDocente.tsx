@@ -81,6 +81,8 @@ export function DashboardDocente({
     const [modalRuletaAbierta, setModalRuletaAbierta] = useState(false);
     const [modalTicoAbierto, setModalTicoAbierto] = useState(false);
     const [alumnoParaEvaluar, setAlumnoParaEvaluar] = useState<{ nombre: string, grupo: Grupo } | null>(null);
+    const [unreadStudentMessages, setUnreadStudentMessages] = useState(0);
+    const [unreadFamilyMessages, setUnreadFamilyMessages] = useState(0);
 
     // Project Renaming State
     const [isEditingProjectName, setIsEditingProjectName] = useState(false);
@@ -88,6 +90,83 @@ export function DashboardDocente({
     const [refreshRecursos, setRefreshRecursos] = useState(0);
 
     const { signOut, perfil, user } = useAuth();
+
+    useEffect(() => {
+        let studentSub: any = null;
+        let familySub: any = null;
+
+        if (user) {
+            const fetchUnreadStudentMessages = async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('mensajes_profesor_alumno')
+                        .select('id')
+                        .eq('profesor_user_id', user.id)
+                        .neq('sender_id', user.id)
+                        .eq('leido', false);
+
+                    if (!error && data) {
+                        setUnreadStudentMessages(data.length);
+                    }
+                } catch (err) {
+                    console.error('Error fetching unread student messages:', err);
+                }
+            };
+
+            const fetchUnreadFamilyMessages = async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('mensajes_familia_profesor')
+                        .select('id')
+                        .eq('profesor_user_id', user.id)
+                        .neq('sender_id', user.id)
+                        .eq('leido', false);
+
+                    if (!error && data) {
+                        setUnreadFamilyMessages(data.length);
+                    }
+                } catch (err) {
+                    console.error('Error fetching unread family messages:', err);
+                }
+            };
+
+            fetchUnreadStudentMessages();
+            fetchUnreadFamilyMessages();
+
+            studentSub = supabase.channel(`student_msgs_docente_${user.id}`)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'mensajes_profesor_alumno',
+                    filter: `profesor_user_id=eq.${user.id}`
+                }, payload => {
+                    if (payload.new.sender_id !== user.id && !payload.new.leido) {
+                        fetchUnreadStudentMessages();
+                    }
+                }).subscribe();
+
+            familySub = supabase.channel(`family_msgs_docente_${user.id}`)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'mensajes_familia_profesor',
+                    filter: `profesor_user_id=eq.${user.id}`
+                }, payload => {
+                    if (payload.new.sender_id !== user.id && !payload.new.leido) {
+                        fetchUnreadFamilyMessages();
+                    }
+                }).subscribe();
+        }
+
+        return () => {
+            if (studentSub) {
+                supabase.removeChannel(studentSub);
+            }
+            if (familySub) {
+                supabase.removeChannel(familySub);
+            }
+        };
+    }, [user]);
 
     const numPendientes = grupos.reduce((acc, g) =>
         acc + (g.hitos || []).filter(h => h.estado === 'revision').length, 0
@@ -376,7 +455,7 @@ export function DashboardDocente({
 
 
                         <div className="mt-6 pt-4 border-t border-gray-200">
-                            <ListaAlumnosEnLinea proyectoId={proyectoActual?.id} grupos={grupos} />
+                            <ListaAlumnosEnLinea proyectoId={proyectoActual?.id} grupos={grupos} onAlumnoClick={setAlumnoParaEvaluar} />
                         </div>
                     </nav>
 
@@ -462,10 +541,11 @@ export function DashboardDocente({
                                                     </h1>
                                                     <button
                                                         onClick={onCambiarProyecto}
-                                                        className="flex items-center gap-1 px-3 py-1 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all shadow-sm"
+                                                        className="relative flex items-center gap-1 px-3 py-1 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all shadow-sm"
                                                     >
                                                         <FolderOpen className="w-3 h-3" />
                                                         Cambiar
+                                                        {unreadFamilyMessages > 0 && <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-rose-500 rounded-full animate-bounce shadow-md border border-white" />}
                                                     </button>
                                                 </div>
 
@@ -490,10 +570,11 @@ export function DashboardDocente({
                                     {proyectoActual ? proyectoActual.nombre : 'Panel Docente'}
                                     <button
                                         onClick={onCambiarProyecto}
-                                        className="p-1.5 bg-slate-100 text-slate-400 rounded-lg active:scale-95"
+                                        className="relative p-1.5 bg-slate-100 text-slate-400 rounded-lg active:scale-95"
                                         title="Cambiar proyecto"
                                     >
                                         <FolderOpen className="w-3.5 h-3.5" />
+                                        {unreadFamilyMessages > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-bounce border border-white" />}
                                     </button>
                                 </div>
                                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Sala: {proyectoActual?.codigo_sala}</span>
@@ -515,6 +596,22 @@ export function DashboardDocente({
                                 </button>
                             )}
 
+                            {/* Chat Alumnos Button (MOVED BEFORE IA MENTOR) */}
+                            <button
+                                onClick={() => setModalChatAlumnosAbierto(true)}
+                                className="relative flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-fuchsia-50 text-fuchsia-600 border-2 border-fuchsia-100 hover:border-fuchsia-300 rounded-2xl font-black transition-all text-[10px] md:text-xs"
+                                title="Chat con Alumnos"
+                            >
+                                <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
+                                <span className="hidden md:inline">ALUMNOS</span>
+                                <span className="md:hidden">CHAT</span>
+                                {unreadStudentMessages > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 md:w-5 md:h-5 bg-rose-500 text-white text-[8px] md:text-[10px] font-black rounded-full flex items-center justify-center shadow-md animate-bounce">
+                                        {unreadStudentMessages}
+                                    </span>
+                                )}
+                            </button>
+
                             <button
                                 onClick={handleAjustesIA}
                                 className="flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-purple-100 text-purple-700 border-2 border-purple-200 hover:border-purple-400 rounded-2xl font-black transition-all text-[10px] md:text-xs"
@@ -533,16 +630,6 @@ export function DashboardDocente({
                                 <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
                                 <span className="hidden md:inline">LISTA</span>
                                 <span className="md:hidden">LISTA</span>
-                            </button>
-
-                            <button
-                                onClick={() => setModalChatAlumnosAbierto(true)}
-                                className="flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-fuchsia-50 text-fuchsia-600 border-2 border-fuchsia-100 hover:border-fuchsia-300 rounded-2xl font-black transition-all text-[10px] md:text-xs"
-                                title="Chat con Alumnos"
-                            >
-                                <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
-                                <span className="hidden md:inline">ALUMNOS</span>
-                                <span className="md:hidden">CHAT</span>
                             </button>
 
                             <button

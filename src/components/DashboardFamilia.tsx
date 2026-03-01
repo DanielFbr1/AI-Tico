@@ -236,7 +236,7 @@ export function DashboardFamilia({ familia, onLogout }: DashboardFamiliaProps) {
             const profIds = [...profMap.keys()];
             const { data: profiles } = await supabase
                 .from('profiles')
-                .select('id, full_name, email')
+                .select('id, nombre, email')
                 .in('id', profIds);
 
             const profesores = profIds.map(pid => {
@@ -244,7 +244,7 @@ export function DashboardFamilia({ familia, onLogout }: DashboardFamiliaProps) {
                 const profile = (profiles || []).find((p: any) => p.id === pid);
                 return {
                     id: pid,
-                    nombre: profile?.full_name || profile?.email?.split('@')[0] || 'Profesor/a',
+                    nombre: profile?.nombre || profile?.email?.split('@')[0] || 'Profesor/a',
                     proyecto_nombre: prof.proyecto_nombre
                 };
             });

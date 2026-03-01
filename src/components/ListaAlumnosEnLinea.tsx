@@ -1,14 +1,32 @@
 import { Users, Circle, Hand } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { Grupo } from '../types';
 import { useAlumnosOnline } from '../hooks/useAlumnosOnline';
 
 interface ListaAlumnosProps {
   proyectoId?: string;
   grupos?: Grupo[];
+  onAlumnoClick?: (alumnoInfo: { nombre: string; grupo: Grupo }) => void;
 }
 
-export function ListaAlumnosEnLinea({ proyectoId, grupos = [] }: ListaAlumnosProps) {
+export function ListaAlumnosEnLinea({ proyectoId, grupos = [], onAlumnoClick }: ListaAlumnosProps) {
   const { alumnosConectados, isAskingForHelp } = useAlumnosOnline(proyectoId, grupos);
+
+  const handleClick = async (alumnoNombre: string) => {
+    if (!onAlumnoClick) return;
+    const grupo = grupos.find(g => g.miembros.includes(alumnoNombre));
+    if (!grupo) return;
+
+    if (grupo.pedir_ayuda) {
+      try {
+        await supabase.from('grupos').update({ pedir_ayuda: false }).eq('id', grupo.id);
+      } catch (err) {
+        console.error('Error dismissing help:', err);
+      }
+    } else {
+      onAlumnoClick({ nombre: alumnoNombre, grupo });
+    }
+  };
 
   return (
     <div className="space-y-2">
@@ -25,7 +43,8 @@ export function ListaAlumnosEnLinea({ proyectoId, grupos = [] }: ListaAlumnosPro
         {alumnosConectados.map((alumno) => (
           <div
             key={alumno.id}
-            className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isAskingForHelp(alumno.nombre) ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50 hover:bg-gray-100'
+            onClick={() => handleClick(alumno.nombre)}
+            className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${onAlumnoClick ? 'cursor-pointer hover:bg-gray-100' : ''} ${isAskingForHelp(alumno.nombre) ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50'
               }`}
           >
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold text-sm relative">
@@ -39,11 +58,6 @@ export function ListaAlumnosEnLinea({ proyectoId, grupos = [] }: ListaAlumnosPro
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-gray-900 truncate flex items-center gap-2">
                 {alumno.nombre}
-                {isAskingForHelp(alumno.nombre) && (
-                  <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full uppercase tracking-tighter animate-pulse">
-                    Pide Ayuda
-                  </span>
-                )}
               </div>
               <div className="text-xs text-gray-500">
                 En línea

@@ -451,6 +451,32 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     };
   }, [alumno.id]);
 
+  // NUEVO EFFECT: Sincronización en tiempo real de la configuración del AI Mentor (Tabla grupos)
+  useEffect(() => {
+    if (!grupoReal?.id || grupoReal.id === 0) return;
+
+    const channelGrupo = supabase.channel(`sync_grupo_${grupoReal.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'grupos',
+        filter: `id=eq.${grupoReal.id}`
+      }, (payload) => {
+        if (payload.new) {
+          const updatedGroup = payload.new as any;
+          // Actualizamos 'grupoReal' para que Tico lea las nuevas instrucciones instantáneamente
+          setGrupoReal(prev => ({ ...prev, ...updatedGroup }));
+          // Actualizamos también 'todosLosGrupos' por si cambia de grupo
+          setTodosLosGrupos(prev => prev.map(g => g.id === updatedGroup.id ? { ...g, ...updatedGroup } : g));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channelGrupo);
+    };
+  }, [grupoReal?.id]);
+
   const handleSwitchClass = async (classData: any) => {
     setLoading(true);
     try {
@@ -770,8 +796,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                   }
                 }}
                 className={`flex items-center justify-center md:justify-start gap-2 px-3 py-2 rounded-xl transition-all font-bold text-xs border-2 ${grupoReal?.pedir_ayuda
-                  ? 'bg-yellow-100 text-yellow-700 border-yellow-300 animate-pulse'
-                  : 'bg-slate-50 text-slate-400 border-transparent'
+                  ? 'bg-yellow-500 text-white border-yellow-600 animate-pulse shadow-md shadow-yellow-200'
+                  : 'bg-yellow-50 text-yellow-600 border-yellow-100 hover:bg-yellow-100 shadow-sm'
                   }`}
               >
                 <span>✋</span>
@@ -803,7 +829,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               {/* CLASS SWITCHER */}
               <DropdownMenu open={dropdownMisClasesOpen} onOpenChange={setDropdownMisClasesOpen}>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center justify-center md:justify-start gap-2 px-3 py-2 bg-slate-50 text-slate-500 rounded-xl transition-all font-bold text-xs hover:bg-indigo-50 hover:text-indigo-600">
+                  <button className="flex items-center justify-center md:justify-start gap-2 px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm hover:bg-indigo-100 rounded-xl transition-all font-bold text-xs">
                     <History className="w-4 h-4" />
                     <span className="uppercase tracking-tight">Mis Clases</span>
                   </button>
@@ -877,7 +903,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
               <button
                 onClick={() => setModalUnirseOpen(true)}
-                className="flex items-center justify-center md:justify-start gap-2 px-3 py-2 bg-slate-50 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all font-bold text-xs"
+                className="flex items-center justify-center md:justify-start gap-2 px-3 py-2 bg-purple-50 text-purple-600 border border-purple-100 shadow-sm hover:bg-purple-100 rounded-xl transition-all font-bold text-xs"
               >
                 <Key className="w-4 h-4" />
                 <span className="uppercase tracking-tight">Unirse</span>
@@ -885,8 +911,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
               {/* Contenedor botones pequeños: Tutorial y Salir */}
               <div className="flex gap-2">
-                <button onClick={() => setTutorialActivo(true)} className="flex-1 md:flex-none p-2 bg-slate-50 text-slate-400 hover:text-blue-600 rounded-xl flex items-center justify-center"><CircleHelp className="w-5 h-5" /></button>
-                <button onClick={onLogout} className="flex-1 md:flex-none p-2 bg-rose-50 text-rose-400 hover:text-rose-600 rounded-xl flex items-center justify-center"><LogOut className="w-5 h-5" /></button>
+                <button onClick={() => setTutorialActivo(true)} className="flex-1 md:flex-none p-2 bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 rounded-xl flex items-center justify-center shadow-sm"><CircleHelp className="w-5 h-5" /></button>
+                <button onClick={onLogout} className="flex-1 md:flex-none p-2 bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-100 rounded-xl flex items-center justify-center shadow-sm"><LogOut className="w-5 h-5" /></button>
               </div>
             </div>
           </div>

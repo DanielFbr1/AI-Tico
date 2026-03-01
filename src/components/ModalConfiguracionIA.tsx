@@ -13,11 +13,11 @@ interface ModalConfiguracionIAProps {
 
 export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfiguracionIAProps) {
     // Estados iniciales basados en el grupo (o defaults)
-    const [nivelExigencia, setNivelExigencia] = useState<'Bajo' | 'Medio' | 'Alto'>(grupo?.configuracion?.nivel_exigencia || 'Medio');
-    const [tono, setTono] = useState<'Divertido' | 'Serio' | 'Socrático'>(grupo?.configuracion?.tono || 'Divertido');
-    const [nivelApoyo, setNivelApoyo] = useState<'Guía' | 'Retador'>(grupo?.configuracion?.nivel_apoyo || 'Guía');
-    const [formatoRespuesta, setFormatoRespuesta] = useState<'Conciso' | 'Detallado'>(grupo?.configuracion?.formato_respuesta || 'Detallado');
-    const [frecuenciaEmojis, setFrecuenciaEmojis] = useState(true);
+    const [nivelExigencia, setNivelExigencia] = useState<string>(grupo?.configuracion?.nivel_exigencia || 'Medio');
+    const [tono, setTono] = useState<string>(grupo?.configuracion?.tono || 'Divertido');
+    const [nivelApoyo, setNivelApoyo] = useState<string>(grupo?.configuracion?.nivel_apoyo || 'Guía');
+    const [formatoRespuesta, setFormatoRespuesta] = useState<string>(grupo?.configuracion?.formato_respuesta || 'Detallado');
+    const [frecuenciaEmojis, setFrecuenciaEmojis] = useState<boolean>(grupo?.configuracion?.usar_emojis ?? true);
 
     // NUEVOS ESTADOS para Voz y Micro
     const [vozActivada, setVozActivada] = useState(grupo?.configuracion?.voz_activada ?? true);
@@ -52,6 +52,7 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                         setFormatoRespuesta(config.formato_respuesta || 'Detallado');
                         setVozActivada(config.voz_activada ?? true);
                         setMicrofonoActivado(config.microfono_activado ?? true);
+                        setFrecuenciaEmojis(config.usar_emojis ?? true);
                         setInstrucciones(data.instrucciones_ia_global || '');
                     }
                 } else if (grupo) {
@@ -70,6 +71,7 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                         setFormatoRespuesta(config.formato_respuesta || 'Detallado');
                         setVozActivada(config.voz_activada ?? true);
                         setMicrofonoActivado(config.microfono_activado ?? true);
+                        setFrecuenciaEmojis(config.usar_emojis ?? true);
                         setInstrucciones(config.instrucciones_comportamiento || '');
                     }
                 }
@@ -92,6 +94,7 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                 ...(grupo ? grupo.configuracion : {}),
                 voz_activada: vozActivada,
                 microfono_activado: microfonoActivado,
+                usar_emojis: frecuenciaEmojis,
                 instrucciones_comportamiento: instrucciones,
                 tono: tono,
                 nivel_exigencia: nivelExigencia,

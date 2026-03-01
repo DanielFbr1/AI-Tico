@@ -71,12 +71,12 @@ export function MensajesFamiliasProfesor({ profesorId, profesorNombre, onBack }:
             const familiaIds = [...new Set([...convMap.values()].map(c => c.familia_user_id))];
             const { data: profiles } = await supabase
                 .from('profiles')
-                .select('id, full_name, email')
+                .select('id, nombre, email')
                 .in('id', familiaIds);
 
             const profileMap = new Map<string, string>();
             (profiles || []).forEach((p: any) => {
-                profileMap.set(p.id, p.full_name || p.email?.split('@')[0] || 'Familia');
+                profileMap.set(p.id, p.nombre || p.email?.split('@')[0] || 'Familia');
             });
 
             const convList = [...convMap.values()].map(c => ({
