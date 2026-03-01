@@ -19,12 +19,14 @@ export default defineConfig({
           {
             src: 'web-app-manifest-192x192-tech.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: 'web-app-manifest-512x512-tech.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           }
         ]
       },
