@@ -90,8 +90,7 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
 
                         let displayName = perfil?.nombre;
                         if (!displayName || displayName === perfil?.email) {
-                            displayName = perfil?.email?.split('@')[0] || 'Profesor';
-                            displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+                            displayName = 'Profesor';
                         }
 
                         seenProfs.add(proy.created_by);

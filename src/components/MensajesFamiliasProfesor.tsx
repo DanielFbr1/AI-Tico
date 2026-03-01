@@ -78,9 +78,7 @@ export function MensajesFamiliasProfesor({ profesorId, profesorNombre, onBack }:
             (profiles || []).forEach((p: any) => {
                 let displayName = p.nombre;
                 if (!displayName || displayName === p.email) {
-                    displayName = p.email?.split('@')[0] || 'Familia';
-                    // Capitalizar primera letra del prefijo del email para que se vea como un nombre
-                    displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+                    displayName = 'Familia';
                 }
                 profileMap.set(p.id, displayName);
             });
