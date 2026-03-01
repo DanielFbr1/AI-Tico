@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Trophy, Users, Shuffle, Loader2, Copy, Sparkles } from 'lucide-react';
+import { X, Trophy, Users, Shuffle, Loader2, Copy, Sparkles, Dices, Check } from 'lucide-react';
 import { useListaAlumnos } from '../hooks/useListaAlumnos';
 import { toast } from 'sonner';
 
@@ -11,45 +11,78 @@ interface RuletaModalProps {
 
 export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProps) {
     const { alumnos, loading } = useListaAlumnos(codigoSala);
-    const [mode, setMode] = useState<'single' | 'groups'>('single');
+    const [mode, setMode] = useState<'single' | 'groups' | 'dice'>('single');
     const [spinning, setSpinning] = useState(false);
     const [rotation, setRotation] = useState(0);
     const [winner, setWinner] = useState<string | null>(null);
 
-    // Group state
     const [numGroups, setNumGroups] = useState(2);
     const [generatedGroups, setGeneratedGroups] = useState<string[][]>([]);
 
+    // Members management (Local list for editing during session)
+    const [managedMembers, setManagedMembers] = useState<{ id: string; nombre: string }[]>([]);
+    const [showWinnerOverlay, setShowWinnerOverlay] = useState(false);
+    // UI state for adding a new member via inline input
+    const [addInputTeam, setAddInputTeam] = useState<number | null>(null);
+    const [addInputValue, setAddInputValue] = useState('');
+    // Sync managed members when alumnos are loaded from hook
+    useEffect(() => {
+        if (alumnos.length > 0 && managedMembers.length === 0) {
+            setManagedMembers(alumnos.map(a => ({ id: a.id, nombre: a.nombre })));
+        }
+    }, [alumnos]);
+
+    // Dice state
+    const [numDice, setNumDice] = useState(1);
+    const [diceType, setDiceType] = useState<6 | 12>(6);
+    const [diceValues, setDiceValues] = useState<number[]>([1, 1, 1, 1, 1, 1]);
+    const [isRollingDice, setIsRollingDice] = useState(false);
+
+    const D12Icon = ({ className }: { className?: string }) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            {/* Contorno exterior heptagonal/octagonal (vista aproximada de dodecaedro iso) */}
+            <polygon points="12 2 19 6 21 14 16 21 8 21 3 14 5 6" />
+
+            {/* Pentágono central (cara frontal principal) */}
+            <polygon points="12 7 16 11 14 16 10 16 8 11" fill="currentColor" fillOpacity="0.1" />
+
+            {/* Líneas que conectan el pentágono central con los vértices exteriores */}
+            <line x1="12" y1="2" x2="12" y2="7" />
+            <line x1="19" y1="6" x2="16" y2="11" />
+            <line x1="16" y1="21" x2="14" y2="16" />
+            <line x1="8" y1="21" x2="10" y2="16" />
+            <line x1="5" y1="6" x2="8" y2="11" />
+
+            {/* Texto centrado en la cara frontal */}
+            <text x="12" y="12.5" fontSize="3.5" fontWeight="900" textAnchor="middle" fill="currentColor" stroke="none">12</text>
+        </svg>
+    );
     // Wheel constants - Vibrant dark colors for maximum text contrast
     const colors = ['#2563eb', '#7c3aed', '#db2777', '#ca8a04', '#059669', '#4f46e5', '#dc2626', '#0891b2'];
     const wheelRef = useRef<HTMLDivElement>(null);
     const [mobileTab, setMobileTab] = useState<'wheel' | 'controls'>(mode === 'single' ? 'wheel' : 'controls');
 
-    // Sync mobile tab when mode changes via desktop interface logic (just in case)
+    // Sync mobile tab when mode changes via desktop interface logic
     useEffect(() => {
         if (mode === 'single') setMobileTab('wheel');
+        else if (mode === 'dice') setMobileTab('wheel');
         else if (generatedGroups.length === 0) setMobileTab('controls');
-    }, [mode]);
+    }, [mode, generatedGroups.length]);
 
     const spinWheel = () => {
-        if (alumnos.length < 1) return;
+        if (managedMembers.length < 1) return;
         if (spinning) return;
 
         setSpinning(true);
         setWinner(null);
 
         // 1. Pick the winner index first
-        const winnerIndex = Math.floor(Math.random() * alumnos.length);
-        const total = alumnos.length;
+        const winnerIndex = Math.floor(Math.random() * managedMembers.length);
+        const total = managedMembers.length;
         const sliceAngle = 360 / total;
 
-        // 2. Calculate rotation
-        // Each slice 'i' is centered at (i * sliceAngle) degrees from the top
-        // To bring slice 'i' to the top, we rotate the wheel by -(i * sliceAngle)
-        const offset = (winnerIndex * sliceAngle);
-
-        // Add multiple full turns (5-8 turns) and subtract the offset
-        // We add normalized randomness within the slice (keep it 20% away from borders)
+        // 2. Target calculation: rotate to make the slice appear under pointer
+        const offset = (winnerIndex * sliceAngle) + (sliceAngle / 2);
         const randomInnerOffset = (Math.random() * sliceAngle * 0.6) - (sliceAngle * 0.3);
 
         const extraSpins = 5 + Math.floor(Math.random() * 5);
@@ -59,16 +92,17 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
 
         setTimeout(() => {
             setSpinning(false);
-            setWinner(alumnos[winnerIndex].nombre);
+            setWinner(managedMembers[winnerIndex].nombre);
+            setShowWinnerOverlay(true);
 
             // Trigger a little celebration burst if possible (handled by UI)
         }, 5000); // Must match transition duration
     };
 
     const createGroups = () => {
-        if (alumnos.length === 0) return;
+        if (managedMembers.length === 0) return;
 
-        const shuffled = [...alumnos].sort(() => Math.random() - 0.5);
+        const shuffled = [...managedMembers].sort(() => Math.random() - 0.5);
         const groups: string[][] = Array.from({ length: numGroups }, () => []);
 
         shuffled.forEach((alumno, index) => {
@@ -84,12 +118,33 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
         toast.success("Grupos copiados al portapapeles");
     };
 
+    const rollDice = () => {
+        if (isRollingDice) return;
+        setIsRollingDice(true);
+
+        // Efecto visual rápido (ahora llega hasta diceType y genera 6 valores independientemente de numDice para que slice funcione)
+        const timer = setInterval(() => {
+            setDiceValues(
+                Array.from({ length: 6 }, () => Math.floor(Math.random() * diceType) + 1)
+            );
+        }, 100);
+
+        setTimeout(() => {
+            clearInterval(timer);
+            setDiceValues(
+                Array.from({ length: 6 }, () => Math.floor(Math.random() * diceType) + 1)
+            );
+            setIsRollingDice(false);
+        }, 1500);
+    };
+
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-300">
-            <div className="bg-white rounded-none md:rounded-[2.5rem] w-full h-full md:h-auto md:max-w-5xl overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] flex flex-col md:max-h-[95vh] border-none md:border md:border-white/20">
-                {/* Header - More Compact */}
-                <div className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-800">
-                    <div className="flex items-center gap-3">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white w-full h-full md:max-w-7xl md:h-[90vh] md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 relative">
+
+                {/* Header - Kid Friendly & Modern */}
+                <div className="bg-slate-900 text-white p-4 md:p-6 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.3)]">
                             <Trophy className="w-5 h-5 text-slate-900" />
                         </div>
@@ -98,7 +153,7 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                 Sorteo Mágico
                             </h2>
                             <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">
-                                {alumnos.length} Alumnos • <span className="text-yellow-500 font-mono">{codigoSala}</span>
+                                {managedMembers.length} Alumnos • <span className="text-yellow-500 font-mono">{codigoSala}</span>
                             </p>
                         </div>
                     </div>
@@ -110,10 +165,40 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                     </button>
                 </div>
 
+                {/* Winner Overlay (Anuncio de Ganador) */}
+                {showWinnerOverlay && winner && (
+                    <div
+                        className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xl animate-in zoom-in duration-300"
+                        onClick={() => setShowWinnerOverlay(false)}
+                    >
+                        <div className="text-center p-8 relative">
+                            <button
+                                onClick={() => setShowWinnerOverlay(false)}
+                                className="absolute -top-4 -right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-xl text-slate-900 hover:scale-110 transition-transform"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                            <div className="w-24 h-24 bg-yellow-400 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-[0_0_50px_rgba(250,204,21,0.5)] animate-bounce">
+                                <Trophy className="w-12 h-12 text-slate-900" />
+                            </div>
+                            <h3 className="text-white/60 font-black uppercase tracking-[0.3em] text-xs mb-2">¡Ha salido elegido/a!</h3>
+                            <h2 className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter drop-shadow-2xl">
+                                {winner}
+                            </h2>
+                            <button
+                                onClick={() => setShowWinnerOverlay(false)}
+                                className="px-12 py-4 bg-white text-slate-900 font-black rounded-2xl hover:bg-yellow-400 transition-all shadow-xl active:scale-95 uppercase tracking-widest text-sm"
+                            >
+                                Genial
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Main View - Simplified for Mobile */}
                 <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-slate-50/50 min-h-0">
 
-                    {/* Column 1: The Wheel */}
+                    {/* Column 1: The Wheel / Dice / Groups Results */}
                     <div className={`flex-1 flex flex-col items-center justify-center p-4 md:p-12 relative border-b md:border-b-0 md:border-r border-slate-200/60 overflow-hidden ${mobileTab === 'wheel' ? 'flex' : 'hidden md:flex'}`}>
 
                         {loading ? (
@@ -121,11 +206,233 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                 <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
                                 <p className="font-black text-slate-400 uppercase text-xs tracking-widest">Cargando Clase...</p>
                             </div>
-                        ) : !alumnos.length ? (
+                        ) : !managedMembers.length ? (
                             <div className="text-center max-w-xs">
                                 <Users className="w-20 h-20 text-slate-200 mx-auto mb-4" />
                                 <h3 className="text-xl font-black text-slate-800 mb-2">Clase Vacía</h3>
                                 <p className="text-slate-500 text-sm">Los alumnos deben entrar con el código para aparecer aquí.</p>
+                            </div>
+                        ) : mode === 'dice' ? (
+                            <div className="flex flex-col items-center justify-center gap-6 md:gap-12 w-full h-full animate-in zoom-in duration-500 overflow-y-auto py-8">
+                                <div className={`flex flex-wrap items-center justify-center gap-4 md:gap-8 ${numDice > 3 ? 'scale-75 md:scale-85' : 'scale-90 md:scale-100'}`}>
+                                    {diceValues.slice(0, numDice).map((val, idx) => (
+                                        <div key={idx} className="perspective-1000">
+                                            {diceType === 6 ? (
+                                                <div
+                                                    className={`w-24 h-24 md:w-32 md:h-32 relative preserve-3d transition-transform duration-500 ${isRollingDice ? 'animate-rolling-dice' : ''}`}
+                                                    style={{
+                                                        transform: !isRollingDice ? (
+                                                            val === 1 ? 'rotateX(0deg) rotateY(0deg)' :
+                                                                val === 2 ? 'rotateX(-90deg) rotateY(0deg)' :
+                                                                    val === 3 ? 'rotateY(-90deg) rotateX(0deg)' :
+                                                                        val === 4 ? 'rotateY(90deg) rotateX(0deg)' :
+                                                                            val === 5 ? 'rotateX(90deg) rotateY(0deg)' :
+                                                                                'rotateX(180deg) rotateY(0deg)'
+                                                        ) : undefined
+                                                    }}
+                                                >
+                                                    {[1, 2, 3, 4, 5, 6].map((v) => (
+                                                        <div
+                                                            key={v}
+                                                            className="absolute inset-0 bg-white border-4 border-slate-900 rounded-2xl flex items-center justify-center shadow-inner"
+                                                            style={{
+                                                                transform: v === 1 ? 'translateZ(48px)' :
+                                                                    v === 2 ? 'rotateX(90deg) translateZ(48px)' :
+                                                                        v === 3 ? 'rotateY(90deg) translateZ(48px)' :
+                                                                            v === 4 ? 'rotateY(-90deg) translateZ(48px)' :
+                                                                                v === 5 ? 'rotateX(-90deg) translateZ(48px)' :
+                                                                                    'rotateX(180deg) translateZ(48px)',
+                                                                backfaceVisibility: 'hidden',
+                                                            }}
+                                                        >
+                                                            <div className={`grid grid-cols-3 gap-1 md:gap-2 p-3 md:p-4 w-full h-full`}>
+                                                                {v === 1 && <div className="col-start-2 row-start-2 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" />}
+                                                                {v === 2 && (<><div className="col-start-1 row-start-1 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-3 row-start-3 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /></>)}
+                                                                {v === 3 && (<><div className="col-start-1 row-start-1 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-2 row-start-2 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-3 row-start-3 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /></>)}
+                                                                {v === 4 && (<><div className="col-start-1 row-start-1 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-3 row-start-1 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-1 row-start-3 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-3 row-start-3 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /></>)}
+                                                                {v === 5 && (<><div className="col-start-1 row-start-1 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-3 row-start-1 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-2 row-start-2 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-1 row-start-3 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-3 row-start-3 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /></>)}
+                                                                {v === 6 && (<><div className="col-start-1 row-start-1 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-3 row-start-1 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-1 row-start-2 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-3 row-start-2 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-1 row-start-3 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /><div className="col-start-3 row-start-3 w-3 h-3 md:w-4 md:h-4 bg-slate-900 rounded-full shadow-sm" /></>)}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className={`w-24 h-24 md:w-32 md:h-32 relative text-slate-900 flex items-center justify-center transition-all duration-[1.5s] ease-in-out ${isRollingDice ? 'animate-spin scale-90 blur-[1px]' : 'scale-100 hover:scale-110 drop-shadow-2xl'}`}
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="white" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full drop-shadow-xl">
+                                                        <polygon points="12 2 19 6 21 14 16 21 8 21 3 14 5 6" />
+                                                        <polygon points="12 6.5 16.5 10.5 14.5 15.5 9.5 15.5 7.5 10.5" fill="rgba(37,99,235,0.05)" />
+                                                        <line x1="12" y1="2" x2="12" y2="6.5" />
+                                                        <line x1="19" y1="6" x2="16.5" y2="10.5" />
+                                                        <line x1="16" y1="21" x2="14.5" y2="15.5" />
+                                                        <line x1="8" y1="21" x2="9.5" y2="15.5" />
+                                                        <line x1="5" y1="6" x2="7.5" y2="10.5" />
+
+                                                        {/* Number inside the polygon */}
+                                                        <text x="12" y="12.5" fontSize="4.5" fontWeight="900" textAnchor="middle" fill="currentColor" stroke="none">
+                                                            {val}
+                                                        </text>
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="text-center">
+                                    <div className="inline-block px-8 py-4 bg-slate-900 rounded-[2rem] shadow-2xl">
+                                        <span className="text-5xl font-black text-white">
+                                            {numDice === 1 ? diceValues[0] : diceValues.slice(0, numDice).reduce((a, b) => a + b, 0)}
+                                        </span>
+                                    </div>
+                                    <p className="mt-4 font-black text-slate-400 uppercase text-[10px] tracking-[0.3em]">
+                                        {numDice === 1 ? 'Resultado' : 'Suma Total'}
+                                    </p>
+                                </div>
+
+                                {/* Botón de lanzar para móvil */}
+                                <button
+                                    onClick={rollDice}
+                                    disabled={isRollingDice}
+                                    className="md:hidden mt-4 px-10 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl active:scale-95 disabled:opacity-50 flex items-center gap-3"
+                                >
+                                    <Dices className={`w-5 h-5 ${isRollingDice ? 'animate-spin' : ''}`} />
+                                    {isRollingDice ? 'LANZANDO...' : 'LANZAR'}
+                                </button>
+                            </div>
+                        ) : mode === 'groups' ? (
+                            <div className="flex-1 w-full flex flex-col min-h-0 overflow-y-auto px-4 md:px-12 py-8">
+                                {generatedGroups.length > 0 ? (
+                                    <div className="w-full max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="flex justify-between items-center mb-6 px-2">
+                                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                                                <Users className="w-5 h-5 text-blue-600" />
+                                                Equipos Generados
+                                            </h3>
+                                            <button onClick={copyGroups} className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-black text-[10px] uppercase flex items-center gap-2 hover:bg-blue-100 transition-colors">
+                                                <Copy className="w-3 h-3" /> Copiar Todo
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 pb-12">
+                                            {generatedGroups.map((grupo, i) => (
+                                                <div key={i} className="bg-white border border-slate-200 p-6 rounded-[2.5rem] relative overflow-hidden group/card shadow-sm hover:shadow-md hover:border-blue-300 transition-all">
+                                                    <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500" />
+                                                    <div className="flex justify-between items-center mb-5">
+                                                        <h4 className="font-black text-slate-900 text-xs uppercase tracking-widest">Equipo {i + 1}</h4>
+                                                        {addInputTeam === i ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Nombre integrante"
+                                                                    value={addInputValue}
+                                                                    onChange={(e) => setAddInputValue(e.target.value)}
+                                                                    className="px-2 py-1 border rounded"
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            e.preventDefault();
+                                                                            // Confirm addition
+                                                                            if (addInputValue.trim()) {
+                                                                                setGeneratedGroups(prev => {
+                                                                                    const newGroups = [...prev];
+                                                                                    if (newGroups[i]) {
+                                                                                        newGroups[i] = [...newGroups[i], addInputValue.trim()];
+                                                                                    }
+                                                                                    return newGroups;
+                                                                                });
+                                                                            }
+                                                                            setAddInputTeam(null);
+                                                                            setAddInputValue('');
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (addInputValue.trim()) {
+                                                                            setGeneratedGroups(prev => {
+                                                                                const newGroups = [...prev];
+                                                                                if (newGroups[i]) {
+                                                                                    newGroups[i] = [...newGroups[i], addInputValue.trim()];
+                                                                                }
+                                                                                return newGroups;
+                                                                            });
+                                                                            toast.success(`Añadido a Equipo ${i + 1}`);
+                                                                        }
+                                                                        setAddInputTeam(null);
+                                                                        setAddInputValue('');
+                                                                    }}
+                                                                    className="w-10 h-10 bg-blue-600 text-white rounded-2xl flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg active:scale-90"
+                                                                >
+                                                                    <Check className="w-5 h-5 font-black" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setAddInputTeam(null);
+                                                                        setAddInputValue('');
+                                                                    }}
+                                                                    className="w-10 h-10 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition-all active:scale-90"
+                                                                >
+                                                                    <X className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setAddInputTeam(i);
+                                                                    setAddInputValue('');
+                                                                }}
+                                                                className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-90"
+                                                                title="Añadir Integrante"
+                                                            >
+                                                                <Users className="w-4 h-4" />
+                                                                <span className=" absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 text-[10px] border-2 border-white flex items-center justify-center font-bold">+</span>
+                                                            </button>
+                                                        )}
+
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2.5">
+                                                        {grupo.map((alumno, idx) => (
+                                                            <div key={`${alumno}-${idx}`} className="flex items-center gap-1 group/item">
+                                                                <span className="px-3.5 py-2 bg-slate-50 border border-slate-100 text-slate-700 rounded-2xl text-[11px] font-bold shadow-sm group-hover/card:bg-white transition-colors">
+                                                                    {alumno}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setGeneratedGroups(prev => {
+                                                                            const newGroups = [...prev];
+                                                                            if (newGroups[i]) {
+                                                                                newGroups[i] = newGroups[i].filter((_, index) => index !== idx);
+                                                                            }
+                                                                            return newGroups;
+                                                                        });
+                                                                    }}
+                                                                    className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
+                                                                    title="Eliminar Integrante"
+                                                                >
+                                                                    <X className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                        {grupo.length === 0 && (
+                                                            <p className="text-[10px] text-slate-400 font-bold uppercase italic p-2">Emtpy Team</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-700">
+                                        <div className="w-48 h-48 bg-blue-50 rounded-[3rem] flex items-center justify-center mb-8 relative group">
+                                            <div className="absolute inset-0 bg-blue-100 rounded-[3rem] scale-90 blur-xl opacity-50 group-hover:scale-110 transition-transform duration-500" />
+                                            <Users className="w-24 h-24 text-blue-600 relative z-10" />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tight">Formador de Equipos</h3>
+                                        <p className="text-slate-500 max-w-xs leading-relaxed">
+                                            Divide a tus <span className="text-blue-600 font-bold">{managedMembers.length} alumnos</span> en grupos equilibrados para tus actividades.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="relative w-full max-w-[260px] xs:max-w-[320px] md:max-w-[420px] aspect-square flex items-center justify-center my-auto">
@@ -146,8 +453,8 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                     style={{ transform: `rotate(${rotation}deg)` }}
                                 >
                                     <svg viewBox="-100 -100 200 200" className="w-full h-full">
-                                        {alumnos.map((alumno, i) => {
-                                            const total = alumnos.length;
+                                        {managedMembers.map((alumno, i) => {
+                                            const total = managedMembers.length;
                                             const angle = 2 * Math.PI / total;
                                             const startAngle = i * angle - Math.PI / 2 - (total > 0 ? (2 * Math.PI / total / 2) : 0);
                                             const endAngle = (i + 1) * angle - Math.PI / 2 - (total > 0 ? (2 * Math.PI / total / 2) : 0);
@@ -164,12 +471,23 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                             const textY = 75 * Math.sin(midAngle);
                                             const rotationDeg = (midAngle * 180 / Math.PI);
 
-                                            // Dynamic and larger font sizes for legibility
                                             const fontSize = total > 20 ? "6.5" : total > 15 ? "8.5" : total > 8 ? "11" : "13";
 
                                             return (
-                                                <g key={alumno.id}>
+                                                <g key={`${alumno.id}-${i}`}>
                                                     <path d={d} fill={colors[i % colors.length]} stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+
+                                                    <rect
+                                                        x={textX - 25}
+                                                        y={textY - (parseFloat(fontSize) / 2) - 2}
+                                                        width={50}
+                                                        height={parseFloat(fontSize) + 4}
+                                                        rx="4"
+                                                        fill="rgba(255,255,255,0.2)"
+                                                        transform={`rotate(${rotationDeg + 90}, ${textX}, ${textY})`}
+                                                        className="pointer-events-none"
+                                                    />
+
                                                     <text
                                                         x={textX}
                                                         y={textY}
@@ -183,7 +501,7 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                         style={{
                                                             paintOrder: 'stroke fill',
                                                             stroke: 'rgba(0,0,0,0.3)',
-                                                            strokeWidth: '1.5px',
+                                                            strokeWidth: '1px',
                                                             strokeLinejoin: 'round'
                                                         }}
                                                     >
@@ -195,18 +513,29 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                     </svg>
                                 </div>
 
-                                {/* Center Knob - Elegant */}
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-white rounded-full border-8 border-slate-900 shadow-2xl flex items-center justify-center z-10 overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent" />
-                                    <div className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center">
-                                        <Sparkles className="w-4 h-4 text-yellow-400 animate-pulse" />
+                                {/* Center Knob */}
+                                <button
+                                    onClick={spinWheel}
+                                    disabled={spinning || !managedMembers.length}
+                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-slate-900 rounded-full border-[4px] border-white shadow-[0_0_40px_rgba(0,0,0,0.4),0_0_20px_rgba(37,99,235,0.2)] flex flex-col items-center justify-center z-40 transition-all active:scale-90 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 group cursor-pointer overflow-hidden isolate"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent pointer-events-none" />
+                                    <div className={`absolute inset-0 bg-gradient-to-tr from-blue-600 via-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${spinning ? 'opacity-100 animate-spin-slow' : ''}`} />
+                                    <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+
+                                    <div className="relative z-10 flex flex-col items-center justify-center">
+                                        <Shuffle className={`w-7 h-7 mb-1 transition-all duration-500 ${spinning ? 'text-white animate-spin' : 'text-white group-hover:scale-110'}`} />
+                                        <span className="text-[10px] font-black text-white uppercase tracking-[0.15em] leading-tight drop-shadow-md">
+                                            {spinning ? 'SORTEO' : 'GIRAR'}
+                                        </span>
                                     </div>
-                                </div>
+                                    <div className="absolute inset-0 shadow-[inset_0_2px_10px_rgba(255,255,255,0.2),inset_0_-2px_10px_rgba(0,0,0,0.4)] rounded-full pointer-events-none" />
+                                </button>
                             </div>
                         )}
                     </div>
 
-                    {/* Column 2: Controls & Results */}
+                    {/* Column 2: Controls */}
                     <div className={`w-full md:w-[400px] flex flex-col p-6 md:p-8 bg-white shrink-0 overflow-y-auto ${mobileTab === 'controls' ? 'flex' : 'hidden md:flex'}`}>
 
                         {/* Mode Switcher */}
@@ -235,129 +564,193 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                     Grupos
                                 </span>
                             </button>
+                            <button
+                                onClick={() => setMode('dice')}
+                                className={`flex-1 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${mode === 'dice'
+                                    ? 'bg-blue-600 text-white shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)]'
+                                    : 'text-slate-400 hover:text-slate-600'
+                                    }`}
+                            >
+                                <span className="flex items-center justify-center gap-2">
+                                    <Dices className="w-4 h-4" />
+                                    Dados
+                                </span>
+                            </button>
                         </div>
 
                         <div className="flex-1 flex flex-col min-h-0">
                             {mode === 'single' ? (
-                                <div className="flex-1 flex flex-col justify-center gap-10">
-                                    <button
-                                        onClick={spinWheel}
-                                        disabled={spinning || !alumnos.length}
-                                        className="w-full py-6 bg-slate-900 text-white font-black text-2xl uppercase tracking-[0.2em] rounded-[2rem] shadow-2xl hover:bg-slate-800 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 relative overflow-hidden group"
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                                        {spinning ? 'GIRANDO...' : '¡SORTEAR!'}
-                                    </button>
+                                <div className="flex-1 flex flex-col min-h-0">
+                                    <div className="bg-slate-50 border border-slate-200 rounded-[2rem] p-6 mb-6">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Participantes</h3>
+                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{managedMembers.length}</span>
+                                        </div>
 
-                                    {/* Winner Area */}
-                                    <div className="min-h-[160px] flex items-center justify-center">
-                                        {winner && !spinning ? (
-                                            <div className="w-full animate-in zoom-in slide-in-from-bottom-8 duration-500 bg-yellow-400/10 border-2 border-yellow-400/50 p-8 rounded-[2.5rem] text-center shadow-[0_0_40px_rgba(250,204,21,0.15)] relative">
-                                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-400 text-slate-900 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Ganador/a</div>
-                                                <p className="text-4xl font-black text-slate-900 mb-1 leading-tight">{winner}</p>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">¡Has sido el elegido! 🎉</p>
-                                            </div>
-                                        ) : (
-                                            <div className="text-center opacity-30 group">
-                                                <Sparkles className="w-16 h-16 mx-auto mb-4 text-slate-300 group-hover:text-blue-400 transition-colors duration-500" />
-                                                <p className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400">Pulsa el botón para empezar</p>
-                                            </div>
-                                        )}
+                                        <div className="flex gap-2 mb-4">
+                                            <input
+                                                type="text"
+                                                placeholder="Añadir nombre..."
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const val = e.currentTarget.value.trim();
+                                                        if (val) {
+                                                            setManagedMembers([...managedMembers, { id: Math.random().toString(), nombre: val }]);
+                                                            e.currentTarget.value = '';
+                                                        }
+                                                    }
+                                                }}
+                                                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                            />
+                                        </div>
+
+                                        <div className="max-h-[380px] md:max-h-[480px] overflow-y-auto pr-2 space-y-2 scrollbar-hide py-1">
+                                            {managedMembers.map((m, idx) => (
+                                                <div key={m.id} className="flex items-center justify-between bg-white border border-slate-100 p-3 rounded-xl group hover:border-blue-200 transition-all shadow-sm">
+                                                    <span className="text-sm font-bold text-slate-700">{m.nombre}</span>
+                                                    <button
+                                                        onClick={() => setManagedMembers(managedMembers.filter((_, i) => i !== idx))}
+                                                        className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-90 flex-shrink-0"
+                                                        title="Eliminar"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
+                                </div>
+                            ) : mode === 'dice' ? (
+                                <div className="flex-1 flex flex-col justify-center gap-8">
+                                    <div className="bg-blue-50 border-2 border-blue-100 rounded-[2.5rem] p-8 text-center">
+                                        <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-200">
+                                            <Dices className="w-8 h-8 text-white" />
+                                        </div>
+                                        <h3 className="text-lg font-black text-slate-900 mb-2 uppercase tracking-tight">Mini-Dados</h3>
+                                        <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                                            Selecciona tipo y cantidad de dados.
+                                        </p>
+
+                                        <div className="flex flex-col gap-4 mb-2">
+                                            {/* Selector de Tipo de Dado */}
+                                            <div className="flex gap-2 justify-center bg-white p-1 rounded-2xl shadow-sm border border-slate-100">
+                                                <button
+                                                    onClick={() => setDiceType(6)}
+                                                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all ${diceType === 6 ? 'bg-blue-100 text-blue-700' : 'text-slate-400 hover:bg-slate-50'}`}
+                                                >
+                                                    <Dices className="w-4 h-4" />
+                                                    D6
+                                                </button>
+                                                <button
+                                                    onClick={() => setDiceType(12)}
+                                                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all ${diceType === 12 ? 'bg-purple-100 text-purple-700' : 'text-slate-400 hover:bg-slate-50'}`}
+                                                >
+                                                    <D12Icon className="w-4 h-4" />
+                                                    D12
+                                                </button>
+                                            </div>
+
+                                            {/* Selector de Cantidad */}
+                                            <div className="flex gap-2 justify-center">
+                                                {[1, 2, 3, 4, 5, 6].map(n => (
+                                                    <button
+                                                        key={n}
+                                                        onClick={() => setNumDice(n)}
+                                                        className={`w-10 h-10 md:w-11 md:h-11 rounded-xl font-black text-xs transition-all ${numDice === n ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:border-blue-300'}`}
+                                                    >
+                                                        {n}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={rollDice}
+                                        disabled={isRollingDice}
+                                        className="w-full py-6 bg-slate-900 text-white font-black rounded-[2rem] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 group active:scale-95 disabled:opacity-50"
+                                    >
+                                        <span className={`transition-transform duration-500 ${isRollingDice ? 'animate-spin' : 'group-hover:rotate-12'}`}>
+                                            <Dices className="w-6 h-6" />
+                                        </span>
+                                        {isRollingDice ? 'LANZANDO...' : 'LANZAR DADOS'}
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="flex-1 flex flex-col min-h-0">
-                                    <div className="space-y-6 mb-8 shrink-0">
-                                        <div className="space-y-3">
+                                    <div className="bg-blue-50 border-2 border-blue-100 rounded-[2.5rem] p-8 text-center mb-8">
+                                        <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-200">
+                                            <Users className="w-8 h-8 text-white" />
+                                        </div>
+                                        <h3 className="text-lg font-black text-slate-900 mb-2 uppercase tracking-tight">Formador de Equipos</h3>
+                                        <p className="text-slate-500 text-[11px] leading-relaxed mb-6 font-medium">
+                                            Divide a tus alumnos en grupos equilibrados para tus actividades.
+                                        </p>
+
+                                        <div className="space-y-4">
                                             <div className="flex justify-between items-center px-1">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Número de Equipos</label>
-                                                <span className="bg-slate-100 text-slate-600 text-xs font-black px-3 py-1 rounded-lg border border-slate-200">{numGroups}</span>
+                                                <span className="bg-white text-blue-600 text-xs font-black px-3 py-1 rounded-lg border border-blue-100 shadow-sm">{numGroups}</span>
                                             </div>
                                             <input
                                                 type="range"
-                                                min="2"
-                                                max={Math.max(2, alumnos.length)}
+                                                min="1"
+                                                max={Math.min(10, Math.max(1, managedMembers.length))}
                                                 value={numGroups}
-                                                onChange={(e) => setNumGroups(parseInt(e.target.value) || 2)}
-                                                className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                onChange={(e) => setNumGroups(parseInt(e.target.value) || 1)}
+                                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                             />
                                         </div>
-                                        <button
-                                            onClick={createGroups}
-                                            disabled={!alumnos.length}
-                                            className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-3 group active:scale-95 disabled:opacity-50"
-                                        >
-                                            <Shuffle className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                                            GENERAR EQUIPOS
-                                        </button>
                                     </div>
 
-                                    {/* Scrollable Results Area */}
-                                    <div className="flex-1 min-h-0 flex flex-col">
-                                        {generatedGroups.length > 0 ? (
-                                            <>
-                                                <div className="flex justify-between items-center px-1 mb-4">
-                                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vista Previa</h3>
-                                                    <button onClick={copyGroups} className="text-blue-600 hover:underline transition-all font-black text-[10px] uppercase flex items-center gap-1.5">
-                                                        <Copy className="w-3 h-3" /> Copiar Todo
-                                                    </button>
-                                                </div>
+                                    <button
+                                        onClick={createGroups}
+                                        disabled={!managedMembers.length}
+                                        className="w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-3 group active:scale-95 disabled:opacity-50"
+                                    >
+                                        <Shuffle className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
+                                        GENERAR EQUIPOS
+                                    </button>
 
-                                                <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-hide py-1">
-                                                    {generatedGroups.map((grupo, i) => (
-                                                        <div key={i} className="bg-slate-50 border border-slate-200 p-4 rounded-3xl relative overflow-hidden group hover:border-blue-300 transition-all">
-                                                            <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500 rounded-full my-4 scale-y-75" />
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <h4 className="font-black text-slate-900 text-xs uppercase tracking-tight">Equipo {i + 1}</h4>
-                                                                <span className="text-[10px] font-bold text-slate-400">{grupo.length} integrantes</span>
-                                                            </div>
-                                                            <div className="flex flex-wrap gap-1.5">
-                                                                {grupo.map((alumno) => (
-                                                                    <span key={alumno} className="px-2.5 py-1 bg-white border border-slate-200 text-slate-600 rounded-xl text-[11px] font-bold shadow-sm group-hover:border-blue-100 transition-colors">
-                                                                        {alumno}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30 border-2 border-dashed border-slate-100 rounded-[2.5rem]">
-                                                <Users className="w-12 h-12 mb-4 text-slate-300" />
-                                                <p className="font-black text-[10px] uppercase tracking-widest text-slate-400 max-w-[150px] leading-relaxed">Configura los equipos arriba</p>
-                                            </div>
-                                        )}
+                                    <div className="mt-auto pt-8 text-center opacity-20">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Gestión de Grupos v1.5.13</p>
                                     </div>
                                 </div>
                             )}
                         </div>
                     </div>
-                </div>
 
-                {/* Mobile Bottom Navigation Bar */}
-                <div className="md:hidden flex border-t border-slate-100 bg-white p-2 safe-bottom">
-                    <button
-                        onClick={() => { setMode('single'); setMobileTab('wheel'); }}
-                        className={`flex-1 flex flex-col items-center py-2 gap-1 rounded-xl transition-all ${mobileTab === 'wheel' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
-                    >
-                        <Shuffle className="w-5 h-5" />
-                        <span className="text-[10px] font-black uppercase">Ruleta</span>
-                    </button>
-                    <button
-                        onClick={() => { setMode('groups'); setMobileTab('controls'); }}
-                        className={`flex-1 flex flex-col items-center py-2 gap-1 rounded-xl transition-all ${mobileTab === 'controls' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
-                    >
-                        <Users className="w-5 h-5" />
-                        <span className="text-[10px] font-black uppercase">Grupos</span>
-                    </button>
-                    <button
-                        onClick={onClose}
-                        className="flex-1 flex flex-col items-center py-2 gap-1 text-slate-400"
-                    >
-                        <X className="w-5 h-5" />
-                        <span className="text-[10px] font-black uppercase">Cerrar</span>
-                    </button>
+                    {/* Mobile Bottom Navigation Bar */}
+                    <div className="md:hidden flex border-t border-slate-100 bg-white p-2 safe-bottom">
+                        <button
+                            onClick={() => { setMode('single'); setMobileTab('wheel'); }}
+                            className={`flex-1 flex flex-col items-center py-2 gap-1 rounded-xl transition-all ${mode === 'single' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
+                        >
+                            <Shuffle className="w-5 h-5" />
+                            <span className="text-[10px] font-black uppercase tracking-tighter">Ruleta</span>
+                        </button>
+                        <button
+                            onClick={() => { setMode('groups'); setMobileTab('controls'); }}
+                            className={`flex-1 flex flex-col items-center py-2 gap-1 rounded-xl transition-all ${mode === 'groups' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
+                        >
+                            <Users className="w-5 h-5" />
+                            <span className="text-[10px] font-black uppercase tracking-tighter">Grupos</span>
+                        </button>
+                        <button
+                            onClick={() => { setMode('dice'); setMobileTab('wheel'); }}
+                            className={`flex-1 flex flex-col items-center py-2 gap-1 rounded-xl transition-all ${mode === 'dice' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
+                        >
+                            <Dices className="w-5 h-5" />
+                            <span className="text-[10px] font-black uppercase tracking-tighter">Dados</span>
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="flex-1 flex flex-col items-center py-2 gap-1 text-slate-400 hover:text-red-500 transition-all"
+                        >
+                            <X className="w-5 h-5" />
+                            <span className="text-[10px] font-black uppercase tracking-tighter">Cerrar</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

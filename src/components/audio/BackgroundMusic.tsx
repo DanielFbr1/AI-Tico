@@ -7,23 +7,25 @@ export function BackgroundMusic() {
     const [isPlaying, setIsPlaying] = useState(false);
 
     useEffect(() => {
-        // En navegadores modernos, no podemos iniciar el audio sin una interacción previa.
-        // En lugar de intentar reproducir inmediatamente, esperamos al primer clic en cualquier parte de la ventana.
-
-        const handleInteraction = async () => {
-            if (!isPlaying) {
-                try {
-                    await ticoAudio.init();
-                    ticoAudio.play();
-                    setIsPlaying(true);
-                    // Remove listener once audio is started
-                    window.removeEventListener('click', handleInteraction);
-                    window.removeEventListener('touchstart', handleInteraction);
-                } catch (e) {
-                    console.warn("Interaction failed to start audio:", e);
-                }
+        const startAudio = async () => {
+            if (isPlaying) return;
+            try {
+                await ticoAudio.init();
+                ticoAudio.play();
+                setIsPlaying(true);
+            } catch (e) {
+                console.warn("Auto-start failed, waiting for interaction", e);
             }
         };
+
+        const handleInteraction = () => {
+            startAudio();
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('touchstart', handleInteraction);
+        };
+
+        // Intentar iniciar inmediatamente (puede funcionar si venimos de una interacción previa)
+        startAudio();
 
         window.addEventListener('click', handleInteraction);
         window.addEventListener('touchstart', handleInteraction);
@@ -33,12 +35,15 @@ export function BackgroundMusic() {
             window.removeEventListener('click', handleInteraction);
             window.removeEventListener('touchstart', handleInteraction);
         };
-    }, [isPlaying]);
+    }, []); // Arreglo vacío para que solo se ejecute al montar/desmontar el componente
 
     const toggleMute = () => {
         if (isMuted) {
             ticoAudio.setVolume(0.4);
             setIsMuted(false);
+            // Intentar reanudar o iniciar se la música si está pausada
+            ticoAudio.play();
+            setIsPlaying(true);
         } else {
             ticoAudio.setVolume(0);
             setIsMuted(true);

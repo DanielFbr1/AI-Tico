@@ -125,7 +125,7 @@ export const BrainChart: React.FC<BrainChartProps> = ({ ticoState }) => {
                 ) : (
                     <div className="h-40 flex flex-col items-center justify-center text-center p-8 bg-white/40 backdrop-blur-md rounded-[2.5rem] border-4 border-dashed border-white/60">
                         <BookOpen className="w-10 h-10 text-slate-300 mb-2 opacity-40 animate-pulse" />
-                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-tight">Ticoteca vacía</h3>
+                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-tight">Resumen vacío</h3>
                     </div>
                 )}
             </div>

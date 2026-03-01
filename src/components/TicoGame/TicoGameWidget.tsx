@@ -5,7 +5,7 @@ import { IngestionModule } from '../tico/IngestionModule';
 import { Wardrobe } from '../tico/Wardrobe';
 import { BrainChart } from '../tico/BrainChart';
 import { StickerAlbum } from '../tico/StickerAlbum';
-import { RefreshCw, Utensils, Shirt, Cookie, Sparkles, X, ChevronLeft, StickyNote, Image as ImageIcon } from 'lucide-react';
+import { RefreshCw, Utensils, Shirt, BarChart3, Sparkles, X, ChevronLeft, StickyNote, Image as ImageIcon } from 'lucide-react';
 import { generateTicoResponse } from '../../services/ticoLogic';
 import { generateAndSaveSticker, Sticker } from '../../services/stickerService';
 import { TicoBackground } from './TicoBackground';
@@ -202,7 +202,7 @@ export function TicoGameWidget({ projectId, organizacionId, onBack }: { projectI
 
             {/* VERSION TAG */}
             <div className="absolute bottom-4 left-6 text-[10px] font-black text-slate-400/50 uppercase tracking-widest z-10 pointer-events-none">
-                Tico AI v3.2.6 - Audio Fix ✨🎓
+                Tico AI v3.2.8 - Label Fix ✨🎓
             </div>
 
             <div className="flex flex-col md:flex-row w-full h-full z-10 relative">
@@ -325,7 +325,7 @@ export function TicoGameWidget({ projectId, organizacionId, onBack }: { projectI
                                 <h3 className="text-xl md:text-4xl font-black text-slate-800 uppercase flex items-center gap-3 md:gap-5 tracking-tight">
                                     {activeTab === 'ingestion' && <><Utensils className="text-rose-500 w-6 h-6 md:w-12 md:h-12 animate-bounce-slow" /> Alimentar</>}
                                     {activeTab === 'wardrobe' && <><Shirt className="text-blue-600 w-6 h-6 md:w-12 md:h-12 animate-bounce-slow" /> Armario</>}
-                                    {activeTab === 'brain' && <><Cookie className="text-emerald-500 w-6 h-6 md:w-12 md:h-12 animate-bounce-slow" /> Ticoteca</>}
+                                    {activeTab === 'brain' && <><BarChart3 className="text-emerald-500 w-6 h-6 md:w-12 md:h-12 animate-bounce-slow" /> Resumen</>}
                                     {activeTab === 'album' && <><StickyNote className="text-yellow-500 w-6 h-6 md:w-12 md:h-12 animate-bounce-slow" /> Álbum</>}
                                 </h3>
                                 <button
@@ -393,9 +393,9 @@ export function TicoGameWidget({ projectId, organizacionId, onBack }: { projectI
                             color="blue"
                         />
                         <BigMenuButton
-                            icon={<Cookie className="w-6 h-6 md:w-8 md:h-8" />}
-                            label="Ticoteca"
-                            description="Registro de datos picoteados"
+                            icon={<BarChart3 className="w-6 h-6 md:w-8 md:h-8" />}
+                            label="Resumen"
+                            description="Registro de datos aprendidos"
                             active={activeTab === 'brain'}
                             onClick={() => { ticoAudio.playClickSFX(); setActiveTab(activeTab === 'brain' ? 'none' : 'brain'); }}
                             color="emerald"

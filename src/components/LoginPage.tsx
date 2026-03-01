@@ -309,7 +309,7 @@ export function LoginPage() {
                             </div>
 
                             <div className="mt-6 md:mt-8 text-center md:text-right">
-                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase relative z-30">Sistema Unificado V1.3.9</span>
+                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase relative z-30">Sistema Unificado V1.4.5</span>
                             </div>
                         </div>
                     </div>

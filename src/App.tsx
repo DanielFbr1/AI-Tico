@@ -7,9 +7,8 @@ import { ProjectDetail } from './pages/ProjectDetail';
 import { GroupDetail } from './pages/GroupDetail';
 import { DashboardAlumno } from './components/DashboardAlumno';
 import { DashboardFamilia } from './components/DashboardFamilia';
-import { Proyecto, Grupo, Organizacion } from './types';
+import { Proyecto, Grupo } from './types';
 import { TicoFullScreenPage } from './pages/TicoGame/TicoFullScreenPage';
-import { SessionPanel } from './components/SessionPanel';
 import { supabase } from './lib/supabase';
 import { Toaster } from 'sonner';
 
@@ -74,12 +73,6 @@ function AppContent() {
   const [selectedProject, setSelectedProject] = useState<Proyecto | null>(null);
   const [selectedGrupo, setSelectedGrupo] = useState<Grupo | null>(null);
 
-  // Contexto de organización del profesor (Ruta: Curso -> Colegio -> Ciclo -> Clase)
-  const [organizacionContext, setOrganizacionContext] = useState<{ clase: Organizacion, breadcrumb: Organizacion[] } | null>(null);
-
-  // Estado para preservar la navegación en el panel de sesión
-  const [sessionPath, setSessionPath] = useState<Organizacion[]>([]);
-
   const handleOpenTicoFull = () => {
     setCurrentScreen('tico-full');
   };
@@ -94,22 +87,9 @@ function AppContent() {
       // Si el usuario se desconecta, limpiamos el estado visual
       setSelectedProject(null);
       setSelectedGrupo(null);
-      setOrganizacionContext(null);
-      setSessionPath([]);
       setCurrentScreen('projects');
     }
   }, [user]);
-
-  const handleSelectClase = (clase: Organizacion, breadcrumb: Organizacion[]) => {
-    setSessionPath(breadcrumb); // Guardamos el camino para poder volver
-    setOrganizacionContext({ clase, breadcrumb });
-  };
-
-  const handleBackToSession = () => {
-    setOrganizacionContext(null);
-    setSelectedProject(null);
-    // sessionPath se mantiene
-  };
 
   const handleSelectProject = (proyecto: Proyecto) => {
     setSelectedProject(proyecto);
@@ -181,19 +161,9 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {currentScreen === 'projects' && !organizacionContext && (
-        <SessionPanel
-          nombreProfesor={user?.email?.split('@')[0] || 'Profesor'}
-          onSelectClase={handleSelectClase}
-          initialPath={sessionPath}
-        />
-      )}
-
-      {currentScreen === 'projects' && organizacionContext && (
+      {currentScreen === 'projects' && (
         <ProjectsDashboard
           onSelectProject={handleSelectProject}
-          organizacionContext={organizacionContext}
-          onBack={handleBackToSession}
         />
       )}
 
@@ -237,6 +207,12 @@ export default function App() {
       <AuthProvider>
         <AppContent />
         <Toaster position="top-right" richColors />
+        {/* Indicador de Versión Global */}
+        <div className="fixed bottom-2 right-2 z-[9999] pointer-events-none">
+          <span className="bg-slate-900/40 backdrop-blur-md text-white/50 text-[10px] font-black px-2 py-0.5 rounded-full border border-white/5 uppercase tracking-widest">
+            Tico.AI v1.6.0
+          </span>
+        </div>
       </AuthProvider>
     </ErrorBoundary>
   );

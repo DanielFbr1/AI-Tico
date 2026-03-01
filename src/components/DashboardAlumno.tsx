@@ -24,7 +24,7 @@ import {
   TrendingUp,
   Target
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Grupo, HitoGrupo, ProyectoFase, Rubrica } from '../types';
 import { supabase } from '../lib/supabase';
 import { MentorChat } from './MentorChat';
@@ -51,6 +51,11 @@ import {
 } from "./ui/dropdown-menu";
 
 import { useGroupTracking } from '../hooks/useGroupTracking';
+
+import { ModalExploradorProyectosAlumno } from './ModalExploradorProyectosAlumno';
+import { ModalHorario } from './ModalHorario';
+import { ModalChatProfesoresAlumno } from './ModalChatProfesoresAlumno';
+import { Calendar } from 'lucide-react';
 
 interface DashboardAlumnoProps {
   alumno: {
@@ -87,6 +92,10 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [modalUnirseOpen, setModalUnirseOpen] = useState(false);
   const [modalSubirRecursoOpen, setModalSubirRecursoOpen] = useState(false);
   const [modalProponerOpen, setModalProponerOpen] = useState(false);
+  const [modalChatProfesoresOpen, setModalChatProfesoresOpen] = useState(false);
+  const [modalExploradorProyectosOpen, setModalExploradorProyectosOpen] = useState(false);
+  const [modalHorarioOpen, setModalHorarioOpen] = useState(false);
+  const [dropdownMisClasesOpen, setDropdownMisClasesOpen] = useState(false); // Control del dropdown
   const [faseParaProponer, setFaseParaProponer] = useState<any>(null);
   const [refreshRecursos, setRefreshRecursos] = useState(0);
 
@@ -139,20 +148,38 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               return miembrosArr.some((m: string) => m.includes(alumno.nombre) || alumno.nombre.includes(m));
             });
 
+            const recentKey = `recent_student_projects_${alumno.id}`;
+            const recentsStr = localStorage.getItem(recentKey);
+            const recents: string[] = recentsStr ? JSON.parse(recentsStr) : [];
+
             // Mapeamos a la estructura que espera el dropdown
-            // Mapeamos a la estructura que espera el dropdown
-            const historialReal = gruposDondeEstoy.map((g: any) => ({
-              id: g.proyecto_id,
-              nombre: g.proyectos?.nombre || g.nombre, // Prefer project name, fallback group name
-              codigo: g.proyectos?.codigo_sala || '???',
-              asignatura: g.proyectos?.asignatura || '', // Capture asignatura
-              curso: g.proyectos?.curso || 'Sin Curso', // Capture curso
-              grupo_interno_id: g.id
-            }));
+            const historialReal = gruposDondeEstoy.map((g: any) => {
+              // Determine order priority
+              let orderIndex = recents.indexOf(String(g.proyecto_id));
+              if (orderIndex === -1) orderIndex = 9999;
+
+              return {
+                id: g.proyecto_id,
+                nombre: g.proyectos?.nombre || g.nombre, // Prefer project name, fallback group name
+                codigo: g.proyectos?.codigo_sala || '???',
+                asignatura: g.proyectos?.asignatura || '', // Capture asignatura
+                curso: g.proyectos?.curso || 'Sin Curso', // Capture curso
+                grupo_interno_id: g.id,
+                orden_reciente: orderIndex
+              };
+            });
+
+            // Sort by recent access, then alphabetically by name
+            historialReal.sort((a, b) => {
+              if (a.orden_reciente !== b.orden_reciente) {
+                return a.orden_reciente - b.orden_reciente;
+              }
+              return a.nombre.localeCompare(b.nombre);
+            });
 
             // Eliminar duplicados por ID de proyecto
             const uniqueHistory = Array.from(new Map(historialReal.map((item: any) => [item.id, item])).values());
-            setHistorialClases(uniqueHistory);
+            setHistorialClases(uniqueHistory.slice(0, 6)); // Top 6 para la cabecera
           }
         } catch (err) {
           console.error("Error en fetchMisClases:", err);
@@ -192,6 +219,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [realEvaluacion, setRealEvaluacion] = useState<any[]>([]);
   const [asistenciaStats, setAsistenciaStats] = useState({ present: 0, total: 0, percentage: 0 });
   const [hasNewEvaluation, setHasNewEvaluation] = useState(false);
+  const [unreadProfMessages, setUnreadProfMessages] = useState(0);
 
   const evaluacionAlumno = showExample ? evaluacionEjemplo : realEvaluacion;
 
@@ -239,6 +267,25 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       if (!targetProjectId) {
         setLoading(false);
         return;
+      }
+
+      // Añadir proyecto a recientes en localStorage si ya estamos en uno válido
+      if (alumno.id && targetProjectId) {
+        const recentKey = `recent_student_projects_${alumno.id}`;
+        try {
+          const recentsStr = localStorage.getItem(recentKey);
+          let recents: string[] = recentsStr ? JSON.parse(recentsStr) : [];
+          const pid = String(targetProjectId);
+          // Remove if exists
+          recents = recents.filter(id => id !== pid);
+          // Add to beginning
+          recents.unshift(pid);
+          // Keep only 20 max to avoid localstorage bloat
+          if (recents.length > 20) recents = recents.slice(0, 20);
+          localStorage.setItem(recentKey, JSON.stringify(recents));
+        } catch (e) {
+          console.error("Error saving recent project", e);
+        }
       }
 
       // Sync History logic - REMOVED (Now fetched from server)
@@ -354,6 +401,55 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Fetching and subscription for unread messages from professors
+    if (!alumno.id) return;
+
+    const setupMsgSubscription = async () => {
+      const { count, error } = await supabase
+        .from('mensajes_profesor_alumno')
+        .select('*', { count: 'exact', head: true })
+        .eq('alumno_user_id', alumno.id)
+        .neq('sender_id', alumno.id)
+        .eq('leido', false);
+
+      if (!error) {
+        setUnreadProfMessages(count || 0);
+      }
+
+      const subscriptionMsg = supabase.channel(`mensajes_profesor_alumno_alu_${alumno.id}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'mensajes_profesor_alumno',
+          filter: `alumno_user_id=eq.${alumno.id}`
+        }, payload => {
+          const newMsg = payload.new as any;
+          if (payload.eventType === 'INSERT' && newMsg && !newMsg.leido && newMsg.sender_id !== alumno.id) {
+            setUnreadProfMessages(prev => prev + 1);
+          } else if (payload.eventType === 'UPDATE') {
+            supabase
+              .from('mensajes_profesor_alumno')
+              .select('*', { count: 'exact', head: true })
+              .eq('alumno_user_id', alumno.id)
+              .neq('sender_id', alumno.id)
+              .eq('leido', false)
+              .then(({ count }) => setUnreadProfMessages(count || 0));
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(subscriptionMsg);
+      };
+    };
+
+    const cleanupFn = setupMsgSubscription();
+    return () => {
+      cleanupFn.then(cleanup => cleanup && cleanup());
+    };
+  }, [alumno.id]);
 
   const handleSwitchClass = async (classData: any) => {
     setLoading(true);
@@ -631,7 +727,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[9px] text-slate-300 font-bold uppercase tracking-wider bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">v4.0.1 (Multi-Rol Login)</span>
+                  <span className="text-[9px] text-slate-300 font-bold uppercase tracking-wider bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">v4.1.0 (Explorador)</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -682,8 +778,30 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 <span className="uppercase tracking-tight">{grupoReal?.pedir_ayuda ? 'ESPERANDO' : 'TENGO DUDA'}</span>
               </button>
 
+              <button
+                onClick={() => setModalHorarioOpen(true)}
+                className="flex items-center justify-center md:justify-start gap-2 px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all font-bold text-xs border border-emerald-100/50 shadow-sm"
+              >
+                <Calendar className="w-4 h-4" />
+                <span className="uppercase tracking-tight">Horario</span>
+              </button>
+
+              <button
+                onClick={() => setModalChatProfesoresOpen(true)}
+                className="relative flex items-center justify-center md:justify-start gap-2 px-3 py-2 bg-fuchsia-50 text-fuchsia-600 hover:bg-fuchsia-100 rounded-xl transition-all font-bold text-xs border border-fuchsia-100/50 shadow-sm"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span className="uppercase tracking-tight hidden md:inline">Profe</span>
+                <span className="uppercase tracking-tight md:hidden">Profe</span>
+                {unreadProfMessages > 0 && (
+                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                    {unreadProfMessages}
+                  </span>
+                )}
+              </button>
+
               {/* CLASS SWITCHER */}
-              <DropdownMenu>
+              <DropdownMenu open={dropdownMisClasesOpen} onOpenChange={setDropdownMisClasesOpen}>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center justify-center md:justify-start gap-2 px-3 py-2 bg-slate-50 text-slate-500 rounded-xl transition-all font-bold text-xs hover:bg-indigo-50 hover:text-indigo-600">
                     <History className="w-4 h-4" />
@@ -740,6 +858,20 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                         ))}
                     </div>
                   )}
+                  {/* Botón Explorar todos mis proyectos */}
+                  <DropdownMenuSeparator />
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        setDropdownMisClasesOpen(false); // Cierra el menú manual
+                        setModalExploradorProyectosOpen(true);
+                      }}
+                      className="w-full py-2 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-600 transition-colors shadow-md flex items-center justify-center gap-2"
+                    >
+                      <FolderOpen className="w-4 h-4" />
+                      Explorar todos mis proyectos
+                    </button>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -1491,6 +1623,29 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           </nav>
         )
       }
+      {modalExploradorProyectosOpen && (
+        <ModalExploradorProyectosAlumno
+          proyectos={historialClases}
+          onClose={() => setModalExploradorProyectosOpen(false)}
+          onSelectProject={handleSwitchClass}
+          alumnoId={alumno.id}
+          proyectoActualId={alumno.proyecto_id}
+        />
+      )}
+      <ModalHorario
+        isOpen={modalHorarioOpen}
+        onClose={() => setModalHorarioOpen(false)}
+        alumnoId={alumno.id}
+      />
+      {modalChatProfesoresOpen && (
+        <ModalChatProfesoresAlumno
+          isOpen={modalChatProfesoresOpen}
+          onClose={() => setModalChatProfesoresOpen(false)}
+          alumnoId={alumno.id}
+          alumnoNombre={alumno.nombre}
+          historialClases={historialClases}
+        />
+      )}
     </div >
   );
 }

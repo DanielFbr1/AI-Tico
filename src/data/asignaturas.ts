@@ -92,8 +92,25 @@ export const getAsignaturaStyles = (asignaturaNombre?: string) => {
         color: '#94a3b8'
     };
 
-    const config = ASIGNATURAS[asignaturaNombre];
-    if (config) return config;
+    const normalizedName = asignaturaNombre.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    // Buscar coincidencia exacta en las keys primero (mayúsculas/minúsculas ignoradas)
+    for (const key of Object.keys(ASIGNATURAS)) {
+        const normalizedKey = key.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (normalizedKey === normalizedName) {
+            return ASIGNATURAS[key];
+        }
+    }
+
+    // Matching difuso por palabras clave o acrónimos
+    if (normalizedName.includes('mate') || normalizedName === 'mates') return ASIGNATURAS['Matemáticas'];
+    if (normalizedName.includes('lengu')) return ASIGNATURAS['Lengua'];
+    if (normalizedName.includes('fisica') || normalizedName === 'ef') return ASIGNATURAS['Educación Física'];
+    if (normalizedName.includes('ingles')) return ASIGNATURAS['Inglés'];
+    if (normalizedName.includes('music')) return ASIGNATURAS['Música'];
+    if (normalizedName.includes('art') || normalizedName.includes('plastic')) return ASIGNATURAS['Arte'];
+    if (normalizedName.includes('sociales') || normalizedName.includes('historia') || normalizedName.includes('geografia')) return ASIGNATURAS['Sociales'];
+    if (normalizedName.includes('ciencia') || normalizedName.includes('naturale') || normalizedName.includes('biologia')) return ASIGNATURAS['Ciencias'];
 
     // Fallback if not found
     return {

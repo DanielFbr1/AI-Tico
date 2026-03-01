@@ -17,31 +17,39 @@ export class TicoAudioEngine {
     };
 
     public async init() {
-        if (this.audioContext && this.audioContext.state !== 'closed') {
+        if (this.audioContext && this.audioContext.state !== 'closed' && this.masterGain) {
             if (this.audioContext.state === 'suspended') {
                 try {
                     await this.audioContext.resume();
+                    console.log("AudioContext reanudado con éxito.");
                 } catch (e) {
-                    console.warn("Could not resume AudioContext directly:", e);
+                    console.warn("No se pudo reanudar el AudioContext directamente:", e);
                 }
             }
             return;
         }
 
         try {
-            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            this.masterGain = this.audioContext.createGain();
-            this.masterGain.connect(this.audioContext.destination);
-            this.masterGain.gain.setValueAtTime(0, this.audioContext.currentTime);
+            if (!this.audioContext || this.audioContext.state === 'closed') {
+                this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            }
+
+            if (!this.masterGain) {
+                this.masterGain = this.audioContext.createGain();
+                this.masterGain.connect(this.audioContext.destination);
+            }
+
+            // Valor inicial de volumen (0 para evitar ruidos al arrancar, luego subirá)
+            this.masterGain.gain.setValueAtTime(this.isPlaying ? 0.5 : 0, this.audioContext.currentTime);
 
             if (this.audioContext.state === 'suspended') {
-                // We don't await here because it might fail due to autoplay policy
+                console.log("AudioContext inicializado en estado suspendido. Esperando gesto.");
                 this.audioContext.resume().catch(e => {
-                    console.warn("AudioContext resume failed on init. Waiting for user gesture.", e);
+                    console.warn("Fallo al reanudar AudioContext en init. Esperando interacción del usuario.", e);
                 });
             }
         } catch (e) {
-            console.error("Failed to init Soft Extended Audio Engine:", e);
+            console.error("Error al inicializar el Motor de Audio Tico:", e);
         }
     }
 

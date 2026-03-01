@@ -23,6 +23,7 @@ import { HitoGrupo } from '../types';
 import { supabase } from '../lib/supabase';
 import { useEffect } from 'react';
 import { getAsignaturaStyles } from '../data/asignaturas';
+import { ModalChatAlumnosDocente } from './ModalChatAlumnosDocente';
 
 interface DashboardDocenteProps {
     onSelectGrupo: (grupo: Grupo) => void;
@@ -70,6 +71,9 @@ export function DashboardDocente({
     const [modalAjustesIAAbierto, setModalAjustesIAAbierto] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // New State
     const [modalRevisionAbierto, setModalRevisionAbierto] = useState(false);
+    const [modalConfigGruposAbierto, setModalConfigGruposAbierto] = useState(false);
+    const [grupoParaConfigYEval, setGrupoParaConfigYEval] = useState<Grupo | null>(null);
+    const [modalChatAlumnosAbierto, setModalChatAlumnosAbierto] = useState(false);
     const [modalAsignarAbierto, setModalAsignarAbierto] = useState(false);
     const [grupoParaTareas, setGrupoParaTareas] = useState<Grupo | null>(null);
     const [modalAsistenciaOpen, setModalAsistenciaOpen] = useState(false);
@@ -289,6 +293,16 @@ export function DashboardDocente({
             {/* Modal Asignar Tareas (Profesor) */}
             {grupoEditando && modalCrearGrupoAbierto === false && (
                 null
+            )}
+
+            {modalChatAlumnosAbierto && (
+                <ModalChatAlumnosDocente
+                    isOpen={modalChatAlumnosAbierto}
+                    onClose={() => setModalChatAlumnosAbierto(false)}
+                    docenteId={user?.id || 'profesor-local'}
+                    docenteNombre={perfil?.nombre || 'Docente'}
+                    grupos={grupos}
+                />
             )}
 
             {/* Mobile Overlay */}
@@ -519,6 +533,16 @@ export function DashboardDocente({
                                 <UserCheck className="w-4 h-4 md:w-5 md:h-5" />
                                 <span className="hidden md:inline">LISTA</span>
                                 <span className="md:hidden">LISTA</span>
+                            </button>
+
+                            <button
+                                onClick={() => setModalChatAlumnosAbierto(true)}
+                                className="flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-fuchsia-50 text-fuchsia-600 border-2 border-fuchsia-100 hover:border-fuchsia-300 rounded-2xl font-black transition-all text-[10px] md:text-xs"
+                                title="Chat con Alumnos"
+                            >
+                                <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
+                                <span className="hidden md:inline">ALUMNOS</span>
+                                <span className="md:hidden">CHAT</span>
                             </button>
 
                             <button

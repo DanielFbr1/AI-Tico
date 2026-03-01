@@ -9,10 +9,9 @@ interface ModalCrearProyectoProps {
     onCrear: (proyecto: Omit<Proyecto, 'id' | 'grupos'>) => void;
     nombreUsuario: string;
     clasesExistentes?: string[];
-    organizacionContext?: { clase: Organizacion, breadcrumb: Organizacion[] };
 }
 
-export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExistentes = [], organizacionContext }: ModalCrearProyectoProps) {
+export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExistentes = [] }: ModalCrearProyectoProps) {
     const [modo, setModo] = useState<'manual' | 'ia'>('manual');
     const [nombre, setNombre] = useState('');
     const [descripcion, setDescripcion] = useState('');
@@ -20,22 +19,22 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
     const [clase, setClase] = useState('');
     const [colegio, setColegio] = useState('');
     const [curso, setCurso] = useState('');
+    const [etapa, setEtapa] = useState('');
     const [asignatura, setAsignatura] = useState('');
     const [contextoIA, setContextoIA] = useState('');
     const [rubricaIA, setRubricaIA] = useState<any>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (nombre.trim()) {
+        if (nombre.trim() && clase.trim() && colegio.trim() && curso.trim() && etapa.trim()) {
             onCrear({
                 nombre: nombre.trim(),
                 descripcion: descripcion.trim(),
                 tipo,
-                clase: organizacionContext ? organizacionContext.clase.nombre : clase,
-                colegio: organizacionContext ? organizacionContext.breadcrumb[1]?.nombre : (colegio.trim() || undefined),
-                curso: organizacionContext ? organizacionContext.breadcrumb[0]?.nombre : (curso.trim() || undefined),
-                organizacion_clase_id: organizacionContext?.clase.id,
-                etapa: organizacionContext ? organizacionContext.breadcrumb[2]?.nombre : undefined,
+                clase: clase.trim(),
+                colegio: colegio.trim(),
+                curso: curso.trim(),
+                etapa: etapa.trim(),
                 estado: 'En preparación' as ProyectoEstado,
                 codigo_sala: Math.random().toString(36).substring(2, 8).toUpperCase(),
                 fases: [
@@ -48,6 +47,8 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
                 asignatura: asignatura || undefined
             });
             onClose();
+        } else {
+            alert('Por favor, rellena todos los campos obligatorios de ubicación (Colegio, Etapa, Curso y Clase).');
         }
     };
 
@@ -178,55 +179,8 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
 
                                     {/* COLUMNA DERECHA: Ubicación + Descripción */}
                                     <div className="space-y-4 flex flex-col justify-between">
-                                        {/* Contexto Jerárquico o Campos Manuales */}
-                                        {organizacionContext ? (
-                                            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex-1 flex flex-col justify-center">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <GraduationCap className="w-4 h-4 text-indigo-600" />
-                                                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Ubicación del Proyecto</span>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
-                                                    {organizacionContext.breadcrumb.map((item) => (
-                                                        <React.Fragment key={item.id}>
-                                                            <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded shadow-sm">
-                                                                {item.nombre}
-                                                            </span>
-                                                            <span className="text-slate-300">/</span>
-                                                        </React.Fragment>
-                                                    ))}
-                                                    <span className="px-1.5 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded shadow-sm">
-                                                        {organizacionContext.clase.nombre}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Clase</label>
-                                                        <input
-                                                            type="text"
-                                                            list="clases-list"
-                                                            value={clase}
-                                                            onChange={(e) => setClase(e.target.value)}
-                                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
-                                                            placeholder="4ºA"
-                                                        />
-                                                        <datalist id="clases-list">
-                                                            {clasesExistentes.map(c => <option key={c} value={c} />)}
-                                                        </datalist>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Curso</label>
-                                                        <input
-                                                            type="text"
-                                                            value={curso}
-                                                            onChange={(e) => setCurso(e.target.value)}
-                                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
-                                                            placeholder="2024-2025"
-                                                        />
-                                                    </div>
-                                                </div>
+                                        <div className="space-y-3">
+                                            <div className="grid grid-cols-2 gap-3">
                                                 <div>
                                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Colegio</label>
                                                     <input
@@ -234,11 +188,56 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
                                                         value={colegio}
                                                         onChange={(e) => setColegio(e.target.value)}
                                                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
-                                                        placeholder="IES..."
+                                                        placeholder="IE..."
+                                                        required
                                                     />
                                                 </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Etapa Educativa</label>
+                                                    <select
+                                                        value={etapa}
+                                                        onChange={(e) => setEtapa(e.target.value)}
+                                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
+                                                        required
+                                                    >
+                                                        <option value="">Selecciona...</option>
+                                                        <option value="Infantil">Infantil</option>
+                                                        <option value="Primaria">Primaria</option>
+                                                        <option value="Secundaria">Secundaria</option>
+                                                        <option value="Bachillerato">Bachillerato</option>
+                                                        <option value="FP">Formación Profesional</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                        )}
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Curso (Año)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={curso}
+                                                        onChange={(e) => setCurso(e.target.value)}
+                                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
+                                                        placeholder="Ej: 2024-2025"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Clase</label>
+                                                    <input
+                                                        type="text"
+                                                        list="clases-list"
+                                                        value={clase}
+                                                        onChange={(e) => setClase(e.target.value)}
+                                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
+                                                        placeholder="Ej: 5ºA"
+                                                        required
+                                                    />
+                                                    <datalist id="clases-list">
+                                                        {clasesExistentes.map(c => <option key={c} value={c} />)}
+                                                    </datalist>
+                                                </div>
+                                            </div>
+                                        </div>
 
                                         {/* DESCRIPCIÓN JUSTO DEBAJO DE LA UBICACIÓN */}
                                         <div>

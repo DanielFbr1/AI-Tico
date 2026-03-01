@@ -6,16 +6,16 @@ import { PROYECTOS_MOCK } from '../data/mockData';
 import { ModalCrearProyecto } from '../components/ModalCrearProyecto';
 import { MensajesFamiliasProfesor } from '../components/MensajesFamiliasProfesor';
 import { getAsignaturaStyles } from '../data/asignaturas';
+import { ModalChatAlumnosDocente } from '../components/ModalChatAlumnosDocente';
+import { Grupo } from '../types';
 
 interface ProjectsDashboardProps {
     onSelectProject: (proyecto: Proyecto) => void;
-    organizacionContext?: { clase: Organizacion, breadcrumb: Organizacion[] };
-    onBack?: () => void;
 }
 
 import { useAuth } from '../context/AuthContext';
 
-export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack }: ProjectsDashboardProps) {
+export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
     const { signOut: authSignOut, session } = useAuth();
     const [proyectos, setProyectos] = useState<Proyecto[]>([]);
     const [loading, setLoading] = useState(true);
@@ -24,26 +24,59 @@ export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack
     const [filtroBusqueda, setFiltroBusqueda] = useState('');
     const [showMensajesFamilias, setShowMensajesFamilias] = useState(false);
     const [unreadFamilyMessages, setUnreadFamilyMessages] = useState(0);
+    const [showModalChatAlumnos, setShowModalChatAlumnos] = useState(false);
+    const [unreadStudentMessages, setUnreadStudentMessages] = useState(0);
+
+    const [todosMisGrupos, setTodosMisGrupos] = useState<Grupo[]>([]);
+
+    const [filtroColegio, setFiltroColegio] = useState('');
+    const [filtroCurso, setFiltroCurso] = useState('');
+    const [filtroClase, setFiltroClase] = useState('');
+    const [filtroEtapa, setFiltroEtapa] = useState('');
 
     const proyectosFiltrados = proyectos.filter(p => {
-        // Filtro de contexto jerárquico (si existe)
-        if (organizacionContext && p.organizacion_clase_id !== organizacionContext.clase.id) {
-            return false;
-        }
+        const matchTexto = p.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase());
 
-        const matchTexto = p.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
-            (p.clase || '').toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
-            p.tipo.toLowerCase().includes(filtroBusqueda.toLowerCase());
+        const matchColegio = !filtroColegio || (p.colegio && p.colegio === filtroColegio);
+        const matchCurso = !filtroCurso || (p.curso && p.curso === filtroCurso);
+        const matchClase = !filtroClase || (p.clase && p.clase === filtroClase);
+        const matchEtapa = !filtroEtapa || (p.etapa && p.etapa === filtroEtapa);
 
-        return matchTexto;
+        return matchTexto && matchColegio && matchCurso && matchClase && matchEtapa;
     });
 
+    const colegiosExistentes = Array.from(new Set(proyectos.map(p => p.colegio).filter(Boolean))) as string[];
+    const cursosExistentes = Array.from(new Set(proyectos.map(p => p.curso).filter(Boolean))) as string[];
+    const etapasExistentes = Array.from(new Set(proyectos.map(p => p.etapa).filter(Boolean))) as string[];
     const clasesExistentes = Array.from(new Set(proyectos.map(p => p.clase).filter(Boolean))) as string[];
 
     useEffect(() => {
         fetchProyectos();
         fetchUnreadFamilyMessages();
     }, []);
+
+    const [recentProjects, setRecentProjects] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        if (session?.user?.id) {
+            try {
+                const stored = localStorage.getItem(`recent_projects_${session.user.id}`);
+                if (stored) {
+                    setRecentProjects(JSON.parse(stored));
+                }
+            } catch (e) {
+                console.error("Error loading recent projects", e);
+            }
+        }
+    }, [session?.user?.id]);
+
+    const handleProjectClick = (proyecto: Proyecto) => {
+        if (session?.user?.id) {
+            const updated = { ...recentProjects, [proyecto.id]: Date.now() };
+            localStorage.setItem(`recent_projects_${session.user.id}`, JSON.stringify(updated));
+        }
+        onSelectProject(proyecto);
+    };
 
     const fetchUnreadFamilyMessages = async () => {
         try {
@@ -65,6 +98,82 @@ export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack
         }
     };
 
+    useEffect(() => {
+        const setupMessageSubscriptions = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            const savedId = user?.id;
+
+            if (savedId) {
+                // Initial fetch for student messages
+                const { count: studentCount, error: countStudentError } = await supabase
+                    .from('mensajes_profesor_alumno')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('profesor_user_id', savedId)
+                    .neq('sender_id', savedId)
+                    .eq('leido', false);
+
+                if (!countStudentError) {
+                    setUnreadStudentMessages(studentCount || 0);
+                }
+
+                // Suscripciones
+                const subscriptionFamilies = supabase.channel(`mensajes_familia_profesor`)
+                    .on('postgres_changes', {
+                        event: '*',
+                        schema: 'public',
+                        table: 'mensajes_familia_profesor',
+                        filter: `profesor_user_id=eq.${savedId}` // Corrected filter to profesor_user_id
+                    }, payload => {
+                        const newMsg = payload.new as any;
+                        if (payload.eventType === 'INSERT' && newMsg && !newMsg.leido && newMsg.sender_id !== savedId) {
+                            setUnreadFamilyMessages(prev => prev + 1);
+                        } else if (payload.eventType === 'UPDATE') {
+                            // Re-fetch count simply to keep synced if states change to read
+                            supabase
+                                .from('mensajes_familia_profesor')
+                                .select('*', { count: 'exact', head: true })
+                                .eq('profesor_user_id', savedId) // Corrected filter to profesor_user_id
+                                .eq('leido', false)
+                                .then(({ count }) => {
+                                    setUnreadFamilyMessages(count || 0);
+                                });
+                        }
+                    })
+                    .subscribe();
+
+                const subscriptionStudents = supabase.channel(`mensajes_profesor_alumno`)
+                    .on('postgres_changes', {
+                        event: '*',
+                        schema: 'public',
+                        table: 'mensajes_profesor_alumno',
+                        filter: `profesor_user_id=eq.${savedId}`
+                    }, payload => {
+                        const newMsg = payload.new as any;
+                        if (payload.eventType === 'INSERT' && newMsg && !newMsg.leido && newMsg.sender_id !== savedId) {
+                            setUnreadStudentMessages(prev => prev + 1);
+                        } else if (payload.eventType === 'UPDATE') {
+                            supabase
+                                .from('mensajes_profesor_alumno')
+                                .select('*', { count: 'exact', head: true })
+                                .eq('profesor_user_id', savedId)
+                                .neq('sender_id', savedId)
+                                .eq('leido', false)
+                                .then(({ count }) => setUnreadStudentMessages(count || 0));
+                        }
+                    })
+                    .subscribe();
+
+                return () => {
+                    supabase.removeChannel(subscriptionFamilies);
+                    supabase.removeChannel(subscriptionStudents);
+                };
+            }
+        };
+
+        setupMessageSubscriptions();
+    }, [session?.user?.id]);
+
+
     const fetchProyectos = async () => {
         try {
             setLoading(true);
@@ -83,6 +192,17 @@ export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack
 
             if (error) throw error;
             setProyectos(data || []);
+
+            if (data && data.length > 0) {
+                const { data: gruposData } = await supabase
+                    .from('grupos')
+                    .select('*')
+                    .in('proyecto_id', data.map(p => p.id));
+
+                if (gruposData) {
+                    setTodosMisGrupos(gruposData as Grupo[]);
+                }
+            }
         } catch (err) {
             console.error('Error fetching projects:', err);
         } finally {
@@ -257,6 +377,35 @@ export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack
         );
     }
 
+    const getProjectScore = (p: Proyecto) => recentProjects[p.id] || 0;
+
+    const orderedClasses = Object.entries(
+        proyectosFiltrados.reduce((acc, p) => {
+            const normalized = normalizeClassName(p.clase || '');
+            if (!acc[normalized]) acc[normalized] = [];
+            acc[normalized].push(p);
+            return acc;
+        }, {} as Record<string, Proyecto[]>)
+    )
+        .map(([clase, proyectosClase]) => {
+            // Sort projects within class: recently opened first, then by name
+            proyectosClase.sort((a, b) => {
+                const scoreA = getProjectScore(a);
+                const scoreB = getProjectScore(b);
+                if (scoreA !== scoreB) return scoreB - scoreA;
+                return a.nombre.localeCompare(b.nombre);
+            });
+
+            // The max score of the class is the score of its recently opened project
+            const maxScore = proyectosClase.length > 0 ? getProjectScore(proyectosClase[0]) : 0;
+            return { clase, proyectosClase, maxScore };
+        })
+        .sort((a, b) => {
+            if (a.maxScore !== b.maxScore) return b.maxScore - a.maxScore;
+            return a.clase.localeCompare(b.clase);
+        });
+
+
     return (
         <div className="min-h-screen bg-[#fcfdff] p-4 md:p-8 font-sans overflow-x-hidden">
             <header className="mb-6 md:mb-12 max-w-7xl mx-auto">
@@ -267,33 +416,15 @@ export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack
                         </div>
                         <div className="overflow-hidden">
                             <h1 className="text-base md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1 truncate">
-                                {organizacionContext ? organizacionContext.clase.nombre : 'Proyectos'}
+                                Tus Proyectos
                             </h1>
                             <p className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1 md:gap-2">
-                                {organizacionContext && (
-                                    <span className="flex items-center gap-1">
-                                        {organizacionContext.breadcrumb.map(b => b.nombre).join(' > ')}
-                                    </span>
-                                )}
-                                {!organizacionContext && (
-                                    <>
-                                        <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                        {proyectos.length} total
-                                    </>
-                                )}
+                                <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                {proyectos.length} proyectos en total
                             </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        {onBack && (
-                            <button
-                                onClick={onBack}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl font-bold transition-all text-xs uppercase tracking-wider"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                                Volver
-                            </button>
-                        )}
                         <button
                             onClick={() => setShowMensajesFamilias(true)}
                             className="relative flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl md:rounded-2xl font-black transition-all border-2 border-emerald-200 hover:border-emerald-400 shadow-sm"
@@ -304,6 +435,19 @@ export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack
                             {unreadFamilyMessages > 0 && (
                                 <span className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-lg animate-bounce">
                                     {unreadFamilyMessages}
+                                </span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setShowModalChatAlumnos(true)}
+                            className="relative flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-fuchsia-50 text-fuchsia-600 hover:bg-fuchsia-100 rounded-xl md:rounded-2xl font-black transition-all border-2 border-fuchsia-200 hover:border-fuchsia-400 shadow-sm"
+                            title="Chat con Alumnos"
+                        >
+                            <Users className="w-4 h-4 md:w-5 md:h-5" />
+                            <span className="text-[10px] md:text-xs uppercase tracking-widest hidden sm:inline">Alumnos</span>
+                            {unreadStudentMessages > 0 && (
+                                <span className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                                    {unreadStudentMessages}
                                 </span>
                             )}
                         </button>
@@ -323,44 +467,70 @@ export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack
                     </div>
                 </div>
 
-                {/* Barra de Búsqueda / Filtro */}
-                <div className="mt-4 md:mt-6 max-w-2xl mx-auto px-1">
-                    <div className="relative group">
+                {/* Barra de Búsqueda / Filtro Avanzado */}
+                <div className="mt-4 md:mt-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-100/50 flex flex-col gap-4">
+                    <div className="relative group w-full">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Search className="h-4 w-4 md:h-5 md:w-5 text-slate-400" />
                         </div>
                         <input
                             type="text"
-                            placeholder="Buscar clase o proyecto..."
+                            placeholder="Buscar proyecto por nombre..."
                             value={filtroBusqueda}
                             onChange={(e) => setFiltroBusqueda(e.target.value)}
-                            className="block w-full pl-10 pr-4 py-3 md:py-3.5 bg-white border border-slate-200 rounded-xl md:rounded-2xl text-[13px] md:text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                            className="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                         />
                         {filtroBusqueda && (
                             <button
                                 onClick={() => setFiltroBusqueda('')}
-                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400"
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
                             >
                                 <X className="w-4 h-4" />
                             </button>
                         )}
                     </div>
-                </div>
 
-                {/* Filtros dropdown de Colegio y Curso eliminados en favor de navegación jerárquica */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <select
+                            value={filtroColegio}
+                            onChange={(e) => setFiltroColegio(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 focus:outline-none focus:border-blue-500"
+                        >
+                            <option value="">Colegio: Todos</option>
+                            {colegiosExistentes.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <select
+                            value={filtroEtapa}
+                            onChange={(e) => setFiltroEtapa(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 focus:outline-none focus:border-blue-500"
+                        >
+                            <option value="">Etapa: Todas</option>
+                            {etapasExistentes.map(e => <option key={e} value={e}>{e}</option>)}
+                        </select>
+                        <select
+                            value={filtroCurso}
+                            onChange={(e) => setFiltroCurso(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 focus:outline-none focus:border-blue-500"
+                        >
+                            <option value="">Curso (Año): Todos</option>
+                            {cursosExistentes.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <select
+                            value={filtroClase}
+                            onChange={(e) => setFiltroClase(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 focus:outline-none focus:border-blue-500"
+                        >
+                            <option value="">Clase: Todas</option>
+                            {clasesExistentes.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+                </div>
             </header>
 
 
             <div className="max-w-7xl mx-auto space-y-12 md:space-y-20">
-                {proyectosFiltrados.length > 0 ? (
-                    Object.entries(
-                        proyectosFiltrados.reduce((acc, p) => {
-                            const normalized = normalizeClassName(p.clase || '');
-                            if (!acc[normalized]) acc[normalized] = [];
-                            acc[normalized].push(p);
-                            return acc;
-                        }, {} as Record<string, Proyecto[]>)
-                    ).map(([clase, proyectosClase]) => (
+                {orderedClasses.length > 0 ? (
+                    orderedClasses.map(({ clase, proyectosClase }) => (
                         <section key={clase} className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-4">
                                 <div className="flex items-center gap-4">
@@ -389,7 +559,7 @@ export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack
                                         return (
                                             <div
                                                 key={proyecto.id}
-                                                onClick={() => onSelectProject(proyecto)}
+                                                onClick={() => handleProjectClick(proyecto)}
                                                 className={`group relative ${proyecto.asignatura ? asigStyles.lightBgClass : 'bg-white'} rounded-[1.25rem] p-8 flex flex-col border-2 ${asigStyles.borderClass} hover:border-blue-400 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden`}
                                             >
                                                 <div className="flex justify-between items-start mb-6 relative z-10">
@@ -473,7 +643,16 @@ export function ProjectsDashboard({ onSelectProject, organizacionContext, onBack
                     onCrear={handleCrearProyecto}
                     nombreUsuario={session?.user?.email || 'Docente'}
                     clasesExistentes={clasesExistentes}
-                    organizacionContext={organizacionContext}
+                />
+            )}
+
+            {showModalChatAlumnos && (
+                <ModalChatAlumnosDocente
+                    isOpen={showModalChatAlumnos}
+                    onClose={() => setShowModalChatAlumnos(false)}
+                    docenteId={session?.user?.id || 'profesor'}
+                    docenteNombre={session?.user?.email?.split('@')[0] || 'Docente'}
+                    grupos={todosMisGrupos}
                 />
             )}
         </div>
