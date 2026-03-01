@@ -431,7 +431,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                             title="Mensajes de Familias"
                         >
                             <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
-                            <span className="text-[10px] md:text-xs uppercase tracking-widest">Familias</span>
+                            <span className="text-[10px] md:text-xs uppercase tracking-widest hidden md:inline">Familias</span>
                             {unreadFamilyMessages > 0 && (
                                 <span className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-lg animate-bounce">
                                     {unreadFamilyMessages}

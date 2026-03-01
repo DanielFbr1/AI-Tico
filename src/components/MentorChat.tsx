@@ -64,7 +64,7 @@ const preguntasSugeridas = [
 
 export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, proyectoNombre, contextoIA }: ChatIAProps) {
   const { user, perfil } = useAuth();
-  const isReadOnly = readOnly || perfil?.rol === 'profesor';
+  const isReadOnly = readOnly ?? false;
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [inputMensaje, setInputMensaje] = useState('');
   const [categoriaMensaje, setCategoriaMensaje] = useState<Mensaje['categoria']>('Creativa');
