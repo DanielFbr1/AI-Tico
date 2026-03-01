@@ -231,7 +231,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
                     </div>
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <MentorChat grupo={grupo} readOnly={true} />
+                    <MentorChat grupo={grupo} />
                   </div>
                 </div>
 
