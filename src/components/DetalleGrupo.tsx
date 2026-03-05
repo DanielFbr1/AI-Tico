@@ -160,17 +160,23 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
 
             {/* RIGHT COLUMN: BIG TREE */}
             <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-200 rounded-[2rem] p-8 shadow-md sticky top-24 flex flex-col items-center justify-center min-h-[500px] h-full">
-                <h3 className="absolute top-6 left-6 text-xs font-black text-slate-300 uppercase tracking-widest">Bio-Estado del Grupo</h3>
-                <LivingTree
-                  progress={grupo.progreso}
-                  health={100}
-                  size={320}
-                  showLabels={true}
-                  variant="satellite"
-                />
-                <div className="mt-4 text-center">
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">En Órbita</div>
+              <div className="bg-white border border-gray-200 rounded-[2rem] p-8 shadow-md sticky top-24 flex flex-col items-center justify-center min-h-[500px] h-full overflow-hidden relative">
+                <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-blue-50 to-transparent rounded-t-[2rem] pointer-events-none"></div>
+                <h3 className="absolute top-6 left-6 text-xs font-black text-slate-400 uppercase tracking-widest z-10">Batería del Equipo</h3>
+
+                <div className="relative z-10 transform hover:scale-105 transition-transform duration-500">
+                  <LivingTree
+                    progress={grupo.progreso}
+                    health={100}
+                    size={280}
+                    showLabels={false}
+                    variant="satellite"
+                  />
+                </div>
+
+                <div className="mt-8 text-center relative z-10 w-full">
+                  <div className="text-4xl font-black text-blue-600 mb-1">{grupo.progreso.toFixed(0)}%</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-blue-50 py-1.5 px-3 rounded-full inline-flex border border-blue-100">Energía Recolectada</div>
                 </div>
               </div>
             </div>

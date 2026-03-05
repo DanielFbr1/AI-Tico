@@ -56,6 +56,16 @@ export default {
                     foreground: "rgb(var(--card-foreground))",
                 },
             },
+            animation: {
+                'shake': 'shake 0.5s ease-in-out infinite',
+            },
+            keyframes: {
+                'shake': {
+                    '0%, 100%': { transform: 'translateX(0)' },
+                    '25%': { transform: 'translateX(-2px) rotate(-1deg)' },
+                    '75%': { transform: 'translateX(2px) rotate(1deg)' },
+                }
+            }
         },
     },
     plugins: [],

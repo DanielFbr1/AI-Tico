@@ -781,21 +781,24 @@ export function DashboardDocente({
                                 {/* COLUMNA DERECHA: BIO-ESTADO (STICKY SIDEBAR) */}
                                 <div className="xl:col-span-1 order-1 xl:order-2 space-y-6">
 
-                                    {/* Living Tree Card - Minimalist Version */}
-                                    <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl overflow-hidden sticky top-24 p-6 flex flex-col items-center min-h-[500px] justify-center">
-                                        <div className="relative w-48 h-48 -my-4">
+                                    {/* Living Tree Card - Rocket Version */}
+                                    <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl overflow-hidden sticky top-24 p-6 flex flex-col items-center min-h-[500px] justify-center relative">
+                                        <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-indigo-50/50 to-transparent rounded-t-[2rem] pointer-events-none"></div>
+                                        <h3 className="absolute top-6 left-6 text-xs font-black text-slate-400 uppercase tracking-widest z-10">Progreso Global</h3>
+
+                                        <div className="relative w-full flex justify-center -my-4 z-10 transform hover:-translate-y-2 transition-transform duration-500">
                                             <LivingTree
-                                                progress={grupos.reduce((acc, g) => acc + g.progreso, 0) / grupos.length}
+                                                progress={grupos.reduce((acc, g) => acc + g.progreso, 0) / (grupos.length || 1)}
                                                 health={100}
-                                                size={200}
+                                                size={300}
                                                 showLabels={false}
                                                 variant="nexus"
                                             />
                                         </div>
 
-                                        <div className="mt-8 text-center">
-                                            <div className="text-3xl font-black text-blue-600">{(grupos.reduce((acc, g) => acc + g.progreso, 0) / grupos.length).toFixed(0)}%</div>
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Crecimiento Global</div>
+                                        <div className="mt-12 text-center relative z-10 w-full">
+                                            <div className="text-4xl font-black text-indigo-600 mb-1">{(grupos.reduce((acc, g) => acc + g.progreso, 0) / (grupos.length || 1)).toFixed(0)}%</div>
+                                            <div className="text-[10px] font-bold text-indigo-800 uppercase tracking-widest bg-indigo-50 py-1.5 px-3 rounded-full box-border border border-indigo-100 inline-block">Misión Espacial</div>
                                         </div>
                                     </div>
 

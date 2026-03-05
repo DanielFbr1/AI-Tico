@@ -207,11 +207,17 @@ export default function App() {
       <AuthProvider>
         <AppContent />
         <Toaster position="top-right" richColors />
-        {/* Indicador de Versión Global */}
-        <div className="fixed bottom-2 right-2 z-[9999] pointer-events-none">
-          <span className="bg-slate-900/40 backdrop-blur-md text-white/50 text-[10px] font-black px-2 py-0.5 rounded-full border border-white/5 uppercase tracking-widest">
-            Tico.AI v1.6.8
+        {/*            {/* Version indicator */}
+        <div className="fixed bottom-2 right-2 flex flex-col items-end gap-1 opacity-50 z-50 pointer-events-none">
+          <span className="text-[10px] font-mono text-slate-400 bg-white/80 px-2 py-1 rounded-md border border-slate-200 shadow-sm backdrop-blur-sm">
+            Tico.AI v1.6.9
           </span>
+          {/* The 'session' variable is not defined in this scope. If intended, it should be passed or fetched here. */}
+          {/* {session && (
+                    <span className="text-[10px] font-mono text-emerald-500 bg-emerald-50/80 px-2 py-1 rounded-md border border-emerald-100 shadow-sm backdrop-blur-sm">
+                        Conectado
+                    </span>
+                )} */}
         </div>
       </AuthProvider>
     </ErrorBoundary>

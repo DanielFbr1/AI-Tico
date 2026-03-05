@@ -4,6 +4,13 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.6.9: Rediseño de Indicadores de Progreso
+*   **Nueva visualización de Progreso:** Sustituidas las variantes SVG del componente `LivingTree`.
+    *   **Variante "nexus" (Progreso Global):** Ahora muestra la animación de un Cohete Espacial. Pasa de un estado "blueprint" al despegue total con fuego y animación temblor al acumular el porcentaje suficiente.
+    *   **Variante "satellite" (Progreso Equipo):** Ahora se muestra como una **Batería de Energía**, que simula cargarse con un "líquido brillante" de energía proporcional a su porcentaje, rematado con partículas ascendentes al cargarse.
+*   **Detalles UI/Ajustes Visibles:** Actualizados los estilos colindantes de los componentes, renombrando los apartados que hablaban de Bio-estado, árboles o satélites para ser acordes con los nuevos diseños ("Progreso Global / Misión Espacial" y "Batería de Energía / Energía Recolectada").
+*   **Configuración de Animaciones:** Añadidas variantes de "shake" en `tailwind.config.js` explícitas para el cohete.
+
 ### Versión 1.6.8: Mejoras visuales en UI de Equipos y Dados
 * **Objetivo:** Responder a las solicitudes de diseño y experiencia interactivas mejorando flujos específicos.
 * **Cambios:**

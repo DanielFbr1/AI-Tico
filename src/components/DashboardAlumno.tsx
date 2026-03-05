@@ -1116,14 +1116,14 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 {/* Árbol (Ocupa 1/3) */}
                 <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[280px] md:min-h-[400px]">
                   <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-green-500"></div>
-                  <h2 className="text-sm md:text-xl font-black text-slate-800 tracking-tight uppercase mb-2 md:mb-4 z-10 w-full text-center">Nuestro Satélite</h2>
-                  <div className="relative z-10 transform scale-[0.7] md:scale-100 -my-10 md:my-0">
+                  <h2 className="text-sm md:text-xl font-black text-slate-800 tracking-tight uppercase mb-2 md:mb-4 z-10 w-full text-center">Batería del Equipo</h2>
+                  <div className="relative z-10 transform hover:scale-105 transition-transform duration-500 -my-4 md:my-0">
                     <LivingTree progress={grupoDisplay.progreso || 0} health={100} size={240} variant="satellite" />
                   </div>
-                  <div className="mt-2 md:mt-8 flex gap-8 text-center">
+                  <div className="mt-6 md:mt-8 flex gap-8 text-center relative z-10">
                     <div>
-                      <div className="text-2xl font-black text-slate-800">{grupoDisplay.progreso}%</div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">En Órbita</div>
+                      <div className="text-3xl font-black text-emerald-600 mb-1">{grupoDisplay.progreso}%</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-emerald-50 py-1.5 px-3 rounded-full border border-emerald-100">Energía Lista</div>
                     </div>
                   </div>
                 </div>
@@ -1202,26 +1202,27 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 {/* 1. Árbol Global (Simple) */}
                 <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[400px]">
                   <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-400 to-purple-500"></div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100 mb-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100 mb-6 relative z-10">
                     <Globe className="w-3 h-3 text-indigo-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Nexo Global</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Progreso Global</span>
                   </div>
 
-                  <div className="relative z-10 transform scale-100">
+                  <div className="relative z-10 transform hover:-translate-y-2 transition-transform duration-500 w-full flex justify-center">
                     <LivingTree
                       progress={todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)}
                       health={100}
-                      size={240}
+                      size={280}
+                      variant="nexus"
                     />
                   </div>
 
-                  <div className="mt-8 text-center">
-                    <div className="text-3xl font-black text-slate-800">
+                  <div className="mt-8 text-center relative z-10">
+                    <div className="text-4xl font-black text-indigo-600 mb-2">
                       {(todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)).toFixed(0)}%
                     </div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Progreso Global</div>
-                    <p className="text-xs text-slate-400 mt-2 max-w-[200px] leading-tight">
-                      El esfuerzo combinado de todos los equipos.
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full inline-block">Misión Espacial</div>
+                    <p className="text-xs text-slate-500 mt-3 max-w-[200px] leading-relaxed font-medium">
+                      El esfuerzo de todos para hacer despegar el cohete.
                     </p>
                   </div>
                 </div>
