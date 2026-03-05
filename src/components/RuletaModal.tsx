@@ -441,16 +441,15 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                     onDrop={(e) => handleDrop(e, i)}
                                                 >
                                                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
-                                                    <div className="flex justify-between items-center mb-3">
-                                                        <h4 className="font-black text-slate-900 text-xs uppercase tracking-widest">Equipo {i + 1}</h4>
+                                                    <div className="flex justify-between items-center mb-3 min-h-[28px]">
                                                         {addInputTeam === i ? (
-                                                            <div className="flex items-center gap-1">
+                                                            <div className="flex items-center gap-1 w-full animate-in fade-in slide-in-from-right-2 duration-200">
                                                                 <input
                                                                     type="text"
-                                                                    placeholder="Nombre"
+                                                                    placeholder="Nuevo integrante..."
                                                                     value={addInputValue}
                                                                     onChange={(e) => setAddInputValue(e.target.value)}
-                                                                    className="px-2 py-1 border rounded-lg text-xs w-24"
+                                                                    className="flex-1 min-w-0 px-3 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-bold text-slate-700 bg-slate-50"
                                                                     onKeyDown={(e) => {
                                                                         if (e.key === 'Enter') {
                                                                             e.preventDefault();
@@ -467,38 +466,43 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                                     }}
                                                                     autoFocus
                                                                 />
-                                                                <button
-                                                                    onClick={() => {
-                                                                        if (addInputValue.trim()) {
-                                                                            setGeneratedGroups(prev => {
-                                                                                const newGroups = [...prev];
-                                                                                if (newGroups[i]) newGroups[i] = [...newGroups[i], addInputValue.trim()];
-                                                                                return newGroups;
-                                                                            });
-                                                                        }
-                                                                        setAddInputTeam(null);
-                                                                        setAddInputValue('');
-                                                                    }}
-                                                                    className="w-7 h-7 bg-blue-600 text-white rounded-lg flex items-center justify-center active:scale-90"
-                                                                >
-                                                                    <Check className="w-4 h-4" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => { setAddInputTeam(null); setAddInputValue(''); }}
-                                                                    className="w-7 h-7 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center active:scale-90"
-                                                                >
-                                                                    <X className="w-3 h-3" />
-                                                                </button>
+                                                                <div className="flex shrink-0 gap-1 ml-1">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            if (addInputValue.trim()) {
+                                                                                setGeneratedGroups(prev => {
+                                                                                    const newGroups = [...prev];
+                                                                                    if (newGroups[i]) newGroups[i] = [...newGroups[i], addInputValue.trim()];
+                                                                                    return newGroups;
+                                                                                });
+                                                                            }
+                                                                            setAddInputTeam(null);
+                                                                            setAddInputValue('');
+                                                                        }}
+                                                                        className="w-7 h-7 bg-blue-600 text-white rounded-lg flex items-center justify-center active:scale-90 shadow-sm"
+                                                                    >
+                                                                        <Check className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => { setAddInputTeam(null); setAddInputValue(''); }}
+                                                                        className="w-7 h-7 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg flex items-center justify-center active:scale-90 transition-colors"
+                                                                    >
+                                                                        <X className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         ) : (
-                                                            <button
-                                                                onClick={() => { setAddInputTeam(i); setAddInputValue(''); }}
-                                                                className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all active:scale-90 relative"
-                                                                title="Añadir Integrante"
-                                                            >
-                                                                <Users className="w-3.5 h-3.5" />
-                                                                <span className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-4 h-4 text-[8px] border border-white flex items-center justify-center font-bold">+</span>
-                                                            </button>
+                                                            <>
+                                                                <h4 className="font-black text-slate-900 text-xs uppercase tracking-widest shrink-0">Equipo {i + 1}</h4>
+                                                                <button
+                                                                    onClick={() => { setAddInputTeam(i); setAddInputValue(''); }}
+                                                                    className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all active:scale-90 relative"
+                                                                    title="Añadir Integrante"
+                                                                >
+                                                                    <Users className="w-4 h-4" />
+                                                                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-4 h-4 text-[9px] border-2 border-white flex items-center justify-center font-bold">+</span>
+                                                                </button>
+                                                            </>
                                                         )}
                                                     </div>
                                                     <div className="flex flex-wrap gap-2 min-h-[30px]">
@@ -737,20 +741,18 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                     onDrop={(e) => handleDrop(e, i)}
                                                 >
                                                     <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500" />
-                                                    <div className="flex justify-between items-center mb-5">
-                                                        <h4 className="font-black text-slate-900 text-xs uppercase tracking-widest">Equipo {i + 1}</h4>
+                                                    <div className="flex justify-between items-center mb-5 min-h-[40px]">
                                                         {addInputTeam === i ? (
-                                                            <div className="flex items-center gap-2">
+                                                            <div className="flex items-center gap-2 w-full animate-in fade-in slide-in-from-right-4 duration-300">
                                                                 <input
                                                                     type="text"
-                                                                    placeholder="Nombre integrante"
+                                                                    placeholder="Nuevo integrante..."
                                                                     value={addInputValue}
                                                                     onChange={(e) => setAddInputValue(e.target.value)}
-                                                                    className="px-2 py-1 border rounded"
+                                                                    className="flex-1 min-w-0 px-4 py-2.5 border-2 border-blue-100 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-slate-700 bg-slate-50"
                                                                     onKeyDown={(e) => {
                                                                         if (e.key === 'Enter') {
                                                                             e.preventDefault();
-                                                                            // Confirm addition
                                                                             if (addInputValue.trim()) {
                                                                                 setGeneratedGroups(prev => {
                                                                                     const newGroups = [...prev];
@@ -759,54 +761,61 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                                                     }
                                                                                     return newGroups;
                                                                                 });
+                                                                                toast.success(`Añadido a Equipo ${i + 1}`);
                                                                             }
                                                                             setAddInputTeam(null);
                                                                             setAddInputValue('');
                                                                         }
                                                                     }}
+                                                                    autoFocus
                                                                 />
-                                                                <button
-                                                                    onClick={() => {
-                                                                        if (addInputValue.trim()) {
-                                                                            setGeneratedGroups(prev => {
-                                                                                const newGroups = [...prev];
-                                                                                if (newGroups[i]) {
-                                                                                    newGroups[i] = [...newGroups[i], addInputValue.trim()];
-                                                                                }
-                                                                                return newGroups;
-                                                                            });
-                                                                            toast.success(`Añadido a Equipo ${i + 1}`);
-                                                                        }
-                                                                        setAddInputTeam(null);
-                                                                        setAddInputValue('');
-                                                                    }}
-                                                                    className="w-10 h-10 bg-blue-600 text-white rounded-2xl flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg active:scale-90"
-                                                                >
-                                                                    <Check className="w-5 h-5 font-black" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setAddInputTeam(null);
-                                                                        setAddInputValue('');
-                                                                    }}
-                                                                    className="w-10 h-10 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition-all active:scale-90"
-                                                                >
-                                                                    <X className="w-4 h-4" />
-                                                                </button>
+                                                                <div className="flex shrink-0 gap-2 ml-1">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            if (addInputValue.trim()) {
+                                                                                setGeneratedGroups(prev => {
+                                                                                    const newGroups = [...prev];
+                                                                                    if (newGroups[i]) {
+                                                                                        newGroups[i] = [...newGroups[i], addInputValue.trim()];
+                                                                                    }
+                                                                                    return newGroups;
+                                                                                });
+                                                                                toast.success(`Añadido a Equipo ${i + 1}`);
+                                                                            }
+                                                                            setAddInputTeam(null);
+                                                                            setAddInputValue('');
+                                                                        }}
+                                                                        className="w-11 h-11 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-all shadow-md active:scale-95"
+                                                                    >
+                                                                        <Check className="w-5 h-5 font-black" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setAddInputTeam(null);
+                                                                            setAddInputValue('');
+                                                                        }}
+                                                                        className="w-11 h-11 bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center hover:bg-slate-200 hover:text-slate-700 transition-all active:scale-95 border border-slate-200"
+                                                                    >
+                                                                        <X className="w-5 h-5" />
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         ) : (
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setAddInputTeam(i);
-                                                                    setAddInputValue('');
-                                                                }}
-                                                                className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-90"
-                                                                title="Añadir Integrante"
-                                                            >
-                                                                <Users className="w-4 h-4" />
-                                                                <span className=" absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 text-[10px] border-2 border-white flex items-center justify-center font-bold">+</span>
-                                                            </button>
+                                                            <>
+                                                                <h4 className="font-black text-slate-900 text-xs uppercase tracking-widest shrink-0">Equipo {i + 1}</h4>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setAddInputTeam(i);
+                                                                        setAddInputValue('');
+                                                                    }}
+                                                                    className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-90 relative"
+                                                                    title="Añadir Integrante"
+                                                                >
+                                                                    <Users className="w-4 h-4" />
+                                                                    <span className=" absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 text-[10px] border-2 border-white flex items-center justify-center font-bold">+</span>
+                                                                </button>
+                                                            </>
                                                         )}
 
                                                     </div>
