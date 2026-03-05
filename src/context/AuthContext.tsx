@@ -41,7 +41,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.log("👤 Analizando metadata para:", user.id);
             let metadata = user.user_metadata;
 
-            // Fallback: Si no hay metadata, consultar la tabla profiles
+            // 1. Check for pending role from social login FIRST to override DB defaults
+            const pendingRole = localStorage.getItem('pendingRole') as Perfil['rol'] | null;
+            if (pendingRole) {
+                console.log("📝 Aplicando rol pendiente (sobreescribiendo defaults):", pendingRole);
+
+                // Update metadata
+                await supabase.auth.updateUser({
+                    data: { rol: pendingRole }
+                });
+
+                // Update profiles table
+                await supabase.from('profiles').upsert({
+                    id: user.id,
+                    rol: pendingRole,
+                    nombre: metadata?.nombre || metadata?.full_name || user.email?.split('@')[0] || 'Usuario'
+                });
+
+                setPerfil({
+                    id: user.id,
+                    nombre: metadata?.nombre || metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+                    rol: pendingRole
+                });
+
+                localStorage.removeItem('pendingRole');
+                return;
+            }
+
+            // 2. Fallback: Si no hay metadata, consultar la tabla profiles
             if (!metadata?.rol) {
                 console.warn("⚠️ Metadata vacía, consultando DB...");
                 const { data: profileData } = await supabase
@@ -55,10 +82,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             }
 
+            // 3. Establecer perfil basado en metadatos
             if (metadata?.rol) {
                 const fetchedPerfil: Perfil = {
                     id: user.id,
-                    nombre: metadata.nombre || user.email?.split('@')[0] || 'Usuario',
+                    nombre: metadata.nombre || metadata.full_name || user.email?.split('@')[0] || 'Usuario',
                     rol: metadata.rol,
                     clase: metadata.clase,
                     codigo_sala: metadata.codigo_sala,
@@ -67,33 +95,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setPerfil(fetchedPerfil);
                 console.log("✅ Perfil cargado:", metadata.rol);
             } else {
-                // Check for pending role from social login
-                const pendingRole = localStorage.getItem('pendingRole') as Perfil['rol'] | null;
-                if (pendingRole) {
-                    console.log("📝 Aplicando rol pendiente:", pendingRole);
-
-                    // Update metadata
-                    await supabase.auth.updateUser({
-                        data: { rol: pendingRole }
-                    });
-
-                    // Update profiles table
-                    await supabase.from('profiles').upsert({
-                        id: user.id,
-                        rol: pendingRole,
-                        nombre: user.email?.split('@')[0] || 'Usuario'
-                    });
-
-                    setPerfil({
-                        id: user.id,
-                        nombre: user.email?.split('@')[0] || 'Usuario',
-                        rol: pendingRole
-                    });
-
-                    localStorage.removeItem('pendingRole');
-                    return;
-                }
-
                 console.error("❌ Usuario sin rol en Metadata ni DB. Asignando 'alumno' por defecto para seguridad.");
                 setPerfil({
                     id: user.id,

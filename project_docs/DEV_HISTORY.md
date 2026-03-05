@@ -4,6 +4,13 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.6.1: Fix Registro Docente y Chat Alumno-Profesor
+*   **Objetivo:** Solucionar errores al registrarse como docente y habilitar las funciones de chat bidireccional entre alumnos y profesores.
+*   **Cambios:**
+    - Ajuste en `AuthContext.tsx` para forzar la asignación del rol a `profesor` tras el login OAuth, saltándose el rol por defecto del trigger SQL.
+    - Creación del script SQL `create_mensajes_profesor_alumno.sql` para generar la tabla de la base de datos correspondiente a los mensajes del chat, implementando a su vez políticas RLS y soporte RealTime.
+    - Actualización global de la versión en UI a V1.6.1 conforme a las directivas del usuario.
+
 ### Versión 1.5.13: Fix de Datos Dinámicos (Lanzamiento 6 Dados)
 *   **Objetivo:** Permitir que se muestre el volumen correcto de dados en la función de lanzamiento (antes todos los arrays simulaban sólamente 3 dados y escondían los demás visualmente).
 *   **Cambios:**
