@@ -4,6 +4,16 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.6.2: Fix Configuración Mentor IA
+* **Objetivo:** Asegurar que los ajustes definidos por el docente sobre Tico (Mentor IA) se apliquen de forma estricta en la interfaz y comportamiento del alumno.
+* **Cambios:**
+    - `MentorChat.tsx`: El botón de control de voz (altavoz) ahora se oculta de la interfaz si el profesor decide desactivar la función.
+    - Sincronización de Prompt: Se ha re-cableado la llamada a la API de Groq para que reciba y procese la variable `grupo.configuracion`, respetando así el tono, exigencia y la prohibición de uso de emojis dictada por el profesor.
+
+### Intervención Manual: Limpieza de Base de Datos
+* **Objetivo:** Eliminar proyecto desactualizado que aparecía erróneamente en el perfil de los alumnos.
+* **Acción:** Se ha eliminado de la tabla `proyectos` en Supabase el registro correspondiente a "mujer rural" (Código de sala: `PG0OC1`).
+
 ### Versión 1.6.1: Fix Registro Docente y Chat Alumno-Profesor
 *   **Objetivo:** Solucionar errores al registrarse como docente y habilitar las funciones de chat bidireccional entre alumnos y profesores.
 *   **Cambios:**

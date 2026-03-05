@@ -331,7 +331,7 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
         historialParaIA,
         grupo.hitos || [], // Tareas del grupo
         proyectoNombre !== 'Proyecto Demo' ? (contextoIA || "") : "", // Contexto IA
-        undefined, // configuracion
+        grupo.configuracion, // configuracion
         controller.signal
       );
 
@@ -541,17 +541,19 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
         ) : (
           <div className="flex flex-col gap-3">
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={toggleMute}
-                className={`p-3 rounded-2xl transition-all ${!isMuted
-                  ? 'bg-indigo-50 text-indigo-600 border border-indigo-100'
-                  : 'bg-slate-50 text-slate-400 border border-slate-100 hover:bg-slate-100'
-                  }`}
-                title={isMuted ? "Activar voz" : "Silenciar voz"}
-              >
-                {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-              </button>
+              {vozPermitidaAdmin && (
+                <button
+                  type="button"
+                  onClick={toggleMute}
+                  className={`p-3 rounded-2xl transition-all ${!isMuted
+                    ? 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                    : 'bg-slate-50 text-slate-400 border border-slate-100 hover:bg-slate-100'
+                    }`}
+                  title={isMuted ? "Activar voz" : "Silenciar voz"}
+                >
+                  {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                </button>
+              )}
               {microPermitidoAdmin && (
                 <button
                   type="button"
