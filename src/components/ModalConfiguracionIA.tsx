@@ -212,20 +212,17 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                         </div>
 
                         {/* COLUMNA DERECHA: CONFIGURACIÓN RÁPIDA */}
-                        <div className="lg:col-span-5 space-y-6">
+                        <div className="lg:col-span-5 space-y-4">
                             {/* Personalidad y Prompt Manual */}
-                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 rounded-lg bg-indigo-100 text-indigo-600">
-                                        <Brain className="w-5 h-5" />
+                            <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="p-1.5 rounded-lg bg-indigo-100 text-indigo-600">
+                                        <Brain className="w-4 h-4" />
                                     </div>
                                     <span className="font-bold text-gray-700 text-sm">Instrucción de Comportamiento</span>
                                 </div>
-                                <p className="text-[10px] text-gray-500 mb-3 font-medium ml-[44px]">
-                                    Define cómo actúa Tico con el alumno o pídele al asistente que redacte uno por ti.
-                                </p>
                                 <textarea
-                                    className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-none transition-all ml-1"
+                                    className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-none transition-all"
                                     placeholder="Ej: Actúa como un experto en Roma antigua..."
                                     value={instrucciones}
                                     onChange={(e) => setInstrucciones(e.target.value)}
@@ -233,49 +230,49 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                             </div>
 
                             {/* Toggles de Hardware/UI */}
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${vozActivada ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
-                                            <Volume2 className="w-5 h-5" />
+                                        <div className={`p-1.5 rounded-lg ${vozActivada ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <Volume2 className="w-4 h-4" />
                                         </div>
                                         <span className="font-bold text-gray-700 text-sm">Voz de Tico</span>
                                     </div>
                                     <button
                                         onClick={() => setVozActivada(!vozActivada)}
-                                        className={`w-12 h-6 rounded-full transition-colors relative ${vozActivada ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                                        className={`w-10 h-5 rounded-full transition-colors relative ${vozActivada ? 'bg-indigo-600' : 'bg-gray-300'}`}
                                     >
-                                        <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-transform ${vozActivada ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${vozActivada ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
 
-                                <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                                <div className="flex items-center justify-between bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${microfonoActivado ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'}`}>
-                                            <Mic className="w-5 h-5" />
+                                        <div className={`p-1.5 rounded-lg ${microfonoActivado ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <Mic className="w-4 h-4" />
                                         </div>
                                         <span className="font-bold text-gray-700 text-sm">Micrófono</span>
                                     </div>
                                     <button
                                         onClick={() => setMicrofonoActivado(!microfonoActivado)}
-                                        className={`w-12 h-6 rounded-full transition-colors relative ${microfonoActivado ? 'bg-purple-600' : 'bg-gray-300'}`}
+                                        className={`w-10 h-5 rounded-full transition-colors relative ${microfonoActivado ? 'bg-purple-600' : 'bg-gray-300'}`}
                                     >
-                                        <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-transform ${microfonoActivado ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${microfonoActivado ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
 
-                                <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                                <div className="flex items-center justify-between bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${frecuenciaEmojis ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                                            <Sparkles className="w-5 h-5" />
+                                        <div className={`p-1.5 rounded-lg ${frecuenciaEmojis ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <Sparkles className="w-4 h-4" />
                                         </div>
                                         <span className="font-bold text-gray-700 text-sm">Usar Emojis</span>
                                     </div>
                                     <button
                                         onClick={() => setFrecuenciaEmojis(!frecuenciaEmojis)}
-                                        className={`w-12 h-6 rounded-full transition-colors relative ${frecuenciaEmojis ? 'bg-green-500' : 'bg-gray-300'}`}
+                                        className={`w-10 h-5 rounded-full transition-colors relative ${frecuenciaEmojis ? 'bg-green-500' : 'bg-gray-300'}`}
                                     >
-                                        <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-transform ${frecuenciaEmojis ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${frecuenciaEmojis ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
                             </div>

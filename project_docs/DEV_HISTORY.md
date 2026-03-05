@@ -4,6 +4,11 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.6.5: Pulido UI Configuración IA
+* **Objetivo:** Asegurar que todo el contenido del panel (especialmente los botones de hardware de la derecha) quepan simultáneamente en pantalla sin scroll vertical.
+* **Cambios:**
+    - `ModalConfiguracionIA.tsx`: Múltiples reducciones de padding (`p-4` a `p-3`), gaps y tamaños de caja para compactar. También se ha eliminado el texto secundario de ayuda debajo de "Instrucción de Comportamiento". Las alturas de los switches han pasado de `h-6` a `h-5` y todo queda a la vista al abrir el popup.
+
 ### Versión 1.6.4: Rediseño de Configuración IA
 * **Objetivo:** Simplificar la interfaz de Ajustes del Mentor IA eliminando indicadores redundantes y unificando el estilo visual del control avanzado.
 * **Cambios:**
