@@ -25,6 +25,11 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
     // UI state for adding a new member via inline input
     const [addInputTeam, setAddInputTeam] = useState<number | null>(null);
     const [addInputValue, setAddInputValue] = useState('');
+
+    // Drag and Drop state
+    const [draggedItem, setDraggedItem] = useState<{ groupIndex: number; itemIndex: number } | null>(null);
+    const [dragOverGroup, setDragOverGroup] = useState<number | null>(null);
+
     // Sync managed members when alumnos are loaded from hook
     useEffect(() => {
         if (alumnos.length > 0 && managedMembers.length === 0) {
@@ -139,6 +144,54 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
             );
             setIsRollingDice(false);
         }, 1500);
+    };
+
+    // Drag and Drop Handlers
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, groupIndex: number, itemIndex: number) => {
+        setDraggedItem({ groupIndex, itemIndex });
+        // Efecto visual al elemento arrastrado
+        setTimeout(() => {
+            if (e.target instanceof HTMLElement) {
+                e.target.classList.add('opacity-40');
+            }
+        }, 0);
+    };
+
+    const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+        if (e.target instanceof HTMLElement) {
+            e.target.classList.remove('opacity-40');
+        }
+        setDraggedItem(null);
+        setDragOverGroup(null);
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>, targetGroupIndex: number) => {
+        e.preventDefault(); // Necesario para permitir el drop
+        if (draggedItem && draggedItem.groupIndex !== targetGroupIndex) {
+            setDragOverGroup(targetGroupIndex);
+        }
+    };
+
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        setDragOverGroup(null);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetGroupIndex: number) => {
+        e.preventDefault();
+        setDragOverGroup(null);
+        if (!draggedItem) return;
+
+        if (draggedItem.groupIndex === targetGroupIndex) return;
+
+        setGeneratedGroups(prev => {
+            const newGroups = prev.map(g => [...g]);
+            const itemToMove = newGroups[draggedItem.groupIndex][draggedItem.itemIndex];
+
+            newGroups[draggedItem.groupIndex].splice(draggedItem.itemIndex, 1);
+            newGroups[targetGroupIndex].push(itemToMove);
+
+            return newGroups;
+        });
     };
 
     return (
@@ -380,7 +433,13 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                 </button>
                                             </div>
                                             {generatedGroups.map((grupo, i) => (
-                                                <div key={i} className="bg-white border border-slate-200 p-4 rounded-2xl relative overflow-hidden">
+                                                <div
+                                                    key={i}
+                                                    className={`bg-white border p-4 rounded-2xl relative overflow-hidden transition-all ${dragOverGroup === i ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md' : 'border-slate-200'}`}
+                                                    onDragOver={(e) => handleDragOver(e, i)}
+                                                    onDragLeave={handleDragLeave}
+                                                    onDrop={(e) => handleDrop(e, i)}
+                                                >
                                                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
                                                     <div className="flex justify-between items-center mb-3">
                                                         <h4 className="font-black text-slate-900 text-xs uppercase tracking-widest">Equipo {i + 1}</h4>
@@ -442,10 +501,16 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                             </button>
                                                         )}
                                                     </div>
-                                                    <div className="flex flex-wrap gap-2">
+                                                    <div className="flex flex-wrap gap-2 min-h-[30px]">
                                                         {grupo.map((alumno, idx) => (
-                                                            <div key={`${alumno}-${idx}`} className="flex items-center gap-1">
-                                                                <span className="px-3 py-1.5 bg-slate-50 border border-slate-100 text-slate-700 rounded-xl text-[11px] font-bold">{alumno}</span>
+                                                            <div
+                                                                key={`${alumno}-${idx}`}
+                                                                className="flex items-center gap-1 cursor-grab active:cursor-grabbing hover:-translate-y-0.5 transition-transform"
+                                                                draggable
+                                                                onDragStart={(e) => handleDragStart(e, i, idx)}
+                                                                onDragEnd={handleDragEnd}
+                                                            >
+                                                                <span className="px-3 py-1.5 bg-slate-50 border border-slate-100 text-slate-700 rounded-xl text-[11px] font-bold shadow-sm">{alumno}</span>
                                                                 <button
                                                                     onClick={() => {
                                                                         setGeneratedGroups(prev => {
@@ -460,6 +525,9 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                                 </button>
                                                             </div>
                                                         ))}
+                                                        {grupo.length === 0 && (
+                                                            <p className="text-[10px] text-slate-400 font-bold uppercase italic w-full text-center py-2 opacity-50">Arrastra aquí</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ))}
@@ -661,7 +729,13 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 pb-12">
                                             {generatedGroups.map((grupo, i) => (
-                                                <div key={i} className="bg-white border border-slate-200 p-6 rounded-[2.5rem] relative overflow-hidden group/card shadow-sm hover:shadow-md hover:border-blue-300 transition-all">
+                                                <div
+                                                    key={i}
+                                                    className={`bg-white border p-6 rounded-[2.5rem] relative overflow-hidden group/card transition-all ${dragOverGroup === i ? 'border-blue-500 shadow-lg ring-4 ring-blue-500/10 scale-[1.02]' : 'border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300'}`}
+                                                    onDragOver={(e) => handleDragOver(e, i)}
+                                                    onDragLeave={handleDragLeave}
+                                                    onDrop={(e) => handleDrop(e, i)}
+                                                >
                                                     <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500" />
                                                     <div className="flex justify-between items-center mb-5">
                                                         <h4 className="font-black text-slate-900 text-xs uppercase tracking-widest">Equipo {i + 1}</h4>
@@ -736,9 +810,15 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                         )}
 
                                                     </div>
-                                                    <div className="flex flex-wrap gap-2.5">
+                                                    <div className="flex flex-wrap gap-2.5 min-h-[40px]">
                                                         {grupo.map((alumno, idx) => (
-                                                            <div key={`${alumno}-${idx}`} className="flex items-center gap-1 group/item">
+                                                            <div
+                                                                key={`${alumno}-${idx}`}
+                                                                className="flex items-center gap-1 group/item cursor-grab active:cursor-grabbing hover:-translate-y-1 transition-transform"
+                                                                draggable
+                                                                onDragStart={(e) => handleDragStart(e, i, idx)}
+                                                                onDragEnd={handleDragEnd}
+                                                            >
                                                                 <span className="px-3.5 py-2 bg-slate-50 border border-slate-100 text-slate-700 rounded-2xl text-[11px] font-bold shadow-sm group-hover/card:bg-white transition-colors">
                                                                     {alumno}
                                                                 </span>
@@ -760,7 +840,9 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                             </div>
                                                         ))}
                                                         {grupo.length === 0 && (
-                                                            <p className="text-[10px] text-slate-400 font-bold uppercase italic p-2">Emtpy Team</p>
+                                                            <div className="flex items-center justify-center w-full py-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Arrastra miembros aquí</p>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>

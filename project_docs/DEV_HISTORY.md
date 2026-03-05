@@ -4,6 +4,13 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.6.7: Drag And Drop en Formador de Equipos
+* **Objetivo:** Permitir arrastrar y reubicar alumnos entre los grupos generados en el Sorteo Mágico de manera interactiva.
+* **Cambios:**
+    - `RuletaModal.tsx`: Se ha integrado la API nativa de Drag & Drop de HTML5. A los *chips* de nombres de alumnos se les ha dado propiedad `draggable=true` con cursores de agarre y efectos de hover.
+    - Se ha dotado a los contenedores de equipo de eventos de recepción (`onDragOver`, `onDragLeave`, `onDrop`) con una sutil animación azul al sobrevolarlos.
+    - Manejo de estados `draggedItem` y manipulación del array de grupos `generatedGroups` para traspasar alumnos automáticamente validando la lógica.
+
 ### Versión 1.6.6: Alineamiento Inferior y Botones Robustos Ajustes IA
 * **Objetivo:** Responder a la solicitud del usuario de agrandar los botones de hardware y alinearlos matemáticamente con el fondo del panel del chat izquierdo.
 * **Cambios:**
