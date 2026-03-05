@@ -4,6 +4,13 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.6.8: Mejoras visuales en UI de Equipos y Dados
+* **Objetivo:** Responder a las solicitudes de diseño y experiencia interactivas mejorando flujos específicos.
+* **Cambios:**
+    - `RuletaModal.tsx`:
+        - Reestructurado el layout del `input` al "*Añadir Integrante*" dentro de Equipos en modo edición para aprovechar todo el ancho horizontal disponible de la tarjeta sin estrechar los botones de guardado.
+        - Se ha rediseñado por completo el SVG paramétrico correspondiente a los Minidados de 12 caras. Ahora representa un pentágono volumétrico limpio y se le ha adjuntado la clase `animate-rolling-dice` y los contenedores `preserve-3d` logrando una asimilación total de animaciones y caídas paramétricas análogas a los dados cúbicos (6 caras).
+
 ### Versión 1.6.7: Drag And Drop en Formador de Equipos
 * **Objetivo:** Permitir arrastrar y reubicar alumnos entre los grupos generados en el Sorteo Mágico de manera interactiva.
 * **Cambios:**

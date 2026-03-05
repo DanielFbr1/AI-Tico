@@ -676,21 +676,43 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                 </div>
                                             ) : (
                                                 <div
-                                                    className={`w-24 h-24 md:w-32 md:h-32 relative text-slate-900 flex items-center justify-center transition-all duration-[1.5s] ease-in-out ${isRollingDice ? 'animate-spin scale-90 blur-[1px]' : 'scale-100 hover:scale-110 drop-shadow-2xl'}`}
+                                                    className={`w-24 h-24 md:w-32 md:h-32 relative preserve-3d transition-transform duration-500 text-slate-900 flex items-center justify-center ${isRollingDice ? 'animate-rolling-dice scale-90' : 'scale-100 hover:scale-110 drop-shadow-2xl hover:-translate-y-2'}`}
+                                                    style={{
+                                                        transform: !isRollingDice ? (
+                                                            val % 4 === 0 ? 'rotateX(0deg) rotateY(0deg)' :
+                                                                val % 4 === 1 ? 'rotateX(5deg) rotateY(5deg) rotateZ(-5deg)' :
+                                                                    val % 4 === 2 ? 'rotateX(-5deg) rotateY(-5deg) rotateZ(5deg)' :
+                                                                        'rotateX(0deg) rotateY(0deg) rotateZ(0deg)'
+                                                        ) : undefined
+                                                    }}
                                                 >
-                                                    <svg viewBox="0 0 24 24" fill="white" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full drop-shadow-xl">
-                                                        <polygon points="12 2 19 6 21 14 16 21 8 21 3 14 5 6" />
-                                                        <polygon points="12 6.5 16.5 10.5 14.5 15.5 9.5 15.5 7.5 10.5" fill="rgba(37,99,235,0.05)" />
-                                                        <line x1="12" y1="2" x2="12" y2="6.5" />
-                                                        <line x1="19" y1="6" x2="16.5" y2="10.5" />
-                                                        <line x1="16" y1="21" x2="14.5" y2="15.5" />
-                                                        <line x1="8" y1="21" x2="9.5" y2="15.5" />
-                                                        <line x1="5" y1="6" x2="7.5" y2="10.5" />
+                                                    <svg viewBox="0 0 24 24" fill="white" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full drop-shadow-xl z-10" style={{ backfaceVisibility: 'hidden' }}>
+                                                        {/* Outer Pentagon */}
+                                                        <polygon points="12 2 22 9 18 21 6 21 2 9" />
+                                                        {/* Inner Pentagon */}
+                                                        <polygon points="12 5.5 18 10 15.5 17 8.5 17 6 10" fill="rgba(37,99,235,0.05)" />
+                                                        {/* Lines connecting outer and inner vertices */}
+                                                        <line x1="12" y1="2" x2="12" y2="5.5" />
+                                                        <line x1="22" y1="9" x2="18" y2="10" />
+                                                        <line x1="18" y1="21" x2="15.5" y2="17" />
+                                                        <line x1="6" y1="21" x2="8.5" y2="17" />
+                                                        <line x1="2" y1="9" x2="6" y2="10" />
 
                                                         {/* Number inside the polygon */}
-                                                        <text x="12" y="12.5" fontSize="4.5" fontWeight="900" textAnchor="middle" fill="currentColor" stroke="none">
+                                                        <text x="12" y="13.5" fontSize="6" fontWeight="900" textAnchor="middle" fill="currentColor" stroke="none">
                                                             {val}
                                                         </text>
+                                                    </svg>
+
+                                                    {/* Contraparte trasera para que no desaparezca en el giro 3D */}
+                                                    <svg viewBox="0 0 24 24" fill="white" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full drop-shadow-xl absolute inset-0 rotate-180" style={{ transform: 'rotateX(180deg) translateZ(-1px)', backfaceVisibility: 'hidden' }}>
+                                                        <polygon points="12 2 22 9 18 21 6 21 2 9" />
+                                                        <polygon points="12 5.5 18 10 15.5 17 8.5 17 6 10" fill="rgba(37,99,235,0.05)" />
+                                                        <line x1="12" y1="2" x2="12" y2="5.5" />
+                                                        <line x1="22" y1="9" x2="18" y2="10" />
+                                                        <line x1="18" y1="21" x2="15.5" y2="17" />
+                                                        <line x1="6" y1="21" x2="8.5" y2="17" />
+                                                        <line x1="2" y1="9" x2="6" y2="10" />
                                                     </svg>
                                                 </div>
                                             )}
