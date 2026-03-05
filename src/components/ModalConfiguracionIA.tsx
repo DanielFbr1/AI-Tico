@@ -190,11 +190,11 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
 
                 {/* Content */}
                 <div className="p-4 md:p-6 bg-gray-50 flex-1 overflow-y-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch min-h-[450px] lg:h-full">
 
                         {/* COLUMNA IZQUIERDA: CHAT (ASISTENTE) */}
-                        <div className="lg:col-span-7 space-y-4">
-                            <div className="bg-white p-5 rounded-3xl shadow-sm border border-indigo-100 ring-4 ring-indigo-50/50">
+                        <div className="lg:col-span-7 h-full flex flex-col">
+                            <div className="bg-white p-5 rounded-3xl shadow-sm border border-indigo-100 ring-4 ring-indigo-50/50 flex flex-col h-full">
                                 <label className="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-wide mb-2">
                                     <Bot className="w-5 h-5 text-indigo-600" />
                                     Tu Asistente Tico
@@ -202,77 +202,79 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                                 <p className="text-xs text-indigo-500 font-medium mb-4">
                                     Pídeme ayuda pedagógica.
                                 </p>
-                                <MentorConfigChat
-                                    currentInstructions={instrucciones}
-                                    onUpdateInstructions={(newInst) => handleAISettingsUpdate(newInst, null)}
-                                    onUpdateSettings={(settings) => handleAISettingsUpdate(undefined as any, settings)}
-                                    currentTone={tono}
-                                />
+                                <div className="flex-1 min-h-0">
+                                    <MentorConfigChat
+                                        currentInstructions={instrucciones}
+                                        onUpdateInstructions={(newInst) => handleAISettingsUpdate(newInst, null)}
+                                        onUpdateSettings={(settings) => handleAISettingsUpdate(undefined as any, settings)}
+                                        currentTone={tono}
+                                    />
+                                </div>
                             </div>
                         </div>
 
                         {/* COLUMNA DERECHA: CONFIGURACIÓN RÁPIDA */}
-                        <div className="lg:col-span-5 space-y-4">
+                        <div className="lg:col-span-5 flex flex-col h-full">
                             {/* Personalidad y Prompt Manual */}
-                            <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="p-1.5 rounded-lg bg-indigo-100 text-indigo-600">
-                                        <Brain className="w-4 h-4" />
+                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex flex-col flex-1 mb-4">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="p-2.5 rounded-xl bg-indigo-100 text-indigo-600">
+                                        <Brain className="w-5 h-5" />
                                     </div>
-                                    <span className="font-bold text-gray-700 text-sm">Instrucción de Comportamiento</span>
+                                    <span className="font-black text-gray-800 text-sm uppercase tracking-wide">Instrucción de Comportamiento</span>
                                 </div>
                                 <textarea
-                                    className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-none transition-all"
+                                    className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-none transition-all"
                                     placeholder="Ej: Actúa como un experto en Roma antigua..."
                                     value={instrucciones}
                                     onChange={(e) => setInstrucciones(e.target.value)}
                                 />
                             </div>
 
-                            {/* Toggles de Hardware/UI */}
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                            {/* Toggles de Hardware/UI (Bottom Aligned) */}
+                            <div className="space-y-3 mt-auto">
+                                <div className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-1.5 rounded-lg ${vozActivada ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
-                                            <Volume2 className="w-4 h-4" />
+                                        <div className={`p-2.5 rounded-xl ${vozActivada ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <Volume2 className="w-5 h-5" />
                                         </div>
-                                        <span className="font-bold text-gray-700 text-sm">Voz de Tico</span>
+                                        <span className="font-bold text-gray-700 text-[15px]">Voz de Tico</span>
                                     </div>
                                     <button
                                         onClick={() => setVozActivada(!vozActivada)}
-                                        className={`w-10 h-5 rounded-full transition-colors relative ${vozActivada ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                                        className={`w-14 h-7 rounded-full transition-colors relative ${vozActivada ? 'bg-indigo-600' : 'bg-gray-300'}`}
                                     >
-                                        <div className={`absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${vozActivada ? 'translate-x-5' : 'translate-x-0'}`} />
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full shadow-md transition-transform ${vozActivada ? 'translate-x-7' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
 
-                                <div className="flex items-center justify-between bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                                <div className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-1.5 rounded-lg ${microfonoActivado ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'}`}>
-                                            <Mic className="w-4 h-4" />
+                                        <div className={`p-2.5 rounded-xl ${microfonoActivado ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <Mic className="w-5 h-5" />
                                         </div>
-                                        <span className="font-bold text-gray-700 text-sm">Micrófono</span>
+                                        <span className="font-bold text-gray-700 text-[15px]">Micrófono</span>
                                     </div>
                                     <button
                                         onClick={() => setMicrofonoActivado(!microfonoActivado)}
-                                        className={`w-10 h-5 rounded-full transition-colors relative ${microfonoActivado ? 'bg-purple-600' : 'bg-gray-300'}`}
+                                        className={`w-14 h-7 rounded-full transition-colors relative ${microfonoActivado ? 'bg-purple-600' : 'bg-gray-300'}`}
                                     >
-                                        <div className={`absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${microfonoActivado ? 'translate-x-5' : 'translate-x-0'}`} />
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full shadow-md transition-transform ${microfonoActivado ? 'translate-x-7' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
 
-                                <div className="flex items-center justify-between bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                                <div className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-1.5 rounded-lg ${frecuenciaEmojis ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                                            <Sparkles className="w-4 h-4" />
+                                        <div className={`p-2.5 rounded-xl ${frecuenciaEmojis ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                            <Sparkles className="w-5 h-5" />
                                         </div>
-                                        <span className="font-bold text-gray-700 text-sm">Usar Emojis</span>
+                                        <span className="font-bold text-gray-700 text-[15px]">Usar Emojis</span>
                                     </div>
                                     <button
                                         onClick={() => setFrecuenciaEmojis(!frecuenciaEmojis)}
-                                        className={`w-10 h-5 rounded-full transition-colors relative ${frecuenciaEmojis ? 'bg-green-500' : 'bg-gray-300'}`}
+                                        className={`w-14 h-7 rounded-full transition-colors relative ${frecuenciaEmojis ? 'bg-green-500' : 'bg-gray-300'}`}
                                     >
-                                        <div className={`absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${frecuenciaEmojis ? 'translate-x-5' : 'translate-x-0'}`} />
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full shadow-md transition-transform ${frecuenciaEmojis ? 'translate-x-7' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
                             </div>

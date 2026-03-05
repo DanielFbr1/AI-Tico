@@ -79,7 +79,7 @@ export function MentorConfigChat({ currentInstructions, onUpdateInstructions, on
     };
 
     return (
-        <div className="flex flex-col h-[320px] bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex flex-col h-full bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg) => (
                     <div

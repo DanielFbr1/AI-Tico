@@ -4,6 +4,12 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.6.6: Alineamiento Inferior y Botones Robustos Ajustes IA
+* **Objetivo:** Responder a la solicitud del usuario de agrandar los botones de hardware y alinearlos matemáticamente con el fondo del panel del chat izquierdo.
+* **Cambios:**
+    - `ModalConfiguracionIA.tsx`: Transformadas las columnas en un espacio `h-full flex` para que los elementos se distribuyan automáticamente. Se aplico `mt-auto` al contenedor inferior de *Toggles* (Voz, Micro, Emojis) obligando a que se alineen perfectamente contra el borde de la fila, equiparando su tamaño con la altura total del chat del asistente de la izquierda. Se restauró el tamaño `h-7`, `w-14` y padding de iconos a los botones.
+    - `MentorConfigChat.tsx`: El input de chat ahora goza de `h-full` nativo para estirarse hasta ocupar la misma columna en Grid.
+
 ### Versión 1.6.5: Pulido UI Configuración IA
 * **Objetivo:** Asegurar que todo el contenido del panel (especialmente los botones de hardware de la derecha) quepan simultáneamente en pantalla sin scroll vertical.
 * **Cambios:**
