@@ -88,8 +88,8 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
         fetchIAConfig();
     }, [proyectoId, grupo, isGlobal]);
 
-    const handleGuardar = async () => {
-        setGuardando(true);
+    const handleGuardar = async (autoGuardado: boolean = false) => {
+        if (!autoGuardado) setGuardando(true);
 
         try {
             const newConfig = {
@@ -112,7 +112,7 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                     .eq('id', grupo.id);
 
                 if (error) throw error;
-                toast.success('Ajustes del grupo actualizados');
+                if (!autoGuardado) toast.success('Ajustes del grupo actualizados');
             } else if (proyectoId) {
                 // 1. Actualizar TODOS los grupos de este proyecto
                 const { error: errorGrupos } = await supabase
@@ -133,17 +133,35 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
 
                 if (errorProyecto) throw errorProyecto;
 
-                toast.success('Ajustes aplicados globalmente');
+                if (!autoGuardado) toast.success('Ajustes aplicados globalmente');
             } else {
-                toast.error('Error: No se pudo identificar el proyecto activo');
+                if (!autoGuardado) toast.error('Error: No se pudo identificar el proyecto activo');
             }
-            onClose();
+            if (!autoGuardado) onClose();
         } catch (error) {
             console.error('Error saving config:', error);
-            toast.error('Error al guardar configuración');
+            if (!autoGuardado) toast.error('Error al guardar configuración');
         } finally {
             setGuardando(false);
         }
+    };
+
+    // Auto-save whenever internal instructions/settings are updated by AI
+    const handleAISettingsUpdate = (newInst: string, newSet: any) => {
+        if (newInst !== undefined) setInstrucciones(newInst);
+
+        if (newSet) {
+            if (newSet.tono) setTono(newSet.tono as any);
+            if (newSet.nivel_exigencia) setNivelExigencia(newSet.nivel_exigencia as any);
+            if (newSet.nivel_apoyo) setNivelApoyo(newSet.nivel_apoyo as any);
+            if (newSet.formato_respuesta) setFormatoRespuesta(newSet.formato_respuesta as any);
+        }
+
+        // Timeout para asegurar que react ha batcheado los sets antes del guardado.
+        setTimeout(() => {
+            handleGuardar(true);
+            toast.success("✨ Instrucciones actualizadas y guardadas por la IA");
+        }, 100);
     };
 
     return (
@@ -186,14 +204,8 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                                 </p>
                                 <MentorConfigChat
                                     currentInstructions={instrucciones}
-                                    onUpdateInstructions={(newInst) => setInstrucciones(newInst)}
-                                    onUpdateSettings={(settings) => {
-                                        if (settings.tono) setTono(settings.tono as any);
-                                        if (settings.nivel_exigencia) setNivelExigencia(settings.nivel_exigencia as any);
-                                        if (settings.nivel_apoyo) setNivelApoyo(settings.nivel_apoyo as any);
-                                        if (settings.formato_respuesta) setFormatoRespuesta(settings.formato_respuesta as any);
-                                        toast.success("Configuración actualizada por IA");
-                                    }}
+                                    onUpdateInstructions={(newInst) => handleAISettingsUpdate(newInst, null)}
+                                    onUpdateSettings={(settings) => handleAISettingsUpdate(undefined as any, settings)}
                                     currentTone={tono}
                                 />
                             </div>
@@ -201,6 +213,21 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
 
                         {/* COLUMNA DERECHA: CONFIGURACIÓN RÁPIDA */}
                         <div className="lg:col-span-5 space-y-6">
+                            {/* Personalidad y Prompt Manual */}
+                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-indigo-100 flex flex-col">
+                                <label className="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-wide mb-2">
+                                    Instrucción de Comportamiento
+                                </label>
+                                <p className="text-[10px] text-gray-500 mb-2 font-medium">
+                                    Texto secreto que define cómo actúa Tico con el alumno. Puedes editarlo o pedirle a Tico en el chat que lo haga por ti.
+                                </p>
+                                <textarea
+                                    className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-none transition-all"
+                                    placeholder="Ej: Actúa como un experto en Roma antigua..."
+                                    value={instrucciones}
+                                    onChange={(e) => setInstrucciones(e.target.value)}
+                                />
+                            </div>
                             {/* Resumen de Ajustes Detectados */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
@@ -283,7 +310,7 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                         Cancelar
                     </button>
                     <button
-                        onClick={handleGuardar}
+                        onClick={() => handleGuardar(false)}
                         disabled={guardando}
                         className={`px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 flex items-center gap-3 ${guardando ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >

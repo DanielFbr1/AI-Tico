@@ -210,7 +210,7 @@ export default function App() {
         {/* Indicador de Versión Global */}
         <div className="fixed bottom-2 right-2 z-[9999] pointer-events-none">
           <span className="bg-slate-900/40 backdrop-blur-md text-white/50 text-[10px] font-black px-2 py-0.5 rounded-full border border-white/5 uppercase tracking-widest">
-            Tico.AI v1.6.2
+            Tico.AI v1.6.3
           </span>
         </div>
       </AuthProvider>

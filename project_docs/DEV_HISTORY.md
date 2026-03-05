@@ -4,6 +4,12 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.6.3: Auto-guardado y Transparencia en Ajustes de Mentor IA
+* **Objetivo:** Garantizar la persistencia inmediata de las reglas dictadas a la IA de ajustes y visibilizar su efecto a los profesores.
+* **Cambios:**
+    - `ModalConfiguracionIA.tsx`: Añadido un nuevo recuadro de texto (`textarea`) a la derecha que expone al profesor exactamente qué "Behavior Prompt" está deduciendo y aplicando el asistente virtual.
+    - Se ha re-escrito la función de guardado interno para soportar el modo silencioso (autoguardado). Ahora, cuando el asistente actualiza su instrucción subyacente porque el profesor se lo pide, la aplicación lo intercepta e impacta inmediatamente en la BDD (Supabase) asegurando que el estudiante lo sufra al instante en su próxima pregunta.
+
 ### Versión 1.6.2: Fix Configuración Mentor IA
 * **Objetivo:** Asegurar que los ajustes definidos por el docente sobre Tico (Mentor IA) se apliquen de forma estricta en la interfaz y comportamiento del alumno.
 * **Cambios:**
