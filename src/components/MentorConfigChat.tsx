@@ -26,7 +26,7 @@ export function MentorConfigChat({ currentInstructions, onUpdateInstructions, on
         {
             id: '1',
             role: 'assistant',
-            content: `¡Hola! Soy tu asistente pedagógico. 🤖\n\nPuedo ayudarte a configurar a Tico (la IA de tus alumnos) o darte ideas para el proyecto.\n\nDime qué necesitas (ej: "Ayúdame con una idea sobre biodiversidad", "Cambia a Tico a un tono socrático", "Haz que Tico sea más exigente").`
+            content: `¡Hola! Soy tu asistente pedagógico. 🤖\n\nPuedo ayudarte a darte ideas para el proyecto u organizar contenidos.\n\nDime qué necesitas (ej: "Ayúdame con una idea sobre biodiversidad", "Haz que actue como un pirata", "Dime un guion para la clase de hoy").`
         }
     ]);
     const [input, setInput] = useState('');

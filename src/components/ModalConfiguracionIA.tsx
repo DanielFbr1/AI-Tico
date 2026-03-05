@@ -200,7 +200,7 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                                     Tu Asistente Tico
                                 </label>
                                 <p className="text-xs text-indigo-500 font-medium mb-4">
-                                    Configura el comportamiento o pídeme ayuda pedagógica.
+                                    Pídeme ayuda pedagógica.
                                 </p>
                                 <MentorConfigChat
                                     currentInstructions={instrucciones}
@@ -214,38 +214,22 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
                         {/* COLUMNA DERECHA: CONFIGURACIÓN RÁPIDA */}
                         <div className="lg:col-span-5 space-y-6">
                             {/* Personalidad y Prompt Manual */}
-                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-indigo-100 flex flex-col">
-                                <label className="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-wide mb-2">
-                                    Instrucción de Comportamiento
-                                </label>
-                                <p className="text-[10px] text-gray-500 mb-2 font-medium">
-                                    Texto secreto que define cómo actúa Tico con el alumno. Puedes editarlo o pedirle a Tico en el chat que lo haga por ti.
+                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 rounded-lg bg-indigo-100 text-indigo-600">
+                                        <Brain className="w-5 h-5" />
+                                    </div>
+                                    <span className="font-bold text-gray-700 text-sm">Instrucción de Comportamiento</span>
+                                </div>
+                                <p className="text-[10px] text-gray-500 mb-3 font-medium ml-[44px]">
+                                    Define cómo actúa Tico con el alumno o pídele al asistente que redacte uno por ti.
                                 </p>
                                 <textarea
-                                    className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-none transition-all"
+                                    className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-none transition-all ml-1"
                                     placeholder="Ej: Actúa como un experto en Roma antigua..."
                                     value={instrucciones}
                                     onChange={(e) => setInstrucciones(e.target.value)}
                                 />
-                            </div>
-                            {/* Resumen de Ajustes Detectados */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
-                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Formato</span>
-                                    <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[11px] font-black uppercase tracking-tight">{formatoRespuesta}</span>
-                                </div>
-                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
-                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Tono</span>
-                                    <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[11px] font-black uppercase tracking-tight">{tono}</span>
-                                </div>
-                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
-                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Exigencia</span>
-                                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-[11px] font-black uppercase tracking-tight">{nivelExigencia}</span>
-                                </div>
-                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex flex-col items-center shadow-sm">
-                                    <span className="text-[10px] uppercase font-bold text-gray-400 mb-1">Apoyo</span>
-                                    <span className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-[11px] font-black uppercase tracking-tight">{nivelApoyo}</span>
-                                </div>
                             </div>
 
                             {/* Toggles de Hardware/UI */}

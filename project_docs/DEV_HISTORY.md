@@ -4,6 +4,12 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.6.4: Rediseño de Configuración IA
+* **Objetivo:** Simplificar la interfaz de Ajustes del Mentor IA eliminando indicadores redundantes y unificando el estilo visual del control avanzado.
+* **Cambios:**
+    - `ModalConfiguracionIA.tsx`: Eliminados los badges de resumen (Tono, Apoyo, Exigencia, Formato) para liberar espacio vertical. El área de texto de `Instrucción de Comportamiento` ha sido completamente rediseñada para compartir la misma estética (bordes y layout) que los controles de hardware inferiores (Altavoz, Emojis, Micros).
+    - `MentorConfigChat.tsx`: Simplificado el mensaje de bienvenida inicial del asistente.
+
 ### Versión 1.6.3: Auto-guardado y Transparencia en Ajustes de Mentor IA
 * **Objetivo:** Garantizar la persistencia inmediata de las reglas dictadas a la IA de ajustes y visibilizar su efecto a los profesores.
 * **Cambios:**
