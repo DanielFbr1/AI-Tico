@@ -347,7 +347,7 @@ export function DashboardDocente({
             {modalAsignarAbierto && grupoParaTareas && (
                 <ModalAsignarTareas
                     grupoNombre={grupoParaTareas.nombre}
-                    faseId={proyectoActual?.fases?.find(f => f.estado === 'actual')?.id || '1'}
+                    faseId={proyectoActual?.fases?.find(f => f.estado === 'actual')?.id || proyectoActual?.fases?.[0]?.id || '1'}
                     proyectoContexto={proyectoActual?.descripcion}
                     onClose={() => setModalAsignarAbierto(false)}
                     onSave={async (nuevosHitos) => {
@@ -356,11 +356,13 @@ export function DashboardDocente({
                         const total = updatedHitos.length;
                         const aprobados = updatedHitos.filter(h => h.estado === 'aprobado').length;
                         const nuevoProgreso = total > 0 ? Math.round((aprobados / total) * 100) : 0;
+                        const nuevoEstado = nuevoProgreso === 100 && total > 0 ? 'Completado' : 'En progreso';
 
                         await onEditarGrupo(grupoParaTareas.id, {
                             ...grupoParaTareas,
                             hitos: updatedHitos,
-                            progreso: nuevoProgreso
+                            progreso: nuevoProgreso,
+                            estado: nuevoEstado
                         });
                         toast.success("Tareas asignadas correctamente");
                     }}

@@ -224,28 +224,48 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                 {/* Winner Overlay (Anuncio de Ganador) */}
                 {showWinnerOverlay && winner && (
                     <div
-                        className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xl animate-in zoom-in duration-300"
+                        className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md animate-in zoom-in duration-300 overflow-hidden"
                         onClick={() => setShowWinnerOverlay(false)}
                     >
-                        <div className="text-center p-8 relative">
+                        {/* Rayos de fondo decorativos */}
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center opacity-30">
+                            <div className="w-[800px] h-[800px] bg-[conic-gradient(from_0deg,transparent_0_340deg,white_360deg)] animate-[spin_4s_linear_infinite]" />
+                            <div className="absolute w-[800px] h-[800px] bg-[conic-gradient(from_180deg,transparent_0_340deg,white_360deg)] animate-[spin_4s_linear_infinite]" />
+                        </div>
+
+                        <div
+                            className="text-center p-10 md:p-14 relative bg-gradient-to-b from-blue-600 to-indigo-900 rounded-[3rem] border-4 border-white/20 shadow-[0_0_100px_rgba(59,130,246,0.6)] transform hover:scale-105 transition-transform duration-500 max-w-xl w-11/12"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <button
                                 onClick={() => setShowWinnerOverlay(false)}
-                                className="absolute -top-4 -right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-xl text-slate-900 hover:scale-110 transition-transform"
+                                className="absolute -top-5 -right-5 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-2xl text-slate-900 hover:scale-110 hover:bg-rose-100 hover:text-rose-600 transition-all z-10"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-6 h-6" />
                             </button>
-                            <div className="w-24 h-24 bg-yellow-400 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-[0_0_50px_rgba(250,204,21,0.5)] animate-bounce">
-                                <Trophy className="w-12 h-12 text-slate-900" />
+
+                            <div className="relative mb-8">
+                                <div className="absolute inset-0 bg-yellow-400 blur-2xl opacity-50 animate-pulse rounded-full" />
+                                <div className="w-28 h-28 bg-gradient-to-tr from-yellow-400 to-amber-300 rounded-full flex items-center justify-center mx-auto relative z-10 shadow-[0_0_0_8px_rgba(255,255,255,0.2)] border-2 border-white animate-bounce">
+                                    <Sparkles className="w-14 h-14 text-white drop-shadow-md" />
+                                </div>
                             </div>
-                            <h3 className="text-white/60 font-black uppercase tracking-[0.3em] text-xs mb-2">¡Ha salido elegido/a!</h3>
-                            <h2 className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter drop-shadow-2xl">
+
+                            <div className="inline-block px-6 py-2 bg-white/10 rounded-full border border-white/20 mb-6 backdrop-blur-md">
+                                <h3 className="text-yellow-300 font-black uppercase tracking-[0.25em] text-[10px] md:text-sm">
+                                    ¡La suerte ha hablado!
+                                </h3>
+                            </div>
+
+                            <h2 className="text-5xl md:text-7xl font-black text-white mb-10 tracking-tight drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] break-words py-4 px-2" style={{ WebkitTextStroke: '2px rgba(255,255,255,0.1)' }}>
                                 {winner}
                             </h2>
+
                             <button
                                 onClick={() => setShowWinnerOverlay(false)}
-                                className="px-12 py-4 bg-white text-slate-900 font-black rounded-2xl hover:bg-yellow-400 transition-all shadow-xl active:scale-95 uppercase tracking-widest text-sm"
+                                className="w-full py-4 bg-white text-indigo-900 font-black rounded-2xl hover:bg-yellow-400 hover:text-slate-900 transition-all shadow-xl active:scale-95 uppercase tracking-widest text-sm border-2 border-transparent hover:border-white/50"
                             >
-                                Genial
+                                ¡Felicidades!
                             </button>
                         </div>
                     </div>
@@ -331,10 +351,11 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                                     const textY = 75 * Math.sin(midAngle);
                                                     const rotationDeg = (midAngle * 180 / Math.PI);
                                                     const fontSize = total > 20 ? "6.5" : total > 15 ? "8.5" : total > 8 ? "11" : "13";
+                                                    const rectWidth = Math.min(80, Math.max(30, alumno.nombre.length * (parseFloat(fontSize) * 0.6)));
                                                     return (
                                                         <g key={`${alumno.id}-${i}`}>
                                                             <path d={d} fill={colors[i % colors.length]} stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                                                            <rect x={textX - 25} y={textY - (parseFloat(fontSize) / 2) - 2} width={50} height={parseFloat(fontSize) + 4} rx="4" fill="rgba(255,255,255,0.2)" transform={`rotate(${rotationDeg + 90}, ${textX}, ${textY})`} className="pointer-events-none" />
+                                                            <rect x={textX - (rectWidth / 2)} y={textY - (parseFloat(fontSize) / 2) - 2} width={rectWidth} height={parseFloat(fontSize) + 4} rx="4" fill="rgba(255,255,255,0.2)" transform={`rotate(${rotationDeg + 90}, ${textX}, ${textY})`} className="pointer-events-none" />
                                                             <text x={textX} y={textY} fill="white" fontSize={fontSize} fontWeight="900" textAnchor="middle" alignmentBaseline="middle" transform={`rotate(${rotationDeg + 90}, ${textX}, ${textY})`} className="pointer-events-none tracking-tight" style={{ paintOrder: 'stroke fill', stroke: 'rgba(0,0,0,0.3)', strokeWidth: '1px', strokeLinejoin: 'round' }}>
                                                                 {alumno.nombre.length > 15 ? alumno.nombre.slice(0, 13) + '..' : alumno.nombre}
                                                             </text>
@@ -931,15 +952,16 @@ export function RuletaModal({ onClose, proyectoId, codigoSala }: RuletaModalProp
                                             const rotationDeg = (midAngle * 180 / Math.PI);
 
                                             const fontSize = total > 20 ? "6.5" : total > 15 ? "8.5" : total > 8 ? "11" : "13";
+                                            const rectWidth = Math.min(80, Math.max(30, alumno.nombre.length * (parseFloat(fontSize) * 0.6)));
 
                                             return (
                                                 <g key={`${alumno.id}-${i}`}>
                                                     <path d={d} fill={colors[i % colors.length]} stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
 
                                                     <rect
-                                                        x={textX - 25}
+                                                        x={textX - (rectWidth / 2)}
                                                         y={textY - (parseFloat(fontSize) / 2) - 2}
-                                                        width={50}
+                                                        width={rectWidth}
                                                         height={parseFloat(fontSize) + 4}
                                                         rx="4"
                                                         fill="rgba(255,255,255,0.2)"

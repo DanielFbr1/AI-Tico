@@ -4,6 +4,17 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 1.6.11: Rediseño Elegante del Ganador en la Ruleta
+*   **Modal de ¡Ha salido elegido! (Sorteo Mágico):**
+    *   Se ha rediseñado completamente el panel modal para la ruleta. Ahora muestra rayos giratorios animados en el fondo, un contenedor con degradados premium azules y sombras profundas, y un elemento central pulsante con la medalla/icono de estrella brillante.
+    *   **Adaptabilidad en Ruleta:** Ya no se truncan horriblemente los nombres largos cuando salen en la ruleta. Se ha implementado un cálculo dinámico de la propiedad matemática `rectWidth`, asegurando que el subrayado (fondo oscurecido) debajo de cada nombre en la ruleta mida siempre lo suficiente (hasta un límite estético) en base a la cantidad de letras.
+
+### Versión 1.6.10: Progreso Dinámico de Grupos
+*   **Progreso Dinámico de Grupos:**
+    *   Se corrigió un error que mantenía las barras de progreso estáticas en 100% cuando se asignaban nuevas tareas a grupos "Completados".
+    *   Se agregó la lógica de reanudar el estado del grupo a "En progreso" al asignar nuevas tareas, posibilitando así recuperar la sensibilidad del medidor visual (batería y cohetes).
+    *   Se repararon los fallbacks de fase para asegurar que las nuevas tareas se muestren en la vista Roadmap.
+
 ### Versión 1.6.9: Rediseño de Indicadores de Progreso
 *   **Nueva visualización de Progreso:** Sustituidas las variantes SVG del componente `LivingTree`.
     *   **Variante "nexus" (Progreso Global):** Ahora muestra la animación de un Cohete Espacial. Pasa de un estado "blueprint" al despegue total con fuego y animación temblor al acumular el porcentaje suficiente.
