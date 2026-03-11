@@ -64,8 +64,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         return res.status(200).json(object);
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error(e);
-        return res.status(500).json({ error: 'Error generando clave dicotómica', details: e.message });
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        return res.status(500).json({ error: 'Error generando clave dicotómica', details: errorMessage });
     }
 }

@@ -24,8 +24,9 @@ export default async function POST(request: Request) {
             headers: { 'Content-Type': 'application/json' },
             status: 200
         });
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error(e);
-        return new Response(JSON.stringify({ error: 'Error generando emojis' }), { status: 500 });
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        return new Response(JSON.stringify({ error: 'Error generando emojis', details: errorMessage }), { status: 500 });
     }
 }

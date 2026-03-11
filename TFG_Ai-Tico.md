@@ -153,7 +153,32 @@ Por otro lado, para el alumnado con Trastorno del Espectro Autista (TEA), el ent
 Este capítulo detalla el proceso de ideación, construcción y aplicación práctica de *Ai-Tico*. Para una mayor claridad expositiva, la metodología se ha dividido en dos grandes bloques: en primer lugar, se expone el proceso de desarrollo técnico y la arquitectura de la plataforma —explicado desde una perspectiva funcional y accesible— y, en segundo lugar, se detalla la guía de uso didáctico, ilustrando cómo el docente y el alumnado interactúan con la herramienta en el día a día del aula.
 
 ### 4.1 Fases de Diseño y Desarrollo Técnico (Cómo se ha hecho la app)
-*(En este apartado explicaremos las fases de creación: desde la idea inicial en Figma hasta la programación real usando herramientas IA. Hablaremos del Branding (colores, logo, identidad) y explicaremos de forma muy sencilla (para un tribunal no técnico) la "arquitectura": qué es el Frontend (lo que se ve), qué es el Backend (Supabase/Base de datos) y cómo se conecta todo).*
+
+El proceso de creación de *Ai-Tico* responde a una metodología de diseño iterativa y centrada en el usuario (el docente y el alumno). Lo que inicialmente se concibió como un mero ejercicio teórico se ha materializado en una aplicación web operativa y global gracias a la integración pionera de herramientas de Inteligencia Artificial en el proceso de desarrollo.
+
+**4.1.1. Del boceto en papel al código IA**
+El proyecto nació de una necesidad real detectada en las aulas: introducir la IA de forma didáctica y segura. En un primer momento, la idea se plasmó mediante bocetos a mano en un cuaderno (*wireframes* de baja fidelidad). El objetivo original era únicamente plantear un prototipo del diseño visual sin funcionalidad programada (diseño de producto). Para ello, los bocetos manuales se trasladaron a la herramienta de diseño digital **Figma**, donde se estructuraron las pantallas y los flujos de interacción. 
+
+Sin embargo, al detectar el vacío existente de herramientas reales que aplicaran este tipo de soluciones en el día a día escolar, se optó por dar un salto metodológico: llevar el prototipo a la programación (*live coding*). Para lograrlo sin ser desarrollador de software profesional, se utilizaron asistentes de programación basados en Inteligencia Artificial (con el agente *Jules* impulsado por **Google AI Pro / Gemini** dentro del entorno **Antigravity**). Esta sinergia humano-máquina permitió transformar los prototipos visuales de Figma en código funcional de alta calidad.
+
+**4.1.2. Inspiración e Identidad Visual (Branding)**
+El diseño visual y la interfaz de usuario (UI) de *Ai-Tico* no son aleatorios; están minuciosamente diseñados para el entorno de Primaria. Para su conceptualización, se realizó un estudio de interfaces *(benchmarking)* de plataformas educativas referentes a nivel mundial:
+*   De plataformas como **Duolingo** y **ClassDojo** se extrapoló el uso de la *gamificación extrema*, el uso de mascotas (avatares redondos, amigables y expresivos) y un sistema visual de recompensas. 
+*   De **Socratic** (de Google), **Khanmigo** y **School.ai** se analizó cómo integrar de forma limpia y accesible una caja de chat conversacional para niños, huyendo de las interfaces frías y corporativas de los asistentes tradicionales.
+*   De propuestas como **Monster Grower de Zespri** se tomó la inspiración para el cuidado evolutivo de la mascota virtual vinculada a acciones saludables o académicas.
+
+La elección de la paleta de colores (tonos vivos, degradados azules y morados) busca estimular visualmente sin llegar a la sobrecarga. Se aplicó un estilo de diseño web conocido como *Glassmorphism* (efecto de cristal esmerilado o difuminado), que dota a la plataforma de un aspecto moderno, limpio y "mágico", facilitando al mismo tiempo la jerarquía visual de los menús. Como símbolo central (isotipo), el uso de un **cohete** representa el despegue cognitivo y el progreso continuo del alumnado, mientras que la mascota "Tico" aporta el anclaje emocional.
+
+**4.1.3. Arquitectura del Sistema (La estructura del colegio digital)**
+Para comprender cómo funciona *Ai-Tico* tecnológicamente, podemos utilizar la metáfora de un centro educativo real, dividido en tres grandes bloques que están interconectados:
+
+1.  **El Frontend ("La fachada y las aulas"):** Es la parte visual, todo lo que el profesor y el alumno ven y tocan en sus pantallas (botones, chat, ruleta, etc.). Toda esta "fachada" está construida con tecnologías modernas y alojada en un servidor de internet llamado **Vercel**, que permite que la aplicación esté disponible a nivel global desde cualquier navegador y dispositivo, sin necesidad de instalación.
+2.  **El Backend ("La secretaría y el archivo"):** Cuando un docente da de alta a un alumno o le suma 10 puntos, esa información no puede perderse al cerrar la pestaña. Para que los datos sean permanentes y seguros, se utiliza **Supabase**, que actúa como la gran base de datos o "archivo central" del colegio. Supabase gestiona de forma encriptada quién inicia sesión (autenticación) y guarda el historial de cada proyecto y las puntuaciones de cada avatar.
+3.  **El Motor de Inteligencia Artificial ("El claustro de expertos"):** Para dotar de inteligencia a la plataforma, *Ai-Tico* no utiliza un único cerebro, sino que orquesta varios modelos especializados:
+    *   **LLaMA:** Es el modelo central utilizado para el "Mentor Socrático". Se eligió este modelo de lenguaje de código abierto por su accesibilidad (es gratuito), su rapidez en las respuestas y porque posee datos suficientes para actuar como un excelente tutor estructurado tras parametrizar correctamente sus instrucciones base.
+    *   **Hugging Face:** Funciona como la biblioteca o el repositorio gigante desde donde se conectan y descargan modelos open-source para tareas específicas de procesamiento de texto.
+    *   **ElevenLabs:** Se encarga del *Text-to-Speech* (texto a voz). Es el sistema que dota a Tico de una voz natural y empática, fundamental para la accesibilidad (DUA) de aquellos alumnos que presentan barreras con la lectoescritura.
+    *   **Nano Banana / Veo3:** Modelos de generación y gestión visual, utilizados para complementar dinámicas específicas dentro del ecosistema de la aplicación.
 
 ### 4.2 Guía de Implementación Didáctica (Cómo usar la app en el aula)
 *(Este será el apartado más extenso. Aquí detallaremos el "paso a paso" pedagógico:
