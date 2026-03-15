@@ -87,19 +87,14 @@ export function LoginPage() {
             }
 
             if (sessionData) {
-                // Actualizar el rol al panel elegido (permite multi-rol con un mismo email)
-                const currentRole = sessionData.user?.user_metadata?.rol;
-                if (currentRole !== targetRole) {
-                    // Actualizar metadata del usuario con el nuevo rol
-                    await supabase.auth.updateUser({
-                        data: { rol: targetRole }
-                    });
+                // SIEMPRE actualizar el rol al panel elegido (permite multi-rol con un mismo email)
+                await supabase.auth.updateUser({
+                    data: { rol: targetRole }
+                });
 
-                    // Actualizar tabla profiles también
-                    await supabase.from('profiles').update({
-                        rol: targetRole
-                    }).eq('id', sessionData.user.id);
-                }
+                await supabase.from('profiles').update({
+                    rol: targetRole
+                }).eq('id', sessionData.user.id);
 
                 setSessionData(sessionData);
                 await refreshPerfil();

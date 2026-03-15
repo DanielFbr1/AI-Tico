@@ -175,7 +175,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const { data: { user: latestUser } } = await supabase.auth.getUser();
             if (latestUser) {
                 setUser(latestUser);
-                fetchPerfil(latestUser);
+                await fetchPerfil(latestUser);
             }
         } catch (err) {
             console.error("❌ Error refrescando perfil:", err);

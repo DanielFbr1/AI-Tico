@@ -86,3 +86,7 @@
 - **Verificación OTP Unificada**: Todos los roles (alumno, profesor, familia) usan el mismo flujo de verificación OTP de 8 dígitos al registrarse.
 - **Login Social para Alumnos**: Los alumnos ahora pueden registrarse/iniciar sesión con Google o Microsoft.
 - **Formulario Unificado**: Todos los roles comparten el mismo formulario de login con campos de nombre, email y contraseña.
+
+## Versión 1.6.16 (Fix Multi-rol con Mismo Email)
+- **Rol Siempre Sincronizado**: Al iniciar sesión, el rol se actualiza siempre al panel elegido (docente/alumno/familia), no solo cuando difiere. Esto garantiza que si entras por "Docente", siempre accedes como docente.
+- **Await en refreshPerfil**: Corregido el timing en `AuthContext.tsx` para que `fetchPerfil` se complete antes de continuar, evitando lecturas de rol desactualizado.
