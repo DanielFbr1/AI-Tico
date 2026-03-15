@@ -26,18 +26,7 @@ export function LoginPage() {
 
         try {
             const targetRole = (view === 'teacher-auth') ? 'profesor' : (view === 'family-auth') ? 'familia' : 'alumno';
-            let authEmail = email;
-
-            // Lógica para Alumnos: Generar Email Sintético
-            if (targetRole === 'alumno') {
-                if (!studentName || !password) {
-                    throw new Error("Por favor completa Nombre y Contraseña");
-                }
-                const cleanUser = studentName.trim().replace(/\s+/g, '').toLowerCase();
-                // Si hay código, lo usamos, si no, generamos uno genérico
-                // NEW FORMAT: username.student@tico.ia (Simplificado)
-                authEmail = `${cleanUser}.student@tico.ia`;
-            }
+            const authEmail = email;
 
             let sessionData = null;
 
@@ -54,7 +43,7 @@ export function LoginPage() {
                 // Prepare metadata
                 const metaData: any = {
                     rol: targetRole,
-                    nombre: targetRole === 'alumno' ? studentName : (studentName || email.split('@')[0])
+                    nombre: studentName || email.split('@')[0]
                 };
 
                 // Only add codigo_sala if provided
@@ -82,24 +71,13 @@ export function LoginPage() {
                     sessionData = data.session;
                     await refreshPerfil();
                 } else {
-                    // No hay sesión inmediata → se requiere confirmación por email
-                    if (targetRole === 'alumno') {
-                        // Alumnos usan email sintético, no debería requerir confirmación
-                        setError('Cuenta creada. Intenta iniciar sesión.');
-                        setIsSignUp(false);
-                        return;
-                    }
-                    // Mostrar pantalla de verificación de email
+                    // No hay sesión inmediata → se requiere confirmación por email (OTP)
                     setEmailSent(true);
                     setResendCooldown(60);
                     return;
                 }
             } else {
                 // Login Normal
-                // Recalc email for student based on input name if simple login
-                // NOTE: This assumes user knows they are 'name.student@tico.ia'. 
-                // UX Improvement: If they type "Juan", auto-suffix it.
-
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email: authEmail,
                     password
@@ -509,6 +487,7 @@ export function LoginPage() {
 
     const isTeacher = view === 'teacher-auth';
     const isFamily = view === 'family-auth';
+    const isStudent = view === 'student-auth';
     const isTeacherOrFamily = isTeacher || isFamily;
 
     // Theme values for Auth form based on role
@@ -554,73 +533,53 @@ export function LoginPage() {
 
                     <form onSubmit={handleAuth} className="space-y-3 md:space-y-4">
 
-                        {/* Campos para ALUMNOS */}
-                        {!isTeacherOrFamily && (
+                        {/* Social Login (compact) - Visible para todos los roles */}
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                            <button
+                                type="button"
+                                onClick={() => handleSocialLogin('google')}
+                                className="flex items-center justify-center gap-2 py-2 bg-white border border-transparent rounded-xl hover:bg-slate-100 transition-all font-bold text-slate-800 text-xs"
+                            >
+                                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-3.5 h-3.5" />
+                                Google
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleSocialLogin('azure')}
+                                className="flex items-center justify-center gap-2 py-2 bg-slate-800 border border-slate-700 rounded-xl hover:bg-slate-700 transition-all font-bold text-white text-xs"
+                            >
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" className="w-3.5 h-3.5" />
+                                Microsoft
+                            </button>
+                        </div>
+
+                        {/* Nombre Completo (solo en registro) */}
+                        {isSignUp && (
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Usuario</label>
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Nombre Completo</label>
                                 <input
                                     type="text"
                                     value={studentName}
                                     onChange={(e) => setStudentName(e.target.value)}
                                     className={`w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
-                                    placeholder="Ej: JuanPerez"
+                                    placeholder={isStudent ? 'Juan Pérez' : isFamily ? 'María López' : 'Profesor García'}
                                     required
                                 />
                             </div>
                         )}
 
-                        {/* Campos para PROFESORES Y FAMILIAS */}
-                        {isTeacherOrFamily && (
-                            <>
-                                {/* Social Login (compact) - Ahora visible tanto en login como registro */}
-                                {isTeacherOrFamily && (
-                                    <div className="grid grid-cols-2 gap-2 mb-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleSocialLogin('google')}
-                                            className="flex items-center justify-center gap-2 py-2 bg-white border border-transparent rounded-xl hover:bg-slate-100 transition-all font-bold text-slate-800 text-xs"
-                                        >
-                                            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-3.5 h-3.5" />
-                                            Google
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleSocialLogin('azure')}
-                                            className="flex items-center justify-center gap-2 py-2 bg-slate-800 border border-slate-700 rounded-xl hover:bg-slate-700 transition-all font-bold text-white text-xs"
-                                        >
-                                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" className="w-3.5 h-3.5" />
-                                            Microsoft
-                                        </button>
-                                    </div>
-                                )}
-
-                                {isSignUp && (
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Nombre Completo</label>
-                                        <input
-                                            type="text"
-                                            value={studentName}
-                                            onChange={(e) => setStudentName(e.target.value)}
-                                            className={`w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
-                                            placeholder={isFamily ? 'María López' : 'Profesor García'}
-                                            required
-                                        />
-                                    </div>
-                                )}
-
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Email</label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className={`w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
-                                        placeholder="correo@ejemplo.com"
-                                        required
-                                    />
-                                </div>
-                            </>
-                        )}
+                        {/* Email */}
+                        <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Email</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className={`w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
+                                placeholder="correo@ejemplo.com"
+                                required
+                            />
+                        </div>
 
                         <div>
                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Contraseña</label>

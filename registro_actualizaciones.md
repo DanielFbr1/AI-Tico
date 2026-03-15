@@ -80,3 +80,9 @@
 - **Notificaciones por Email**: Al enviar un mensaje en el chat profesor-familia, el destinatario recibe una notificación por email con el contenido del mensaje y un enlace para abrir la app.
 - **Edge Function `notify-chat`**: Nueva función serverless desplegada en Supabase que envía emails automáticos vía Gmail SMTP.
 - **Database Trigger**: Trigger `trigger_notify_chat` en la tabla `mensajes_familia_profesor` que dispara la Edge Function automáticamente al insertar un nuevo mensaje.
+
+## Versión 1.6.15 (Login con Email Real para Alumnos)
+- **Email Real para Alumnos**: Los alumnos ahora inician sesión con email real + contraseña, igual que profesores y familias. Se eliminó el email sintético `@tico.ia`.
+- **Verificación OTP Unificada**: Todos los roles (alumno, profesor, familia) usan el mismo flujo de verificación OTP de 8 dígitos al registrarse.
+- **Login Social para Alumnos**: Los alumnos ahora pueden registrarse/iniciar sesión con Google o Microsoft.
+- **Formulario Unificado**: Todos los roles comparten el mismo formulario de login con campos de nombre, email y contraseña.
