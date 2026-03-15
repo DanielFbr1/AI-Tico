@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Users, Check, Tag, UserPlus, Radio, Loader2 } from 'lucide-react';
-import { Grupo, AlumnoConectado } from '../types';
+import { X, Plus, Trash2, Users, Check, UserPlus, Loader2 } from 'lucide-react';
+import { Grupo } from '../types';
 import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 
 interface ModalCrearGrupoProps {
   onClose: () => void;
@@ -54,17 +55,27 @@ export function ModalCrearGrupo({ onClose, onCrear, grupoEditando, proyectoId, c
   };
 
   const handleAgregarMiembro = () => {
-    if (nuevoMiembro.trim() && !miembros.includes(nuevoMiembro.trim())) {
-      setMiembros([...miembros, nuevoMiembro.trim()]);
-      setNuevoMiembro('');
+    const trimmed = nuevoMiembro.trim();
+    if (trimmed) {
+      // Búsqueda case-insensitive para evitar duplicados en la lista de miembros
+      const alreadyExists = miembros.some(m => m.toLowerCase() === trimmed.toLowerCase());
+      if (!alreadyExists) {
+        setMiembros([...miembros, trimmed]);
+        setNuevoMiembro('');
+      } else {
+        toast.error('Este alumno ya está en el equipo');
+      }
     }
   };
 
   const handleToggleMiembroOnline = (nombreAlumno: string) => {
-    if (miembros.includes(nombreAlumno)) {
-      setMiembros(miembros.filter(m => m !== nombreAlumno));
+    const normalizedName = nombreAlumno.trim();
+    const isMember = miembros.some(m => m.toLowerCase() === normalizedName.toLowerCase());
+
+    if (isMember) {
+      setMiembros(miembros.filter(m => m.toLowerCase() !== normalizedName.toLowerCase()));
     } else {
-      setMiembros([...miembros, nombreAlumno]);
+      setMiembros([...miembros, normalizedName]);
     }
   };
 
@@ -143,33 +154,71 @@ export function ModalCrearGrupo({ onClose, onCrear, grupoEditando, proyectoId, c
           </div>
 
           <div className="space-y-6 md:space-y-8">
-            {/* Selección de Alumnos Registrados */}
+            {/* Buscador / Añadidor Manual */}
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.15em] px-1">
-                <Users className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-500" />
-                Alumnos Registrados
+                <UserPlus className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" />
+                Añadir Alumno manualmente
               </label>
-              <div className="bg-emerald-50/50 rounded-[2rem] p-4 md:p-6 border-2 border-emerald-100/50">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={nuevoMiembro}
+                  onChange={(e) => setNuevoMiembro(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAgregarMiembro())}
+                  className="flex-1 px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-blue-500 focus:bg-white transition-all font-bold text-slate-700 text-sm outline-none"
+                  placeholder="Nombre del alumno..."
+                />
+                <button
+                  type="button"
+                  onClick={handleAgregarMiembro}
+                  disabled={!nuevoMiembro.trim()}
+                  className="px-4 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-100"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Selección de Alumnos Registrados */}
+            <div className="space-y-3">
+              <label className="flex items-center justify-between text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.15em] px-1">
+                <div className="flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-500" />
+                  Alumnos en la Sala ({codigoSala})
+                </div>
+                <button 
+                  type="button" 
+                  onClick={fetchAlumnosClase}
+                  className="text-[9px] text-emerald-600 hover:text-emerald-700 underline font-black uppercase tracking-tighter"
+                >
+                  Actualizar lista
+                </button>
+              </label>
+              <div className="bg-emerald-50/50 rounded-[2rem] p-4 md:p-6 border-2 border-emerald-100/50 min-h-[120px]">
                 {loadingAlumnos ? (
                   <div className="flex items-center justify-center p-8">
                     <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
                   </div>
                 ) : alumnosClase.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {alumnosClase.map((alumno: any) => (
-                      <button
-                        key={alumno.id}
-                        type="button"
-                        onClick={() => handleToggleMiembroOnline(alumno.nombre)}
-                        className={`px-3 md:px-4 py-2 md:py-2.5 rounded-xl border-2 transition-all text-[11px] md:text-xs font-black uppercase tracking-wider flex items-center gap-2 active:scale-95 ${miembros.includes(alumno.nombre)
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-200'
-                          : 'bg-white text-emerald-700 border-white hover:border-emerald-200'
-                          }`}
-                      >
-                        {miembros.includes(alumno.nombre) && <Check className="w-3 md:w-4 h-3 md:h-4" />}
-                        {alumno.nombre}
-                      </button>
-                    ))}
+                    {alumnosClase.map((alumno: any) => {
+                      const isSelected = miembros.some(m => m.toLowerCase() === alumno.nombre.toLowerCase());
+                      return (
+                        <button
+                          key={alumno.id}
+                          type="button"
+                          onClick={() => handleToggleMiembroOnline(alumno.nombre)}
+                          className={`px-3 md:px-4 py-2 md:py-2.5 rounded-xl border-2 transition-all text-[11px] md:text-xs font-black uppercase tracking-wider flex items-center gap-2 active:scale-95 ${isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-200'
+                            : 'bg-white text-emerald-700 border-white hover:border-emerald-200'
+                            }`}
+                        >
+                          {isSelected && <Check className="w-3 md:w-4 h-3 md:h-4" />}
+                          {alumno.nombre}
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-6 px-4">

@@ -91,6 +91,12 @@
 - **Rol Siempre Sincronizado**: Al iniciar sesión, el rol se actualiza siempre al panel elegido (docente/alumno/familia), no solo cuando difiere. Esto garantiza que si entras por "Docente", siempre accedes como docente.
 - **Await en refreshPerfil**: Corregido el timing en `AuthContext.tsx` para que `fetchPerfil` se complete antes de continuar, evitando lecturas de rol desactualizado.
 
+## v1.6.18
+- Añadida funcionalidad para añadir alumnos manualmente a los grupos mediante nombre.
+- Mejorada la gestión de miembros en el modal de grupos (búsqueda case-insensitive).
+- Añadido botón de actualización manual de la lista de alumnos en la sala.
+- Corregido error en el toggle de miembros que podía causar duplicados.
+
 ## Versión 1.6.17 (Observaciones Visibles en Panel Familia)
 - **Fix Observaciones**: Las observaciones del profesor ahora se muestran correctamente en el panel de familia. Se corrigió un bug de coincidencia case-sensitive en los nombres de alumnos entre tablas.
 - **Sección Siempre Visible**: La sección "Observaciones del Profesor" ahora aparece siempre, mostrando "Sin observaciones registradas" cuando no hay ninguna.
