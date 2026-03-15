@@ -75,3 +75,8 @@
 - **Código OTP de 6 dígitos**: El registro ahora envía un código numérico al email en lugar de un enlace, solucionando el problema de escáneres de seguridad que consumían los enlaces de verificación.
 - **Pantalla OTP Premium**: Interfaz con 6 cajas individuales para introducir el código, con auto-focus, soporte de pegar (paste) y feedback visual.
 - **Verificación Manual**: El usuario introduce el código recibido por email y lo verifica directamente en la app con `verifyOtp`.
+
+## Versión 1.6.14 (Notificaciones de Chat por Email)
+- **Notificaciones por Email**: Al enviar un mensaje en el chat profesor-familia, el destinatario recibe una notificación por email con el contenido del mensaje y un enlace para abrir la app.
+- **Edge Function `notify-chat`**: Nueva función serverless desplegada en Supabase que envía emails automáticos vía Gmail SMTP.
+- **Database Trigger**: Trigger `trigger_notify_chat` en la tabla `mensajes_familia_profesor` que dispara la Edge Function automáticamente al insertar un nuevo mensaje.
