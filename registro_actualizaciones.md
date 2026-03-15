@@ -91,6 +91,10 @@
 - **Rol Siempre Sincronizado**: Al iniciar sesión, el rol se actualiza siempre al panel elegido (docente/alumno/familia), no solo cuando difiere. Esto garantiza que si entras por "Docente", siempre accedes como docente.
 - **Await en refreshPerfil**: Corregido el timing en `AuthContext.tsx` para que `fetchPerfil` se complete antes de continuar, evitando lecturas de rol desactualizado.
 
+## v1.6.19
+- Corregido error en las notificaciones del chat docente: los avisos rojos ahora desaparecen correctamente en tiempo real al leer los mensajes.
+- Mejorada la sincronización del contador de mensajes no leídos entre componentes.
+
 ## v1.6.18
 - Añadida funcionalidad para añadir alumnos manualmente a los grupos mediante nombre.
 - Mejorada la gestión de miembros en el modal de grupos (búsqueda case-insensitive).

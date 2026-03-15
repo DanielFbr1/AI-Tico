@@ -26,9 +26,10 @@ interface ModalChatAlumnosDocenteProps {
     docenteId: string;
     docenteNombre: string;
     grupos: Grupo[];
+    onMessagesRead?: () => void;
 }
 
-export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNombre, grupos }: ModalChatAlumnosDocenteProps) {
+export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNombre, grupos, onMessagesRead }: ModalChatAlumnosDocenteProps) {
     const [alumnos, setAlumnos] = useState<AlumnoChatInfo[]>([]);
     const [alumnoSeleccionado, setAlumnoSeleccionado] = useState<string | null>(null);
     const [mensajes, setMensajes] = useState<Record<string, Mensaje[]>>({});
@@ -195,6 +196,8 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
                 [alumnoId]: thread.map(m => m.sender_id !== docenteId ? { ...m, leido: true } : m)
             };
         });
+        
+        if (onMessagesRead) onMessagesRead();
     };
 
     const getTiempoTranscurrido = (createdString: string) => {

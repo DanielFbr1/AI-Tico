@@ -135,26 +135,22 @@ export function DashboardDocente({
 
             studentSub = supabase.channel(`student_msgs_docente_${user.id}`)
                 .on('postgres_changes', {
-                    event: 'INSERT',
+                    event: '*',
                     schema: 'public',
                     table: 'mensajes_profesor_alumno',
                     filter: `profesor_user_id=eq.${user.id}`
                 }, payload => {
-                    if (payload.new.sender_id !== user.id && !payload.new.leido) {
-                        fetchUnreadStudentMessages();
-                    }
+                    fetchUnreadStudentMessages();
                 }).subscribe();
 
             familySub = supabase.channel(`family_msgs_docente_${user.id}`)
                 .on('postgres_changes', {
-                    event: 'INSERT',
+                    event: '*',
                     schema: 'public',
                     table: 'mensajes_familia_profesor',
                     filter: `profesor_user_id=eq.${user.id}`
                 }, payload => {
-                    if (payload.new.sender_id !== user.id && !payload.new.leido) {
-                        fetchUnreadFamilyMessages();
-                    }
+                    fetchUnreadFamilyMessages();
                 }).subscribe();
         }
 
@@ -383,6 +379,25 @@ export function DashboardDocente({
                     docenteId={user?.id || 'profesor-local'}
                     docenteNombre={perfil?.nombre || 'Docente'}
                     grupos={grupos}
+                    onMessagesRead={() => {
+                        const fetchUnreadStudentMessages = async () => {
+                            try {
+                                const { data, error } = await supabase
+                                    .from('mensajes_profesor_alumno')
+                                    .select('id')
+                                    .eq('profesor_user_id', user!.id)
+                                    .neq('sender_id', user!.id)
+                                    .eq('leido', false);
+
+                                if (!error && data) {
+                                    setUnreadStudentMessages(data.length);
+                                }
+                            } catch (err) {
+                                console.error('Error fetching unread student messages:', err);
+                            }
+                        };
+                        fetchUnreadStudentMessages();
+                    }}
                 />
             )}
 
