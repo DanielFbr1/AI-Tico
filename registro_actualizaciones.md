@@ -1,5 +1,25 @@
 # Registro de Actualizaciones
 
+## Versión 1.2.7 (Juego Oraciones - Arreglo Definitivo Drag & Drop Tablets)
+- **Reversión Híbrida Inteligente:** Se recupera el Arrastre y el Toque Simple.
+- **Bloqueo nativo del scroll (`touch-none`):** Se ha añadido la clase CSS a las tarjetas y cajas para que los navegadores móviles como Android o Safari no intenten desplazar la pantalla al interactuar con ellas. Esto es la pieza central que soluciona de raíz el fallo clásico del Polyfill.
+- **Arrastre instántaneo (50ms):** Reducido sustancialmente el retraso inicial al tocar una tarjeta. Gracias al bloqueo de scroll, ahora el dedo "engancha" la tarjeta de forma casi automática, sin necesidad de dejar el dedo quieto y pulsado medio segundo.
+
+## Versión 1.2.5 (Juego de Oraciones - Interacción Táctil y Diccionario)
+- **Modo Tacto Inteligente:** Eliminado el problemático "Drag & Drop" en tablets, siendo sustituido por un sistema de toques secuenciales. Se selecciona la carta deseada con un tap (destacándose visualmente) y se mueve a su posición presionando el slot vacío.
+- **Diccionario:** Integrada la lectura de superlativos ("rapidísimo") hacia su raíz para que ARASAAC devuelva el pictograma correspondiente en los dictados extremos sin arrojar un error 404.
+
+## Versión 1.2.4 (Corrección de Eventos Táctiles y Mejoras UI)
+- **Correcciones Tablets:** Afinadas las configuraciones del Polyfill para pantallas móviles. Añadido `touch-action: none` sobre los elementos jugables, previniendo que la pantalla scrollee accidentalmente, además de introducir un límite temporal de milisegundos para diferenciar entre toques normales y arrastres intencionales.
+- **Aciertos:** Color azul para la estadística de final de nivel que permite a los docentes identificar el progreso rápidamente.
+
+## Versión 1.2.3 (Juego de Oraciones - UX Pediátrica)
+- **Game Over Positivo:** Rediseño íntegro de la pantalla final. El contador de fallos (Aciertos: X/10) ha sido reducido a un texto discreto inferior para uso exclusivo del docente. El foco principal para el niño ahora es una enorme tarjeta de recompensa dorada que celebra los "Puntos Mágicos" ganados, evitando deprimir al estudiante tras la sesión.
+
+## Versión 1.2.2 (Juego de Oraciones - Soporte Tablet y Audio)
+- **Soporte para Tablets:** Implementado un sistema ("polyfill") para habilitar el arrastrar y soltar (drag & drop) nativamente en pantallas táctiles como iPads y tablets Samsung.
+- **Control de Audio (Mute):** Agregado botón universal para silenciar completamente el audio en la aplicación y corregido fallo para que el audio se desbloquee automáticamente al arrancar el juego en un dispositivo móvil.
+
 ## Versión 1.2.1 (Ortografía Independiente, Puntuaciones Dinámicas y UX)
 - **Separación Ortográfica:** El sistema de "Evaluar Ortografía" en el juego de oraciones ahora tiene dos opciones divididas e independientes: "Mayúsculas Iniciales" y "Acentos y Tildes", permitiendo una personalización aún más fina para cada alumno.
 - **Corrección In-Situ:** Cuando los alumnos cometen un error armando la oración, las tarjetas ya no rebotan a la bandeja inferior. Ahora se quedan "pegadas" en la pantalla de juego para que el alumno analice su error y pueda corregirlo visualmente simplemente intercambiando las posiciones. 
@@ -44,3 +64,9 @@
 
 ## Versión 4.1.1
 - **Documentación Funcional**: Se ha creado y añadido a la base del proyecto el archivo `features.md` el cual recolecta un resumen en formato de lista de las principales funcionalidades de la plataforma.
+
+## Versión 1.6.12 (Confirmación de Email en Registro)
+- **Pantalla de Verificación de Email**: Al registrarse como Docente o Familia, se muestra una pantalla visual con instrucciones para verificar el email en lugar de un simple `alert()`.
+- **Reenvío de Email**: Añadido botón para reenviar el email de confirmación con cooldown de 60 segundos para evitar spam.
+- **Redirección Post-Confirmación**: Configurado `emailRedirectTo` en el registro para que el enlace de confirmación redirija correctamente a la app.
+- **Detección de Enlaces Expirados**: La app ahora detecta errores de verificación en la URL y muestra un toast informativo cuando un enlace ha expirado o es inválido.

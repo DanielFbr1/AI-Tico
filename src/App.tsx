@@ -67,6 +67,24 @@ function AppContent() {
         window.location.href = window.location.origin;
       });
     }
+
+    // Detectar errores de verificación de email en la URL
+    const errorParam = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
+    if (errorParam) {
+      const msg = errorDescription
+        ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+        : 'Error de verificación';
+      console.warn('⚠️ Error de Auth en URL:', errorParam, msg);
+      // Mostrar toast con el error
+      import('sonner').then(({ toast }) => {
+        toast.error('El enlace de verificación ha expirado o no es válido. Solicita uno nuevo desde el registro.', {
+          duration: 8000,
+        });
+      });
+      // Limpiar la URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const [currentScreen, setCurrentScreen] = useState<'projects' | 'project-detail' | 'group-detail' | 'tico-full'>('projects');
@@ -209,7 +227,7 @@ export default function App() {
         <Toaster position="top-right" richColors />
         <div className="fixed bottom-2 right-2 flex flex-col items-end gap-1 opacity-50 z-50 pointer-events-none">
           <span className="text-[10px] font-mono text-slate-400 bg-white/80 px-2 py-1 rounded-md border border-slate-200 shadow-sm backdrop-blur-sm">
-            Tico.AI v1.6.11
+            Tico.AI v1.6.12
           </span>
           {/* The 'session' variable is not defined in this scope. If intended, it should be passed or fetched here. */}
           {/* {session && (

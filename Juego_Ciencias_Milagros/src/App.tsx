@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { Layers, ListTree } from 'lucide-react';
 import DichotomousKey from './games/DichotomousKey';
 import TrophicPyramid from './games/TrophicPyramid';
-import ChatBuilder from './games/ChatBuilder';
 
 function App() {
   const [activeGame, setActiveGame] = useState<'menu' | 'dicotomic' | 'trophic'>('menu');
-  const [showBuilder, setShowBuilder] = useState(false);
 
   if (activeGame === 'menu') {
     return (
@@ -58,7 +56,7 @@ function App() {
       <header className="relative flex flex-col sm:flex-row justify-between items-center bg-white/90 backdrop-blur-md p-4 px-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 mb-6 sm:mb-8 sticky top-4 z-40 min-h-[80px] gap-4 sm:gap-0">
         <div className="flex w-full sm:w-1/3 justify-center sm:justify-start z-10">
           <button
-            onClick={() => { setActiveGame('menu'); setShowBuilder(false); }}
+            onClick={() => { setActiveGame('menu'); }}
             className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl font-bold text-slate-600 hover:text-slate-800 transition-colors flex items-center gap-2 shadow-sm"
           >
             <span>←</span> Volver al Menú
@@ -82,32 +80,11 @@ function App() {
         </div>
 
         <div className="flex w-full sm:w-1/3 justify-center sm:justify-end z-10">
-          <div className="relative">
-            <button
-              onClick={() => setShowBuilder(!showBuilder)}
-              className={`transition-all duration-300 rounded-full px-5 py-2.5 font-bold flex items-center gap-2 shadow-md hover:shadow-lg border-2 text-sm ${showBuilder ? 'bg-purple-600 text-white border-purple-700' : 'bg-purple-100 hover:bg-purple-200 text-purple-800 border-purple-200'}`}
-            >
-              <span className="text-lg">🤖</span> <span className="inline">Creador IA</span>
-            </button>
-
-            {showBuilder && (
-              <div className="absolute right-0 top-14 w-[350px] md:w-[450px] max-h-[calc(100vh-100px)] overflow-y-auto z-50 bg-white/95 backdrop-blur-3xl p-5 rounded-3xl shadow-[0_20px_60px_-15px_rgba(147,51,234,0.4)] border-2 border-purple-200 flex flex-col animate-in fade-in slide-in-from-top-4 duration-200 origin-top-right">
-                <button onClick={() => setShowBuilder(false)} className="sticky top-0 z-10 text-slate-400 hover:text-slate-700 font-bold mb-3 self-end text-sm transition-colors bg-slate-100 hover:bg-slate-200 p-2 rounded-full leading-none">
-                  ✕
-                </button>
-                <ChatBuilder
-                  activeGame={activeGame}
-                  title={activeGame === 'dicotomic' ? "Generador de Claves" : "Generador de Cadenas"}
-                  description={activeGame === 'dicotomic' ? "Genera de dos formas: 1) Dame solo la lista de especies (máx 10). 2) Dame las especies y las preguntas exactas que quieres usar." : "Genera de dos formas: 1) Dime el ecosistema (ej: Sabana). 2) Dame una lista de 5 especies concretas para armarla."}
-                  placeholder="Escribe tus instrucciones para la IA aquí..."
-                />
-              </div>
-            )}
-          </div>
+          {/* AI Creator button removed */}
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-6xl mx-auto relative">
+      <main className="flex-1 w-full max-w-6xl mx-auto relative text-center">
         {activeGame === 'dicotomic' && <DichotomousKey />}
         {activeGame === 'trophic' && <TrophicPyramid />}
       </main>

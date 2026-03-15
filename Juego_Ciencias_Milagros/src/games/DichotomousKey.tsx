@@ -3,7 +3,7 @@ import { SPECIES_DB, getSpeciesForDifficulty, type Species, type Difficulty } fr
 import { fetchWikiImage } from '../utils/wiki';
 
 // ====== VERSION ======
-const VERSION = "v4.2.1";
+const VERSION = "v4.3.0";
 
 const ARASAAC_URL = (pictoId: number) => `https://static.arasaac.org/pictograms/${pictoId}/${pictoId}_500.png`;
 
@@ -283,25 +283,10 @@ export default function DichotomousKey() {
         return bestQ;
     }, [candidates, difficulty, skippedQuestions]);
 
-    const [dynamicEmoji, setDynamicEmoji] = useState<string | null>(null);
-
     useEffect(() => {
         if (nextQuestion && nextQuestion.text !== prevQuestionRef.current) {
             prevQuestionRef.current = nextQuestion.text;
             speak(nextQuestion.text);
-
-            // Fetch live emojis from AI
-            setDynamicEmoji(null); // Reset while loading
-            fetch('/api/generate-emojis', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: nextQuestion.text })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.emojis) setDynamicEmoji(data.emojis);
-                })
-                .catch(err => console.error("Error fetching dynamic emojis", err));
         }
     }, [nextQuestion]);
 
@@ -334,15 +319,6 @@ export default function DichotomousKey() {
         setEditingLevelId(null);
     };
 
-    const addMockCustomTree = () => {
-        const mockSpeciesInfo = Object.values(SPECIES_DB).slice(0, 5); // Just pick 5 random species
-        const newLevel: CustomLevel = {
-            id: Date.now().toString(),
-            label: "Mi Clave Árboles (AI Test)",
-            species: mockSpeciesInfo
-        };
-        updateCustomLevels(prev => [...prev, newLevel]);
-    };
 
     const resetGame = useCallback(() => {
         setDifficulty(null); setCandidates([]); setHistory([]); setSkippedQuestions(new Set());
@@ -388,11 +364,6 @@ export default function DichotomousKey() {
                     ))}
                 </div>
 
-                <div className="mt-8">
-                    <button onClick={addMockCustomTree} className="text-purple-600 bg-purple-100 hover:bg-purple-200 px-6 py-2.5 rounded-full font-bold transition-colors shadow-sm text-sm flex items-center gap-2 border border-purple-200 hover:border-purple-300">
-                        <span>🪄</span> Simular árbol generado por IA (Test)
-                    </button>
-                </div>
 
                 <p className="mt-6 text-gray-400 text-xs">{VERSION}</p>
             </div>
@@ -586,7 +557,7 @@ export default function DichotomousKey() {
                             <div className="w-36 h-36 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-[1.5rem] p-1 flex items-center justify-center flex-shrink-0 shadow-inner z-10">
                                 <div className="w-full h-full bg-white rounded-[1.25rem] flex items-center justify-center relative">
                                     <img src={ARASAAC_URL(nextQuestion.pictoId)} alt="picto" className="w-[80%] h-[80%] object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-                                    <span className="text-5xl hidden drop-shadow-sm leading-none">{dynamicEmoji ?? nextQuestion.fallbackEmoji}</span>
+                                    <span className="text-5xl hidden drop-shadow-sm leading-none">{nextQuestion.fallbackEmoji}</span>
                                 </div>
                             </div>
                             <h3 className="text-3xl md:text-4xl font-extrabold text-slate-800 text-center md:text-left leading-tight md:leading-snug z-10" style={{ fontFamily: "'Patrick Hand', cursive" }}>{nextQuestion.text}</h3>

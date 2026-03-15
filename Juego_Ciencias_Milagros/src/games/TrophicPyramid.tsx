@@ -226,17 +226,6 @@ export default function TrophicPyramid() {
         setEditingLevelId(null);
     };
 
-    const addMockCustomPyramid = () => {
-        const mockSpeciesInfo = CHAINS[0].map(id => SPECIES_DB.find(s => s.id === id)!);
-        const newLevel: CustomEcosystem = {
-            id: Date.now().toString(),
-            label: "Mi Ecosistema (AI Test)",
-            species: mockSpeciesInfo,
-            emoji: "🧪",
-            colorClass: "bg-orange-500"
-        };
-        updateCustomLevels([...customLevels, newLevel]);
-    };
 
     if (!isPlaying) {
         return (
@@ -268,11 +257,6 @@ export default function TrophicPyramid() {
                     ))}
                 </div>
 
-                <div className="mt-8">
-                    <button onClick={addMockCustomPyramid} className="text-purple-600 bg-purple-100 hover:bg-purple-200 px-6 py-2.5 rounded-full font-bold transition-colors shadow-sm text-sm flex items-center gap-2 border border-purple-200 hover:border-purple-300">
-                        <span>🪄</span> Simular ecosistema generado por IA (Test)
-                    </button>
-                </div>
             </div>
         );
     }

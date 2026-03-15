@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego Pictogramas ARASAAC</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Google Fonts: Patrick Hand -->
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+    <style>
+        .font-patrick {
+            font-family: 'Patrick Hand', cursive;
+        }
+
+        /* Confetti animation for success */
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .confetti {
+            position: absolute;
+            animation: confettiFall 3s linear forwards;
+        }
+
+        /* Prevent default touch action on draggables to allow polyfill catching the events */
+        [draggable="true"] {
+            touch-action: none;
+        }
+    </style>
+
+    <!-- Generic Favicon to prevent 404 -->
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
+
+    <!-- Polyfill for Drag & Drop on Mobile/Tablets -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/scroll-behaviour.min.js"></script>
+    <script>
+        window.MobileDragDrop.polyfill({
+            dragImageTranslateOverride: window.MobileDragDrop.scrollBehaviourDragImageTranslateOverride,
+            holdToDrag: 50 // Casi instantáneo, ya que usamos touch-action: none para prevenir el scroll en esas áreas
+        });
+        document.addEventListener("touchmove", function () { }, { passive: false });
+    </script>
+</head>
+
+<body class="bg-sky-50 min-h-screen font-sans text-gray-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useRef } = React;
+
+        // --- ICONS (Inline SVGs) ---
+        const Volume2 = ({ className = "w-6 h-6", onClick }) => (
+            <svg onClick={onClick} className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: onClick ? 'pointer' : 'default' }}>
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+        );
+        const VolumeX = ({ className = "w-6 h-6", onClick }) => (
+            <svg onClick={onClick} className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: onClick ? 'pointer' : 'default' }}>
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <line x1="23" y1="9" x2="17" y2="15"></line>
+                <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+        );
+        const Star = ({ className = "w-6 h-6", fill = "none", style = {} }) => (
+            <svg className={className} style={style} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+        );
+        const Play = ({ className = "w-6 h-6", fill = "none" }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+        );
+        const CheckCircle = ({ className = "w-6 h-6" }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+        );
+        const AlertCircle = ({ className = "w-6 h-6" }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+        );
+        const Layers = ({ className = "w-6 h-6" }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 12 12 17 22 12"></polyline><polyline points="2 17 12 22 22 17"></polyline></svg>
+        );
+        const ImageIcon = ({ className = "w-6 h-6" }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+        );
+        const TypeIcon = ({ className = "w-6 h-6" }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+        );
+        const Keyboard = ({ className = "w-6 h-6" }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="8" x2="6.01" y2="8"></line><line x1="10" y1="8" x2="10.01" y2="8"></line><line x1="14" y1="8" x2="14.01" y2="8"></line><line x1="18" y1="8" x2="18.01" y2="8"></line><line x1="8" y1="12" x2="8.01" y2="12"></line><line x1="12" y1="12" x2="12.01" y2="12"></line><line x1="16" y1="12" x2="16.01" y2="12"></line><line x1="7" y1="16" x2="17" y2="16"></line></svg>
+        );
+        const Eye = ({ className = "w-6 h-6" }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        );
+
+        // --- ARASAAC CATEGORIES & API ---
+        const WORD_CATEGORIES = {
+            // Amarillo: Artículos, pronombres
+            "el": "yellow", "la": "yellow", "los": "yellow", "las": "yellow",
+            "un": "yellow", "una": "yellow", "unos": "yellow", "unas": "yellow",
+            "mi": "yellow", "tu": "yellow", "su": "yellow", "me": "yellow", "te": "yellow", "se": "yellow",
+
+            // Gris: Preposiciones, conjunciones
+            "y": "gray", "en": "gray", "con": "gray", "de": "gray", "al": "gray", "del": "gray",
+            "a": "gray", "por": "gray", "para": "gray", "que": "gray",
+
+            // Verde: Verbos
+            "come": "green", "comen": "green", "bebe": "green", "beben": "green", "juega": "green", "juegan": "green",
+            "corre": "green", "corren": "green", "salta": "green", "saltan": "green", "duerme": "green", "duermen": "green",
+            "lee": "green", "leen": "green", "escribe": "green", "escriben": "green", "pinta": "green", "pintan": "green",
+            "ve": "green", "ven": "green", "escucha": "green", "escuchan": "green",
+            "tiene": "green", "tienen": "green", "quiere": "green", "quieren": "green",
+            "está": "green", "están": "green", "es": "green", "son": "green", "pasea": "green", "pasean": "green",
+            "canta": "green", "cantan": "green", "vuela": "green", "vuelan": "green", "baila": "green", "bailan": "green",
+            "llora": "green", "lloran": "green", "ríe": "green", "ríen": "green", "nada": "green", "nadan": "green",
+            "lava": "green", "lavan": "green", "limpia": "green", "limpian": "green", "dibuja": "green", "dibujan": "green",
+            "ladra": "green", "maúlla": "green", "brilla": "green", "enseña": "green", "pita": "green", "camina": "green",
+            "da": "green", "trepan": "green", "llega": "green", "pone": "green", "cuida": "green", "caen": "green",
+            "busca": "green", "traen": "green", "ruge": "green", "hablan": "green", "jugamos": "green", "viaja": "green",
+            "navega": "green", "cocinan": "green", "hace": "green", "sumar": "green", "aúlla": "green", "comieron": "green",
+            "haciendo": "green", "temblar": "green", "pesca": "green", "ayuda": "green", "guarda": "green", "apagan": "green", "lleva": "green",
+
+            // Azul: Adjetivos
+            "rojo": "blue", "roja": "blue", "rojos": "blue", "rojas": "blue",
+            "azul": "blue", "azules": "blue",
+            "amarillo": "blue", "amarilla": "blue", "amarillos": "blue", "amarillas": "blue",
+            "verde": "blue", "verdes": "blue",
+            "grande": "blue", "grandes": "blue", "pequeño": "blue", "pequeña": "blue", "pequeños": "blue", "pequeñas": "blue",
+            "rápido": "blue", "rápida": "blue", "rápidos": "blue", "rápidas": "blue",
+            "lento": "blue", "lenta": "blue", "lentos": "blue", "lentas": "blue",
+            "bonito": "blue", "bonita": "blue", "bonitos": "blue", "bonitas": "blue",
+            "feo": "blue", "fea": "blue", "feos": "blue", "feas": "blue",
+            "feliz": "blue", "felices": "blue", "triste": "blue", "tristes": "blue",
+            "mucho": "blue", "mucha": "blue", "muchos": "blue", "muchas": "blue",
+            "poco": "blue", "poca": "blue", "pocos": "blue", "pocas": "blue",
+            "alto": "blue", "alta": "blue", "altos": "blue", "altas": "blue",
+            "bajo": "blue", "baja": "blue", "bajos": "blue", "bajas": "blue",
+            "fuerte": "blue", "fuertes": "blue",
+            "caliente": "blue", "calientes": "blue", "frío": "blue", "fría": "blue", "fríos": "blue", "frías": "blue",
+            "limpio": "blue", "limpia": "blue", "limpios": "blue", "limpias": "blue",
+            "sucio": "blue", "sucia": "blue", "sucios": "blue", "sucias": "blue",
+            "contento": "blue", "contenta": "blue", "contentos": "blue", "contentas": "blue",
+            "enfadado": "blue", "enfadada": "blue", "enfadados": "blue", "enfadadas": "blue",
+            "asustado": "blue", "asustada": "blue", "asustados": "blue", "asustadas": "blue", "gris": "blue", "grises": "blue",
+            "redonda": "blue", "blancas": "blue", "blanco": "blue", "negro": "blue", "negra": "blue", "buena": "blue", "buenas": "blue", "bueno": "blue", "buenos": "blue",
+            "naranja": "blue", "rubia": "blue", "gordos": "blue", "gordo": "blue", "tranquilo": "blue", "furioso": "blue", "llena": "blue",
+            "moreno": "blue", "largo": "blue", "larga": "blue", "largas": "blue", "lindo": "blue", "linda": "blue", "pardos": "blue", "pardo": "blue",
+            "fiel": "blue", "seguro": "blue", "amable": "blue", "traviesos": "blue", "veloz": "blue", "veloces": "blue", "salvaje": "blue",
+            "mala": "blue", "hermosa": "blue", "viejo": "blue", "vieja": "blue", "viejos": "blue", "fresca": "blue", "valiente": "blue", "oscura": "blue",
+            "rapidísimo": "blue", "gigante": "blue", "simpático": "blue", "dulce": "blue", "dulces": "blue", "marrón": "blue", "marrones": "blue",
+
+            // Sustantivos (por defecto todo lo demás será naranja si no está aquí)
+        };
+
+        const getWordData = (word) => {
+            const cleanWord = normalizeString(word);
+            const cat = WORD_CATEGORIES[cleanWord] || "orange"; // por defecto naranja (sustantivo)
+
+            let colorClass = "bg-orange-100 border-orange-300";
+            let canHaveIcon = true;
+
+            if (cat === "yellow") { colorClass = "bg-yellow-100 border-yellow-300"; canHaveIcon = false; }
+            if (cat === "gray") { colorClass = "bg-gray-100 border-gray-300"; canHaveIcon = false; }
+            if (cat === "green") colorClass = "bg-green-100 border-green-300";
+            if (cat === "blue") colorClass = "bg-blue-100 border-blue-300";
+
+            return { color: colorClass, canHaveIcon };
+        };
+
+        const LEMMATIZER = {
+            "come": "comer", "comen": "comer", "bebe": "beber", "beben": "beber",
+            "juega": "jugar", "juegan": "jugar", "corre": "correr", "corren": "correr",
+            "salta": "saltar", "saltan": "saltar", "duerme": "dormir", "duermen": "dormir",
+            "lee": "leer", "leen": "leer", "escribe": "escribir", "escriben": "escribir",
+            "pinta": "pintar", "pintan": "pintar", "ve": "ver", "ven": "ver",
+            "escucha": "escuchar", "escuchan": "escuchar", "tiene": "tener", "tienen": "tener",
+            "quiere": "querer", "quieren": "querer", "está": "estar", "están": "estar",
+            "es": "ser", "son": "ser", "pasea": "pasear", "pasean": "pasear",
+            "canta": "cantar", "cantan": "cantar", "vuela": "volar", "vuelan": "volar",
+            "baila": "bailar", "bailan": "bailar", "llora": "llorar", "lloran": "llorar",
+            "ríe": "reir", "ríen": "reir", "nada": "nadar", "nadan": "nadar",
+            "lava": "lavar", "lavan": "lavar", "limpia": "limpiar", "limpian": "limpiar",
+            "dibuja": "dibujar", "dibujan": "dibujar", "pesa": "pesar", "pesan": "pesar",
+            "mira": "mirar", "miran": "mirar", "toca": "tocar", "tocan": "tocar",
+            "corta": "cortar", "cortan": "cortar", "saluda": "saludar", "saludan": "saludar",
+            "sube": "subir", "suben": "subir", "baja": "bajar", "bajan": "bajar",
+            "ladra": "ladrar", "maúlla": "maullar", "brilla": "brillar", "enseña": "enseñar", "pita": "pitar",
+            "camina": "caminar", "da": "dar", "trepan": "trepar", "llega": "llegar", "pone": "poner",
+            "cuida": "cuidar", "caen": "caer", "busca": "buscar", "traen": "traer", "ruge": "rugir",
+            "hablan": "hablar", "jugamos": "jugar", "viaja": "viajar", "navega": "navegar", "cocinan": "cocinar",
+            "hace": "hacer", "aúlla": "aullar", "comieron": "comer", "pesca": "pescar", "ayuda": "ayudar",
+            "guarda": "guardar", "apagan": "apagar", "lleva": "llevar", "temblar": "temblar", "haciendo": "hacer",
+            "rapidísimo": "rápido",
+            "nubes": "nube", "mariposas": "mariposa", "hojas": "hoja", "niños": "niño", "niñas": "niña",
+            "cerdos": "cerdo", "caballos": "caballo", "ovejas": "oveja", "pájaros": "pájaro", "árboles": "árbol",
+            "peces": "pez", "trenes": "tren", "flores": "flor", "estrellas": "estrella", "padres": "padre",
+            "vacas": "vaca", "osos": "oso", "monos": "mono", "leones": "león", "cascos": "casco", "rocas": "roca",
+            "nueces": "nuez", "bomberos": "bombero"
+        };
+
+        const fetchArasaacIcon = async (word) => {
+            try {
+                let searchWord = normalizeString(word);
+                // Convertir verbos conjugados a infinitivos para que ARASAAC los encuentre
+                searchWord = LEMMATIZER[searchWord] || searchWord;
+
+                const res = await fetch(`https://api.arasaac.org/api/pictograms/es/search/${encodeURIComponent(searchWord)}`);
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    return `https://static.arasaac.org/pictograms/${data[0]._id}/${data[0]._id}_300.png`;
+                }
+            } catch (e) {
+                console.error("Error ARASAAC", e);
+            }
+            return null;
+        };
+
+        // --- DICCIONARIO CURADO DE ORACIONES (OPCIÓN 1) ---
+        // Base de datos de oraciones perfectas y naturales garantizadas, clasificadas por longitud (2 a 12 palabras)
+        const CURATED_SENTENCES = {
+            2: [
+                "Papá come", "Mamá bebe", "Él duerme", "Ella corre", "Abuelo lee", "Abuela pinta",
+                "Perro ladra", "Gato maúlla", "Pájaro vuela", "Niño juega", "Niña salta", "Mamá mira",
+                "Papá saluda", "Ana llora", "Juan dibuja"
+            ],
+            3: [
+                "El perro corre", "La niña salta", "Mi papá come", "Tu mamá bebe", "El gato duerme",
+                "El abuelo lee", "La abuela pinta", "El pájaro vuela", "La profesora enseña", "El tren pita",
+                "La casa grande", "El sol amarillo", "Las nubes blancas", "El coche rojo", "La pelota salta"
+            ],
+            4: [
+                "El perro corre mucho", "La niña salta alto", "Mi papá come pan", "El gato bebe agua",
+                "La casa es bonita", "El coche es rojo", "El sol brilla hoy", "La luna es blanca",
+                "El niño dibuja bien", "Mamá lee un libro", "La mesa es redonda", "El oso come miel",
+                "Las mariposas vuelan alto", "El abuelo camina lento", "La vaca da leche"
+            ],
+            5: [
+                "El perro corre muy rápido", "La niña salta en clase", "Mi papá come en casa",
+                "El gato duerme mucho hoy", "El perro grande ladra fuerte", "La manzana roja es dulce",
+                "El abuelo pasea por ahí", "El bebé llora muy fuerte", "La vaca come mucha hierba",
+                "El pájaro azul vuela alto", "La mariposa bonita es amarilla", "El camión grande pesa mucho",
+                "El elefante gris bebe agua", "La tortuga verde nada lento", "Los monos trepan el árbol"
+            ],
+            6: [
+                "El perro rojo corre muy rápido", "La niña pequeña salta en clase",
+                "Mi papá come en la cocina", "El gato negro duerme mucho hoy",
+                "El niño feliz juega al fútbol", "La mamá de Juan bebe agua",
+                "El abuelo lee un libro grande", "La casa azul tiene una puerta",
+                "El coche amarillo es muy rápido", "La profesora buena enseña a leer",
+                "El pez naranja nada bajo el mar", "El león corre detrás de la cebra",
+                "El oso panda come hojas verdes hoy", "La niña rubia tiene un vestido bonito",
+                "Los niños buenos van al colegio temprano"
+            ],
+            7: [
+                "El perro rojo corre por el parque", "La niña pequeña salta en la cama",
+                "Mi papá come pan en la cocina", "El gato negro duerme en la silla",
+                "El niño feliz juega con el balón", "La profesora buena enseña en el colegio",
+                "El abuelo lee un libro muy grande", "La casa azul tiene una puerta grande",
+                "Las mariposas vuelan alto en el cielo", "El tren rápido llega a la estación",
+                "El pollito amarillo bebe agua cerca y", "La granja roja tiene muchos cerdos gordos",
+                "Los caballos rápidos corren por la pradera", "La gallina blanca pone un huevo hoy",
+                "El pastor amigo cuida a las ovejas"
+            ],
+            8: [
+                "El perro y el gato juegan en casa", "La niña y el niño leen un libro",
+                "Mi papá y mi mamá comen pan hoy", "El abuelo feliz pasea por el pueblo tranquilo",
+                "Mamá y papá corren juntos por el parque", "La gata blanca bebe leche en un plato",
+                "El sol amarillo brilla mucho por la mañana", "Las hojas verdes caen lento de los árboles",
+                "Los pájaros cantan contentos en el árbol alto", "La mariposa bonita vuela suave por el jardín",
+                "La ballena azul nada lento por el mar", "El coche rojo corre mucho en la calle",
+                "Un oso hormiguero busca comida en el bosque", "Las nubes grises traen la lluvia al campo",
+                "El leñador fuerte corta la madera con cuidado"
+            ],
+            9: [
+                "El perro marrón y el gato juegan en casa", "La niña lista y el niño leen un libro",
+                "Mi abuelo y mi abuela comen en la mesa", "El coche rojo y rápido corre por la calle",
+                "La profesora feliz y los niños cantan en clase", "El bebé pequeño llora mucho por la noche fría",
+                "La vaca blanca y negra come hierba muy verde", "El oso grande come miel dulce en el bosque",
+                "Los niños y las niñas pintan con colores bonitos", "La familia de Juan va junta a la playa",
+                "El avión blanco y gigante vuela por las nubes", "La tortuga lenta camina por la arena de la playa",
+                "El mono divertido salta muy alto en el zoológico", "La abeja pequeña busca muchas flores en el jardín grande",
+                "Un tigre furioso ruge fuerte bajo la luna llena"
+            ],
+            10: [
+                "El perro grande y el gato pequeño juegan en casa", "La niña rubia y el niño moreno leen un libro",
+                "Mi abuelo alto y mi abuela comen en la mesa", "El coche rojo y el camión azul corren por ahí",
+                "Los padres felices y la profesora hablan en el colegio", "El león fuerte corre muy rápido por la selva verde",
+                "Las vacas grandes comen mucha hierba en el campo bonito", "Mi hermano pequeño y yo jugamos juntos con los trenes",
+                "La niña contenta come una manzana roja en el recreo", "El tren largo de madera viaja lejos por la vía",
+                "El cocodrilo verde nada lento en el agua del río", "La serpiente larga verde y amarilla baja por el pino",
+                "El barco pirata navega rápido hacia la isla del tesoro", "La rana pequeña verde salta sobre las rocas del pozo",
+                "Un elefante gordo camina junto a su familia en África"
+            ],
+            11: [
+                "El lindo perro y el lindo gato juegan contentos en casa", "La niña rubia y el niño moreno leen un libro grande",
+                "El papá bueno y la mamá buena cocinan sopa muy rica", "Los osos grandes y pardos duermen mucho en la cueva fría",
+                "Las mariposas azules y amarillas vuelan suave por el parque verde", "Mi perro fiel y yo paseamos despacio por el campo bonito",
+                "El pájaro cantador hace un nido seguro en un árbol alto", "La profesora amable enseña a sumar despacio a los niños felices",
+                "Los monos traviesos comen plátanos amarillos rápido en el zoológico grande", "El caballo veloz salta las vallas altas en el establo limpio",
+                "La jirafa alta come deliciosas hojas verdes de la rama alta", "El lobo salvaje gris aúlla fuerte cerca de la montaña alta",
+                "La bruja mala vuela rápido en la escoba por la luna", "El astronauta amigo viaja rápido en su nave a las estrellas",
+                "La reina hermosa de aquel castillo lleva una corona de oro"
+            ],
+            12: [
+                "El perro grande marrón y el gato pequeño negro juegan en casa", "La dulce niña rubia y el niño moreno leen un libro grande",
+                "Ayer el abuelo viejo y la abuela contenta comieron tarta de fresa", "Los dos caballos rápidos y marrones corren veloces por el campo verde",
+                "Las bonitas vacas felices comen hierba fresca muy lento en la granja", "Mi hermana mayor y mi primo menor nadan rápido en la piscina",
+                "El valiente explorador viejo camina despacio por la selva muy oscura y", "La dulce mamá oso limpia la cueva con agua limpia del río",
+                "Todos los niños buenos y las niñas buenas pintan dibujos muy hermosos", "Un coche rojo de carreras cruza rapidísimo la línea blanca de meta",
+                "El dinosaurio gigante verde corre fuerte haciendo temblar el suelo del valle", "El pingüino simpático y blanco pesca ricos peces en el hielo frío",
+                "Un caballero fuerte ayuda a la gente en el poblado muy lejano", "La ardilla roja y juguetona guarda sus ricas nueces en el árbol",
+                "Los bomberos amigos con sus grandes cascos rojos apagan el fuego rápido"
+            ]
+        };
+
+        // Guardará las oraciones que ya salieron para no repetirlas
+        let usedSentencesStore = new Set();
+
+        const getRandomSentenceFromDict = (targetLength) => {
+            let len = targetLength === 'random' ? Math.floor(Math.random() * 11) + 2 : parseInt(targetLength, 10);
+
+            // Seguridad: Asegurar que len esté entre 2 y 12
+            if (len < 2) len = 2;
+            if (len > 12) len = 12;
+
+            const sentenceList = CURATED_SENTENCES[len];
+
+            // Filtrar las que aún no han salido
+            let availableSentences = sentenceList.filter(s => !usedSentencesStore.has(s));
+
+            // Si ya salieron todas las de esta longitud, se reinicia el filtro para esta longitud
+            if (availableSentences.length === 0) {
+                sentenceList.forEach(s => usedSentencesStore.delete(s));
+                availableSentences = [...sentenceList];
+            }
+
+            const sentence = availableSentences[Math.floor(Math.random() * availableSentences.length)];
+
+            // Se marca como usada
+            usedSentencesStore.add(sentence);
+
+            return sentence;
+        };
+
+        // Normaliza el string para comparar sin tildes ni signos
+        const normalizeString = (str) => {
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/g, "").trim().toLowerCase();
+        };
+
+        // Extrae palabras limpias
+        const getWords = (sentence) => {
+            return sentence.replace(/[.,¡!¿?;:"'()-]/g, "").trim().split(/\s+/);
+        };
+
+        function App() {
+            // -- Game Configuration --
+            const [difficulty, setDifficulty] = useState('easy'); // easy, medium, hard, extreme
+            const audioMode = 'auto'; // Voz automática siempre habilitada
+            const [isMuted, setIsMuted] = useState(false); // Botón de silenciar
+            const [textCase, setTextCase] = useState('uppercase'); // uppercase, lowercase
+            const [lengthFilter, setLengthFilter] = useState('random'); // random, 2, 3... 12
+            const [customSentenceInput, setCustomSentenceInput] = useState('');
+            const [checkCapitals, setCheckCapitals] = useState(false); // Validar mayúsculas
+            const [checkAccents, setCheckAccents] = useState(false); // Validar tildes
+
+            // -- Game State --
+            const [gameState, setGameState] = useState('menu'); // menu, playing, success, error
+            const [score, setScore] = useState(0);
+            const [currentSentence, setCurrentSentence] = useState('');
+            const [words, setWords] = useState([]); // { id, text, icon, color }
+            const [slots, setSlots] = useState([]); // Array del mismo tamaño
+            const [errorMessage, setErrorMessage] = useState(null);
+
+            // Extreme mode input
+            const [extremeInput, setExtremeInput] = useState('');
+            const [extremeFeedback, setExtremeFeedback] = useState(null); // { type, message }
+            const [showTeacherText, setShowTeacherText] = useState(false);
+
+            // Confetti
+            const [confetti, setConfetti] = useState([]);
+
+            // Rondas y Puntuación
+            const [currentRound, setCurrentRound] = useState(1);
+            const [maxRounds, setMaxRounds] = useState(10);
+            const [hits, setHits] = useState(0);
+            const [failedCurrentRound, setFailedCurrentRound] = useState(false);
+
+            // Load score on mount
+            useEffect(() => {
+                const savedScore = localStorage.getItem('arasaacScore');
+                if (savedScore) setScore(parseInt(savedScore, 10));
+            }, []);
+
+            // Save score
+            useEffect(() => {
+                localStorage.setItem('arasaacScore', score);
+            }, [score]);
+
+            const speakText = (text) => {
+                if (isMuted) return; // No hablar si está silenciado
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'es-ES';
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            const unlockAudio = () => {
+                if (!isMuted && 'speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance('');
+                    utterance.volume = 0;
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            const startNewGame = () => {
+                unlockAudio();
+                let selectedSentence = getRandomSentenceFromDict(lengthFilter);
+
+                setCurrentRound(1);
+                // setMaxRounds ya viene del menú general
+                setHits(0);
+                setScore(0);
+                setFailedCurrentRound(false);
+                setupRound(selectedSentence);
+            };
+
+            const startCustomGame = () => {
+                unlockAudio();
+                if (!customSentenceInput.trim()) return;
+
+                setCurrentRound(1);
+                setMaxRounds(1); // Forzamos 1 sola ronda
+                setHits(0);
+                setScore(0);
+                setFailedCurrentRound(false);
+                setupRound(customSentenceInput.trim());
+            };
+
+            const nextRound = () => {
+                let selectedSentence = getRandomSentenceFromDict(lengthFilter);
+
+                setCurrentRound(prev => prev + 1);
+                setFailedCurrentRound(false);
+                setupRound(selectedSentence);
+            };
+
+            const setupRound = async (sentence) => {
+                setCurrentSentence(sentence);
+                setGameState('loading');
+                setExtremeInput('');
+                setExtremeFeedback(null);
+                setConfetti([]);
+
+                const sentenceWords = getWords(sentence);
+
+                // Obtener datos y pictogramas de la API de ARASAAC
+                const wordPromises = sentenceWords.map(async (w, index) => {
+                    const data = getWordData(w);
+                    let iconUrl = null;
+                    if (data.canHaveIcon) {
+                        iconUrl = await fetchArasaacIcon(w);
+                    }
+                    return {
+                        id: `word-${index}-${Date.now()}`,
+                        text: w,
+                        targetIndex: index,
+                        color: data.color,
+                        iconUrl: iconUrl
+                    };
+                });
+
+                const wordObjects = await Promise.all(wordPromises);
+
+                // Shuffle for the pool
+                const shuffled = [...wordObjects].sort(() => Math.random() - 0.5);
+                setWords(shuffled);
+                setSlots(new Array(sentenceWords.length).fill(null));
+
+                setGameState('playing');
+
+                if (audioMode === 'auto') {
+                    speakText(sentence);
+                }
+            };
+
+            // Drag and Drop handlers
+            const handleDragStart = (e, wordObj, sourceIdx, fromSlot) => {
+                e.dataTransfer.setData('application/json', JSON.stringify({ wordObj, sourceIdx, fromSlot }));
+            };
+
+            const handleDropSlot = (e, dropIdx) => {
+                e.preventDefault();
+                const dataRaw = e.dataTransfer.getData('application/json');
+                if (!dataRaw) return;
+
+                const data = JSON.parse(dataRaw);
+                const { wordObj, sourceIdx, fromSlot } = data;
+
+                const newSlots = [...slots];
+                const newWords = [...words];
+
+                if (fromSlot) {
+                    // Mover entre slots
+                    const temp = newSlots[dropIdx];
+                    newSlots[dropIdx] = wordObj;
+                    newSlots[sourceIdx] = temp;
+                } else {
+                    // Mover del pool al slot
+                    const existingInSlot = newSlots[dropIdx];
+                    newSlots[dropIdx] = wordObj;
+                    newWords.splice(sourceIdx, 1);
+                    if (existingInSlot) {
+                        newWords.push(existingInSlot);
+                    }
+                }
+
+                setSlots(newSlots);
+                setWords(newWords);
+                checkCompletion(newSlots);
+            };
+
+            const handleDropPool = (e) => {
+                e.preventDefault();
+                const dataRaw = e.dataTransfer.getData('application/json');
+                if (!dataRaw) return;
+
+                const data = JSON.parse(dataRaw);
+                const { wordObj, sourceIdx, fromSlot } = data;
+
+                if (fromSlot) {
+                    const newSlots = [...slots];
+                    newSlots[sourceIdx] = null;
+                    setSlots(newSlots);
+                    setWords(prev => [...prev, wordObj]);
+                }
+            };
+
+            const handleClickWord = (wordObj, sourceIdx, fromSlot) => {
+                if (fromSlot) {
+                    // Devolver al pool
+                    const newSlots = [...slots];
+                    newSlots[sourceIdx] = null;
+                    setSlots(newSlots);
+                    setWords([...words, wordObj]);
+                } else {
+                    // Enviar al primer slot libre
+                    const emptyIdx = slots.findIndex(s => s === null);
+                    if (emptyIdx !== -1) {
+                        const newSlots = [...slots];
+                        newSlots[emptyIdx] = wordObj;
+                        setSlots(newSlots);
+                        const newWords = [...words];
+                        newWords.splice(sourceIdx, 1);
+                        setWords(newWords);
+
+                        checkCompletion(newSlots);
+                    }
+                }
+            };
+
+            const checkCompletion = (currentSlots) => {
+                if (currentSlots.some(s => s === null)) return; // Not full yet
+
+                let isCorrect = true;
+                const sentenceWords = getWords(currentSentence);
+                currentSlots.forEach((slot, index) => {
+                    let t = sentenceWords[index].replace(/[.,¡!¿?;:"'()-]/g, "").trim();
+                    let s = slot.text.replace(/[.,¡!¿?;:"'()-]/g, "").trim();
+
+                    if (!checkCapitals) {
+                        t = t.toLowerCase();
+                        s = s.toLowerCase();
+                    }
+                    if (!checkAccents) {
+                        t = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    }
+
+                    if (t !== s) {
+                        isCorrect = false;
+                    }
+                });
+
+                if (isCorrect) {
+                    triggerSuccess();
+                } else {
+                    setFailedCurrentRound(true);
+                    if (checkCapitals || checkAccents) {
+                        setErrorMessage('¡Casi! Revisa bien las posiciones, mayúsculas o tildes.');
+                        if (audioMode === 'auto') speakText('Revisa bien las posiciones, las mayúsculas o las tildes');
+                    } else {
+                        setErrorMessage('¡Sigue intentándolo!');
+                        if (audioMode === 'auto') speakText('Casi. Inténtalo de nuevo');
+                    }
+
+                    setTimeout(() => {
+                        setErrorMessage(null);
+                    }, 2500); // 2.5s para leer el mensaje de error de ortografía
+                }
+            };
+
+            const checkExtremeMode = () => {
+                const targetCleanBase = normalizeString(currentSentence);
+                const userCleanBase = normalizeString(extremeInput);
+
+                if (checkCapitals || checkAccents) {
+                    let tSq = currentSentence.replace(/[.,¡!¿?;:"'()-]/g, "").trim().replace(/\s+/g, " ");
+                    let uSq = extremeInput.replace(/[.,¡!¿?;:"'()-]/g, "").trim().replace(/\s+/g, " ");
+
+                    if (!checkCapitals) {
+                        tSq = tSq.toLowerCase();
+                        uSq = uSq.toLowerCase();
+                    }
+                    if (!checkAccents) {
+                        tSq = tSq.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        uSq = uSq.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    }
+
+                    if (tSq === uSq) {
+                        triggerSuccess();
+                    } else {
+                        // Falló, determinamos si fue por ortografía o por palabras incorrectas
+                        if (targetCleanBase === userCleanBase) {
+                            // Palabras correctas pero ortografía mala
+                            setFailedCurrentRound(true);
+                            let msg = '¡Casi perfecto! Pero has fallado: ';
+                            if (checkCapitals && checkAccents) msg += 'revisa mayúsculas y tildes.';
+                            else if (checkCapitals) msg += 'revisa las mayúsculas.';
+                            else msg += 'revisa las tildes.';
+
+                            setExtremeFeedback({ type: 'warning', message: msg });
+                            if (audioMode === 'auto') speakText(msg);
+                        } else {
+                            setFailedCurrentRound(true);
+                            setExtremeFeedback({ type: 'error', message: '¡Sigue intentándolo, seguro que lo logras!' });
+                            if (audioMode === 'auto') speakText('Casi. Inténtalo otra vez');
+                        }
+                    }
+                    return; // Fin de la validación estricta
+                }
+
+                // --------- Validación Estándar ---------
+                if (targetCleanBase === userCleanBase) {
+                    // Validar solo mayúscula inicial si está en modo minúsculas
+                    if (textCase === 'lowercase') {
+                        const firstCharUser = extremeInput.trim().charAt(0);
+                        if (firstCharUser !== firstCharUser.toUpperCase() || firstCharUser.toUpperCase() === firstCharUser.toLowerCase()) {
+                            if (firstCharUser !== firstCharUser.toUpperCase()) {
+                                setFailedCurrentRound(true);
+                                setExtremeFeedback({ type: 'error', message: '¡Recuerda que la oración empieza con mayúscula!' });
+                                if (audioMode === 'auto') speakText('Recuerda que la oración empieza con mayúscula');
+                                return;
+                            }
+                        }
+                    }
+                    triggerSuccess();
+                } else {
+                    setFailedCurrentRound(true);
+                    setExtremeFeedback({ type: 'error', message: '¡Sigue intentándolo, seguro que lo logras!' });
+                    if (audioMode === 'auto') speakText('Casi. Inténtalo otra vez');
+                }
+            };
+
+            const triggerSuccess = () => {
+                setGameState('success');
+
+                // --- PUNTUACIÓN DINÁMICA ---
+                let basePoints = 1; // fácil
+                if (difficulty === 'medium') basePoints = 2;
+                else if (difficulty === 'hard') basePoints = 3;
+                else if (difficulty === 'extreme') basePoints = 5;
+
+                const wordCount = getWords(currentSentence).length;
+
+                // Multiplicador por cantidad de ejercicios (ej: 5->x1, 10->x2, ..., 60->x12)
+                const roundMultiplier = Math.max(1, Math.floor(maxRounds / 5));
+
+                const pointsToAdd = basePoints * wordCount * roundMultiplier;
+
+                setScore(s => s + pointsToAdd);
+
+                setHits(prev => failedCurrentRound ? prev : prev + 1);
+
+                if (audioMode === 'auto') speakText('¡Muy bien! Lo has logrado');
+
+                // Generar confeti
+                const newConfetti = Array.from({ length: 50 }).map((_, i) => ({
+                    id: i,
+                    left: Math.random() * 100 + '%',
+                    delay: Math.random() * 0.5 + 's',
+                    size: Math.random() * 20 + 20 + 'px',
+                    color: ['#FBBF24', '#34D399', '#60A5FA', '#F87171'][Math.floor(Math.random() * 4)]
+                }));
+                setConfetti(newConfetti);
+            };
+
+            const renderCard = (item, index, fromSlot) => {
+                if (!item) return null;
+
+                const textTransform = textCase === 'uppercase' ? 'uppercase' : 'lowercase';
+                const hasIcon = !!item.iconUrl;
+                const showText = difficulty === 'easy' || difficulty === 'hard' || !hasIcon;
+                const showIcon = (difficulty === 'easy' || difficulty === 'medium') && hasIcon;
+
+                return (
+                    <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, item, index, fromSlot)}
+                        onClick={() => handleClickWord(item, index, fromSlot)}
+                        className={`relative w-28 h-36 md:w-32 md:h-40 flex flex-col items-center justify-center p-2 rounded-xl shadow-md cursor-pointer hover:scale-105 transition-transform border-4 ${item.color} select-none overflow-hidden bg-white touch-none`}
+                    >
+                        {audioMode === 'auto' && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); speakText(item.text); }}
+                                className="absolute top-1 right-1 p-1 bg-white/70 rounded-full hover:bg-gray-100 shadow text-gray-700 z-10"
+                            >
+                                <Volume2 className="w-4 h-4" />
+                            </button>
+                        )}
+
+                        {showIcon && (
+                            <img src={item.iconUrl} alt={item.text} draggable="false" className={`object-contain pointer-events-none ${showText ? 'h-16 w-16 mb-1' : 'h-24 w-24'}`} />
+                        )}
+                        {showText && (
+                            <span className={`font-patrick font-bold text-center w-full break-words leading-tight ${textTransform} ${showIcon ? 'text-2xl' : 'text-3xl lg:text-4xl'}`}>
+                                {item.text}
+                            </span>
+                        )}
+                    </div>
+                );
+            };
+
+            if (gameState === 'loading') {
+                return (
+                    <div className="flex flex-col h-screen fixed inset-0 items-center justify-center bg-sky-50 z-50">
+                        <div className="animate-spin rounded-full h-32 w-32 border-t-8 border-b-8 border-sky-500 mb-8"></div>
+                        <h2 className="text-4xl font-extrabold text-sky-600 font-patrick animate-pulse">Cargando pictogramas ARASAAC...</h2>
+                    </div>
+                );
+            }
+
+            if (gameState === 'menu') {
+                return (
+                    <div className="max-w-6xl mx-auto p-2 md:p-4 pb-10">
+                        <header className="text-center mb-4 relative">
+                            <button
+                                onClick={() => setIsMuted(!isMuted)}
+                                className={`absolute right-4 md:right-8 top-1 p-2 rounded-full shadow-md transition-colors ${isMuted ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
+                                title={isMuted ? "Activar sonido" : "Silenciar sonido"}
+                            >
+                                {isMuted ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />}
+                            </button>
+                            <h1 className="text-3xl md:text-5xl font-extrabold text-blue-600 mb-1 mt-2">Juego de Oraciones</h1>
+                        </header>
+
+                        <div className="bg-white rounded-2xl p-4 shadow-xl border-4 border-blue-100 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
+
+                            {/* COLUMNA IZQUIERDA */}
+                            <div className="space-y-4 lg:space-y-6">
+                                {/* 1. DIFICULTAD */}
+                                <section>
+                                    <h2 className="text-xl font-bold mb-2 text-gray-700 flex items-center gap-2"><Layers className="w-5 h-5" /> Dificultad</h2>
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                        {[
+                                            { id: 'easy', title: 'Fácil', desc: 'Dibujo + Texto', icon: <div className="flex gap-1 items-center mb-2"><ImageIcon className="w-6 h-6" /><span className="text-xl">+</span><TypeIcon className="w-6 h-6" /></div> },
+                                            { id: 'medium', title: 'Medio', desc: 'Solo Dibujo', icon: <ImageIcon className="w-8 h-8 mb-2" /> },
+                                            { id: 'hard', title: 'Difícil', desc: 'Solo Texto', icon: <TypeIcon className="w-8 h-8 mb-2" /> },
+                                            { id: 'extreme', title: 'Extremo', desc: 'Dictado', icon: <Keyboard className="w-8 h-8 mb-2" /> }
+                                        ].map(d => (
+                                            <button
+                                                key={d.id}
+                                                onClick={() => setDifficulty(d.id)}
+                                                className={`p-2 rounded-xl flex flex-col items-center text-center transition-all border-2 md:border-4 ${difficulty === d.id ? 'bg-blue-500 text-white border-blue-600 shadow-inner' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-blue-50'}`}
+                                            >
+                                                <div className="scale-75 mb-0 md:scale-100 md:mb-1">{d.icon}</div>
+                                                <span className="font-bold text-sm md:text-base leading-tight">{d.title}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                {/* 2. TIPO DE LETRA */}
+                                <section>
+                                    <h2 className="text-xl font-bold mb-2 text-gray-700 flex items-center gap-2"><TypeIcon className="w-5 h-5" /> Tipo de letra</h2>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => setTextCase('uppercase')}
+                                            className={`p-2 font-patrick text-xl rounded-xl border-2 md:border-4 ${textCase === 'uppercase' ? 'bg-purple-500 text-white border-purple-600' : 'bg-gray-50 text-gray-600 border-gray-200'}`}
+                                        >
+                                            MAYÚSCULAS
+                                        </button>
+                                        <button
+                                            onClick={() => setTextCase('lowercase')}
+                                            className={`p-2 font-patrick text-xl rounded-xl border-2 md:border-4 ${textCase === 'lowercase' ? 'bg-purple-500 text-white border-purple-600' : 'bg-gray-50 text-gray-600 border-gray-200'}`}
+                                        >
+                                            minúsculas
+                                        </button>
+                                    </div>
+                                </section>
+
+                                {/* 5. EVALUACIÓN ORTOGRÁFICA */}
+                                <section>
+                                    <h2 className="text-xl font-bold mb-2 text-gray-700 flex items-center gap-2"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Evaluar Ortografía</h2>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {/* Mayúsculas */}
+                                        <div className="flex bg-gray-50 rounded-xl border-2 md:border-4 border-gray-200 p-2 items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <TypeIcon className="w-5 h-5 text-gray-500" />
+                                                <span className="font-bold text-gray-700">Mayúsculas</span>
+                                            </div>
+                                            <button
+                                                onClick={() => setCheckCapitals(!checkCapitals)}
+                                                className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${checkCapitals ? 'bg-blue-600' : 'bg-gray-300'}`}
+                                                role="switch"
+                                                aria-checked={checkCapitals}
+                                            >
+                                                <span aria-hidden="true" className={`pointer-events-none absolute left-0 inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checkCapitals ? 'translate-x-7' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
+
+                                        {/* Tildes */}
+                                        <div className="flex bg-gray-50 rounded-xl border-2 md:border-4 border-gray-200 p-2 items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-patrick font-bold text-gray-500 text-xl leading-none">áéí</span>
+                                                <span className="font-bold text-gray-700">Tildes</span>
+                                            </div>
+                                            <button
+                                                onClick={() => setCheckAccents(!checkAccents)}
+                                                className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${checkAccents ? 'bg-blue-600' : 'bg-gray-300'}`}
+                                                role="switch"
+                                                aria-checked={checkAccents}
+                                            >
+                                                <span aria-hidden="true" className={`pointer-events-none absolute left-0 inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checkAccents ? 'translate-x-7' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </section>
+
+                            </div>
+
+                            {/* COLUMNA DERECHA */}
+                            <div className="space-y-4 lg:space-y-6">
+                                {/* 3. CANTIDAD DE EJERCICIOS */}
+                                <section>
+                                    <h2 className="text-xl font-bold mb-2 text-gray-700 flex items-center gap-2"><Layers className="w-5 h-5" /> Cantidad de ejercicios</h2>
+                                    <div className="grid grid-cols-4 lg:grid-cols-4 gap-2">
+                                        {[5, 10, 15, 20, 30, 40, 50, 60].map(num => (
+                                            <button
+                                                key={`rounds-${num}`}
+                                                onClick={() => setMaxRounds(num)}
+                                                className={`p-2 rounded-xl font-bold text-center transition-all border-2 md:border-4 ${maxRounds === num ? 'bg-sky-500 text-white border-sky-600 shadow-inner' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-sky-50'}`}
+                                            >
+                                                {num}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+                                {/* 4. PALABRAS */}
+                                <section>
+                                    <h2 className="text-xl font-bold mb-2 text-gray-700 flex items-center gap-2">
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg> Palabras
+                                    </h2>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <select
+                                                value={lengthFilter}
+                                                onChange={(e) => setLengthFilter(e.target.value)}
+                                                className="w-full p-2 rounded-xl border-2 md:border-4 border-gray-200 text-lg font-bold text-gray-700 cursor-pointer focus:border-blue-500 outline-none"
+                                            >
+                                                <option value="random">Aleatorio</option>
+                                                {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(num => (
+                                                    <option key={num} value={num}>{num}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </section>
+                                {/* 6. ORACIÓN A TRABAJAR */}
+                                <section>
+                                    <h2 className="text-xl font-bold mb-2 text-gray-700 flex items-center gap-2"><Star className="w-5 h-5 text-gray-700" /> Oración a trabajar</h2>
+                                    <div className="flex gap-2 items-center">
+                                        <input
+                                            type="text"
+                                            value={customSentenceInput}
+                                            onChange={(e) => setCustomSentenceInput(e.target.value)}
+                                            placeholder="Ej: El perro azul corre..."
+                                            className={`flex-1 p-2 rounded-xl border-2 md:border-4 border-gray-200 text-lg focus:border-blue-500 outline-none font-patrick ${textCase === 'lowercase' ? 'normal-case' : 'uppercase'}`}
+                                        />
+                                        <button
+                                            onClick={startCustomGame}
+                                            disabled={!customSentenceInput.trim()}
+                                            className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-extrabold text-xl py-2 px-4 rounded-xl shadow-[0_4px_0_#059669] active:shadow-[0_0px_0_#059669] active:translate-y-1 transition-all"
+                                        >
+                                            IR
+                                        </button>
+                                    </div>
+                                </section>
+                            </div>
+
+                        </div>
+
+                        <button
+                            onClick={startNewGame}
+                            className="w-full mt-4 bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-2xl py-3 md:py-4 rounded-2xl shadow-[0_6px_0_#0284c7] active:shadow-[0_0px_0_#0284c7] active:translate-y-2 transition-all flex justify-center items-center gap-2"
+                        >
+                            <Play className="w-8 h-8" fill="currentColor" /> ¡JUGAR!
+                        </button>
+                        <p className="text-center mt-4 text-gray-400 font-bold uppercase tracking-widest text-xs">Versión 1.2.7</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex flex-col h-screen fixed inset-0">
+                    <header className="bg-white p-4 shadow-md flex justify-between items-center z-10 w-full overflow-hidden">
+                        <div className="flex gap-2 items-center flex-shrink-0">
+                            <button
+                                onClick={() => setGameState('menu')}
+                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 md:px-4 py-2 rounded-xl border-2 border-gray-300 font-bold flex items-center gap-1 md:gap-2 text-sm md:text-base mr-1"
+                            >
+                                <span className="hidden md:inline">←</span> Volver
+                            </button>
+                            <button
+                                onClick={() => setIsMuted(!isMuted)}
+                                className={`p-2 rounded-xl border-2 font-bold flex items-center gap-2 transition-colors ${isMuted ? 'bg-red-100 text-red-600 border-red-300 hover:bg-red-200' : 'bg-green-100 text-green-600 border-green-300 hover:bg-green-200'}`}
+                                title={isMuted ? "Activar sonido" : "Silenciar sonido"}
+                            >
+                                {isMuted ? <VolumeX className="w-5 h-5 md:w-6 md:h-6" /> : <Volume2 className="w-5 h-5 md:w-6 md:h-6" />}
+                            </button>
+                        </div>
+
+                        {gameState !== 'menu' && (
+                            <div className="font-bold text-gray-400 text-lg md:text-xl font-patrick bg-sky-50 px-4 py-1 rounded-full border-2 border-sky-100 hidden sm:block">
+                                R{currentRound}/{maxRounds}
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-xl border-2 border-yellow-300 font-bold text-xl">
+                            <Star fill="currentColor" /> {score}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto w-full">
+
+                        {gameState === 'success' && (
+                            <div className="fixed inset-0 bg-emerald-500/95 z-50 flex flex-col items-center justify-center p-4">
+                                {confetti.map(c => (
+                                    <Star key={c.id} className="confetti" fill="currentColor" style={{ left: c.left, animationDelay: c.delay, width: c.size, height: c.size, color: c.color }} />
+                                ))}
+                                <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl transform scale-100">
+                                    <CheckCircle className="w-24 h-24 text-emerald-500 mx-auto mb-4" />
+                                    <h2 className="text-5xl font-extrabold text-emerald-600 mb-6 font-patrick">¡GENIAL!</h2>
+                                    <button
+                                        onClick={() => {
+                                            if (currentRound >= maxRounds) {
+                                                setGameState('gameover');
+                                            } else {
+                                                nextRound();
+                                            }
+                                        }}
+                                        className="w-full bg-sky-500 text-white font-bold text-2xl py-4 rounded-xl border-b-4 border-sky-700 active:border-b-0 active:translate-y-1 transition-all"
+                                    >
+                                        {currentRound >= maxRounds ? 'Ver Resultados' : 'Siguiente Oración'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {gameState === 'gameover' && (
+                            <div className="fixed inset-0 bg-white/95 z-50 flex flex-col items-center justify-center p-4">
+                                <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border-4 border-blue-200">
+                                    <h2 className="text-5xl font-extrabold text-blue-600 mb-2 font-patrick">¡Buen trabajo!</h2>
+                                    <p className="text-xl font-bold text-blue-400 mb-6">¡Has completado todas las oraciones!</p>
+
+                                    <div className="bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-3xl p-6 shadow-xl border-4 border-yellow-200 mb-6 transform hover:scale-105 transition-transform flex flex-col items-center">
+                                        <div className="flex justify-center gap-2 mb-2">
+                                            <Star fill="currentColor" className="w-10 h-10 text-white animate-pulse" />
+                                            <Star fill="currentColor" className="w-12 h-12 text-white animate-bounce" />
+                                            <Star fill="currentColor" className="w-10 h-10 text-white animate-pulse" />
+                                        </div>
+                                        <h3 className="text-yellow-900 font-extrabold text-XL md:text-2xl mb-1 uppercase tracking-widest">PUNTOS MÁGICOS</h3>
+                                        <div className="text-8xl font-extrabold font-patrick text-white drop-shadow-lg">
+                                            {score}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center bg-gray-50 rounded-xl p-3 mb-6 border-2 border-gray-100">
+                                        <div className={`px-3 py-1 rounded-full font-bold uppercase tracking-wider text-xs ${difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' :
+                                            difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                                difficulty === 'hard' ? 'bg-orange-100 text-orange-700' :
+                                                    'bg-purple-100 text-purple-700'
+                                            }`}>
+                                            Nivel {difficulty === 'easy' ? 'Fácil' : difficulty === 'medium' ? 'Medio' : difficulty === 'hard' ? 'Difícil' : 'Extremo'}
+                                        </div>
+                                        <div className="text-sm font-bold text-blue-500" title="Aciertos al primer intento (Para el profe)">
+                                            Aciertos a la primera: {hits}/{maxRounds}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setGameState('menu')}
+                                        className="w-full bg-blue-500 text-white font-bold text-2xl py-4 rounded-xl border-b-4 border-blue-700 active:border-b-0 active:translate-y-1 transition-all hover:bg-blue-600"
+                                    >
+                                        Volver al Menú
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {errorMessage && (
+                            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-red-500 text-white font-bold px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-bounce">
+                                <AlertCircle /> {errorMessage}
+                            </div>
+                        )}
+
+                        {difficulty === 'extreme' ? (
+                            // EXTREME MODE (DICTATION)
+                            <div className="flex-1 max-w-3xl mx-auto w-full flex flex-col justify-center items-center gap-8">
+                                <div className="bg-white p-8 rounded-3xl shadow-lg border-4 border-purple-200 w-full text-center">
+                                    {audioMode === 'auto' ? (
+                                        <button
+                                            onClick={() => speakText(currentSentence)}
+                                            className="bg-purple-100 hover:bg-purple-200 text-purple-700 p-8 rounded-full shadow-md animate-pulse mx-auto"
+                                        >
+                                            <Volume2 className="w-16 h-16" />
+                                        </button>
+                                    ) : (
+                                        <div className="flex flex-col items-center">
+                                            <button
+                                                onPointerDown={() => setShowTeacherText(true)}
+                                                onPointerUp={() => setShowTeacherText(false)}
+                                                onPointerLeave={() => setShowTeacherText(false)}
+                                                className="bg-orange-100 text-orange-700 px-8 py-4 rounded-2xl shadow-md font-bold text-xl mx-auto flex items-center gap-2 select-none border-b-4 border-orange-300 active:border-b-0 active:translate-y-1"
+                                            >
+                                                <Eye /> Mantén pulsado para ver (Profesor)
+                                            </button>
+                                            {showTeacherText ? (
+                                                <p className={`mt-6 text-4xl font-patrick text-gray-800 ${textCase === 'lowercase' ? 'normal-case' : 'uppercase'}`}>
+                                                    {currentSentence}
+                                                </p>
+                                            ) : (
+                                                <div className="h-16 mt-6"></div> // placeholder
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="w-full relative">
+                                    <textarea
+                                        value={extremeInput}
+                                        onChange={(e) => {
+                                            setExtremeInput(e.target.value);
+                                            setExtremeFeedback(null);
+                                        }}
+                                        placeholder="Escribe la oración aquí..."
+                                        className={`w-full h-40 p-6 rounded-3xl border-4 ${extremeFeedback ? 'border-red-400 bg-red-50' : 'border-blue-300'} text-4xl font-patrick shadow-inner resize-none outline-none focus:border-blue-500 text-center ${textCase === 'lowercase' ? 'normal-case' : 'uppercase'}`}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                checkExtremeMode();
+                                            }
+                                        }}
+                                    />
+                                    {extremeFeedback && (
+                                        <div className="absolute -bottom-16 left-0 right-0 p-4 bg-red-100 text-red-700 border-2 border-red-300 font-bold rounded-xl flex items-center justify-center gap-2 animate-bounce">
+                                            <AlertCircle /> {extremeFeedback.message}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={checkExtremeMode}
+                                    className="w-full max-w-md bg-emerald-500 text-white font-extrabold text-3xl py-6 rounded-3xl shadow-[0_8px_0_#059669] active:translate-y-[8px] active:shadow-none transition-all"
+                                >
+                                    COMPROBAR
+                                </button>
+                            </div>
+                        ) : (
+                            // NORMAL MODE (DRAG & DROP)
+                            <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full">
+
+                                {/* Target Slots Area */}
+                                <div className="bg-white p-6 rounded-3xl shadow-md border-4 border-gray-200 mb-6 min-h-[14rem]">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-bold text-gray-400 text-lg">ARRASTRA AQUÍ LAS TARJETAS</h3>
+                                        {audioMode === 'auto' && (
+                                            <button onClick={() => speakText(currentSentence)} className="text-sky-600 bg-sky-50 hover:bg-sky-100 px-3 py-2 rounded-xl flex gap-1 items-center font-bold">
+                                                <Volume2 className="w-5 h-5" /> Escuchar oración
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+                                        {slots.map((slot, index) => (
+                                            <div
+                                                key={`slot-${index}`}
+                                                onDragOver={(e) => e.preventDefault()}
+                                                onDrop={(e) => handleDropSlot(e, index)}
+                                                className={`w-28 h-36 md:w-32 md:h-40 rounded-xl border-4 flex items-center justify-center transition-colors touch-none ${slot ? 'border-transparent' : 'border-dashed border-gray-300 bg-gray-50'}`}
+                                            >
+                                                {slot ? renderCard(slot, index, true) : (
+                                                    <span className="text-gray-300 font-bold text-4xl">{index + 1}</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Source Pool Area */}
+                                <div
+                                    className="flex-1 bg-sky-100/50 p-6 rounded-3xl border-4 border-sky-200"
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={handleDropPool}
+                                >
+                                    <h3 className="font-bold text-gray-500 text-center mb-4">Haz clic o arrastra las tarjetas</h3>
+                                    <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+                                        {words.map((word, index) => (
+                                            <React.Fragment key={word.id}>
+                                                {renderCard(word, index, false)}
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>

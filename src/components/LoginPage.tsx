@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Brain, User, GraduationCap, ArrowRight, Key, Check, Users } from 'lucide-react';
+import { Brain, User, GraduationCap, ArrowRight, Key, Check, Users, Mail, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function LoginPage() {
@@ -15,6 +15,8 @@ export function LoginPage() {
     const [error, setError] = useState('');
     const [isSignUp, setIsSignUp] = useState(false);
     const [foundProject, setFoundProject] = useState<any>(null);
+    const [emailSent, setEmailSent] = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(0);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -63,7 +65,8 @@ export function LoginPage() {
                     email: authEmail,
                     password,
                     options: {
-                        data: metaData
+                        data: metaData,
+                        emailRedirectTo: window.location.origin
                     }
                 });
 
@@ -78,14 +81,16 @@ export function LoginPage() {
                     sessionData = data.session;
                     await refreshPerfil();
                 } else {
-                    // Si no hay sesión inmediata (confirmación email), en nuestro caso de alumno (sintético)
-                    // debería haber sesión. Si es profe con email real, avisar.
+                    // No hay sesión inmediata → se requiere confirmación por email
                     if (targetRole === 'alumno') {
-                        // Should not happen with auto-confirm off, but safety check
-                        alert('Cuenta creada. Intenta iniciar sesión.');
+                        // Alumnos usan email sintético, no debería requerir confirmación
+                        setError('Cuenta creada. Intenta iniciar sesión.');
+                        setIsSignUp(false);
                         return;
                     }
-                    alert('Cuenta creada. Revisa tu email para confirmar.');
+                    // Mostrar pantalla de verificación de email
+                    setEmailSent(true);
+                    setResendCooldown(60);
                     return;
                 }
             } else {
@@ -189,6 +194,34 @@ export function LoginPage() {
         }
     };
 
+    // Cooldown timer for resend
+    useEffect(() => {
+        if (resendCooldown <= 0) return;
+        const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [resendCooldown]);
+
+    const handleResendEmail = async () => {
+        if (resendCooldown > 0) return;
+        setLoading(true);
+        try {
+            const { error } = await supabase.auth.resend({
+                type: 'signup',
+                email: email,
+                options: {
+                    emailRedirectTo: window.location.origin
+                }
+            });
+            if (error) throw error;
+            setResendCooldown(60);
+            setError('');
+        } catch (err: any) {
+            setError(err.message || 'Error al reenviar el email.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const BackgroundDesign = () => (
         <div className="absolute inset-0 overflow-hidden bg-[#0A0F1A] z-0 pointer-events-none">
             {/* Base dark background is #0A0F1A */}
@@ -211,6 +244,75 @@ export function LoginPage() {
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0A0F1A]/50 to-[#0A0F1A]" />
         </div>
     );
+
+    // ── Pantalla de "Revisa tu Email" ──
+    if (emailSent) {
+        return (
+            <div className="h-[100dvh] w-full bg-[#0A0F1A] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+                <BackgroundDesign />
+                <div className="w-full max-w-sm relative z-10">
+                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl text-center">
+                        {/* Icono animado de email */}
+                        <div className="w-20 h-20 mx-auto mb-6 bg-emerald-500/20 rounded-2xl flex items-center justify-center border border-emerald-400/30 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+                            <Mail className="w-10 h-10 text-emerald-400 animate-bounce" />
+                        </div>
+
+                        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">¡Revisa tu email!</h2>
+                        <p className="text-slate-400 text-sm mb-2">
+                            Hemos enviado un enlace de confirmación a:
+                        </p>
+                        <p className="text-cyan-400 font-bold text-sm mb-6 break-all">
+                            {email}
+                        </p>
+
+                        <div className="bg-white/5 rounded-xl p-4 mb-6 border border-white/10">
+                            <p className="text-slate-300 text-xs leading-relaxed">
+                                📧 Haz clic en el enlace del email para activar tu cuenta.
+                                <br /><br />
+                                💡 <strong>¿No lo ves?</strong> Revisa la carpeta de <strong>spam</strong> o correo no deseado.
+                            </p>
+                        </div>
+
+                        {error && (
+                            <div className="bg-rose-500/10 text-rose-400 p-2.5 rounded-lg text-xs font-medium border border-rose-500/20 flex items-center gap-2 mb-4">
+                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                {error}
+                            </div>
+                        )}
+
+                        {/* Botón Reenviar */}
+                        <button
+                            onClick={handleResendEmail}
+                            disabled={loading || resendCooldown > 0}
+                            className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-3"
+                        >
+                            {loading ? (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <RefreshCw className="w-4 h-4" />
+                            )}
+                            {resendCooldown > 0
+                                ? `Reenviar en ${resendCooldown}s`
+                                : 'Reenviar email de confirmación'
+                            }
+                        </button>
+
+                        {/* Volver al login */}
+                        <button
+                            onClick={() => {
+                                setEmailSent(false);
+                                setIsSignUp(false);
+                                setError('');
+                            }}
+                            className="text-slate-400 hover:text-white text-xs font-medium transition-colors"
+                        >
+                            ← Volver al inicio de sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (view === 'selection') {
         return (
