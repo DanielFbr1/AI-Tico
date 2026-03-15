@@ -90,3 +90,8 @@
 ## Versión 1.6.16 (Fix Multi-rol con Mismo Email)
 - **Rol Siempre Sincronizado**: Al iniciar sesión, el rol se actualiza siempre al panel elegido (docente/alumno/familia), no solo cuando difiere. Esto garantiza que si entras por "Docente", siempre accedes como docente.
 - **Await en refreshPerfil**: Corregido el timing en `AuthContext.tsx` para que `fetchPerfil` se complete antes de continuar, evitando lecturas de rol desactualizado.
+
+## Versión 1.6.17 (Observaciones Visibles en Panel Familia)
+- **Fix Observaciones**: Las observaciones del profesor ahora se muestran correctamente en el panel de familia. Se corrigió un bug de coincidencia case-sensitive en los nombres de alumnos entre tablas.
+- **Sección Siempre Visible**: La sección "Observaciones del Profesor" ahora aparece siempre, mostrando "Sin observaciones registradas" cuando no hay ninguna.
+- **Consultas Case-Insensitive**: Todas las consultas de evaluaciones, asistencia, comentarios y puntos usan `ilike` para evitar desajustes de mayúsculas/minúsculas.

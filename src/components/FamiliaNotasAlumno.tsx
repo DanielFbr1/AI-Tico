@@ -98,7 +98,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                 const { data: evalData } = await supabase
                     .from('evaluaciones')
                     .select('*')
-                    .eq('alumno_nombre', alumno.alumno_nombre)
+                    .ilike('alumno_nombre', alumno.alumno_nombre)
                     .eq('proyecto_id', proyectoId)
                     .maybeSingle();
 
@@ -130,7 +130,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     .from('asistencia')
                     .select('*')
                     .eq('proyecto_id', proyectoId)
-                    .eq('alumno_nombre', alumno.alumno_nombre);
+                    .ilike('alumno_nombre', alumno.alumno_nombre);
 
                 const total = attendanceData?.length || 0;
                 const present = attendanceData?.filter((a: any) => a.presente === true).length || 0;
@@ -140,7 +140,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     .from('comentarios_alumno')
                     .select('id, contenido, created_at')
                     .eq('proyecto_id', proyectoId)
-                    .eq('alumno_nombre', alumno.alumno_nombre)
+                    .ilike('alumno_nombre', alumno.alumno_nombre)
                     .order('created_at', { ascending: false });
 
                 // Fetch points
@@ -148,7 +148,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     .from('alumno_puntos')
                     .select('puntos')
                     .eq('proyecto_id', proyectoId)
-                    .eq('alumno_nombre', alumno.alumno_nombre)
+                    .ilike('alumno_nombre', alumno.alumno_nombre)
                     .maybeSingle();
 
                 const puntos = puntosData ? puntosData.puntos : 0;
@@ -395,13 +395,13 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                 })}
                                                             </div>
 
-                                                            {/* Observations */}
-                                                            {proyecto.comentarios.length > 0 && (
-                                                                <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
-                                                                    <div className="flex items-center gap-2 mb-2">
-                                                                        <MessageSquare className="w-3 h-3 text-yellow-600" />
-                                                                        <span className="text-[9px] font-black text-yellow-600 uppercase tracking-widest">Observaciones</span>
-                                                                    </div>
+                                                            {/* Observations - Always shown */}
+                                                            <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <MessageSquare className="w-3 h-3 text-yellow-600" />
+                                                                    <span className="text-[9px] font-black text-yellow-600 uppercase tracking-widest">Observaciones del Profesor</span>
+                                                                </div>
+                                                                {proyecto.comentarios.length > 0 ? (
                                                                     <div className="space-y-2">
                                                                         {proyecto.comentarios.map(c => (
                                                                             <p key={c.id} className="text-xs text-slate-600 font-medium leading-relaxed italic">
@@ -409,8 +409,10 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                             </p>
                                                                         ))}
                                                                     </div>
-                                                                </div>
-                                                            )}
+                                                                ) : (
+                                                                    <p className="text-xs text-slate-400 font-medium italic">Sin observaciones registradas</p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
