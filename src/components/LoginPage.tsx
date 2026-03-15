@@ -17,7 +17,7 @@ export function LoginPage() {
     const [foundProject, setFoundProject] = useState<any>(null);
     const [emailSent, setEmailSent] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
-    const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
+    const [otpCode, setOtpCode] = useState(['', '', '', '', '', '', '', '']);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -230,7 +230,7 @@ export function LoginPage() {
         newOtp[index] = value;
         setOtpCode(newOtp);
         // Auto-focus next input
-        if (value && index < 5) {
+        if (value && index < 7) {
             const next = document.getElementById(`otp-${index + 1}`);
             next?.focus();
         }
@@ -245,18 +245,18 @@ export function LoginPage() {
 
     const handleOtpPaste = (e: React.ClipboardEvent) => {
         e.preventDefault();
-        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-        if (pasted.length === 6) {
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 8);
+        if (pasted.length === 8) {
             setOtpCode(pasted.split(''));
-            const last = document.getElementById('otp-5');
+            const last = document.getElementById('otp-7');
             last?.focus();
         }
     };
 
     const handleVerifyOTP = async () => {
         const code = otpCode.join('');
-        if (code.length !== 6) {
-            setError('Introduce el código completo de 6 dígitos.');
+        if (code.length !== 8) {
+            setError('Introduce el código completo de 8 dígitos.');
             return;
         }
         setLoading(true);
@@ -275,7 +275,7 @@ export function LoginPage() {
             setError(err.message === 'Token has expired or is invalid'
                 ? 'Código expirado o inválido. Solicita uno nuevo.'
                 : (err.message || 'Error al verificar el código.'));
-            setOtpCode(['', '', '', '', '', '']);
+            setOtpCode(['', '', '', '', '', '', '', '']);
         } finally {
             setLoading(false);
         }
@@ -318,7 +318,7 @@ export function LoginPage() {
 
                         <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Verifica tu cuenta</h2>
                         <p className="text-slate-400 text-sm mb-1">
-                            Hemos enviado un código de 6 dígitos a:
+                            Hemos enviado un código de 8 dígitos a:
                         </p>
                         <p className="text-cyan-400 font-bold text-sm mb-6 break-all">
                             {email}
@@ -337,7 +337,7 @@ export function LoginPage() {
                                     onChange={(e) => handleOtpChange(i, e.target.value)}
                                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
                                     onPaste={i === 0 ? handleOtpPaste : undefined}
-                                    className="w-11 h-13 text-center text-xl font-bold text-white bg-white/10 border border-white/20 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 outline-none transition-all"
+                                    className="w-10 h-12 text-center text-lg font-bold text-white bg-white/10 border border-white/20 rounded-lg focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 outline-none transition-all"
                                     autoFocus={i === 0}
                                 />
                             ))}
@@ -359,7 +359,7 @@ export function LoginPage() {
                         {/* Verificar */}
                         <button
                             onClick={handleVerifyOTP}
-                            disabled={loading || otpCode.join('').length !== 6}
+                            disabled={loading || otpCode.join('').length !== 8}
                             className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-3"
                         >
                             {loading ? (
@@ -389,7 +389,7 @@ export function LoginPage() {
                                 setEmailSent(false);
                                 setIsSignUp(false);
                                 setError('');
-                                setOtpCode(['', '', '', '', '', '']);
+                                setOtpCode(['', '', '', '', '', '', '', '']);
                             }}
                             className="text-slate-500 hover:text-white text-xs font-medium transition-colors"
                         >
