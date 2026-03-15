@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Brain, User, GraduationCap, ArrowRight, Key, Check, Users, Mail, RefreshCw } from 'lucide-react';
+import { Brain, User, GraduationCap, ArrowRight, Key, Check, Users, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function LoginPage() {
@@ -17,6 +17,7 @@ export function LoginPage() {
     const [foundProject, setFoundProject] = useState<any>(null);
     const [emailSent, setEmailSent] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
+    const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -222,6 +223,64 @@ export function LoginPage() {
         }
     };
 
+    const handleOtpChange = (index: number, value: string) => {
+        if (value.length > 1) value = value.slice(-1);
+        if (value && !/^[0-9]$/.test(value)) return;
+        const newOtp = [...otpCode];
+        newOtp[index] = value;
+        setOtpCode(newOtp);
+        // Auto-focus next input
+        if (value && index < 5) {
+            const next = document.getElementById(`otp-${index + 1}`);
+            next?.focus();
+        }
+    };
+
+    const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+        if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
+            const prev = document.getElementById(`otp-${index - 1}`);
+            prev?.focus();
+        }
+    };
+
+    const handleOtpPaste = (e: React.ClipboardEvent) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        if (pasted.length === 6) {
+            setOtpCode(pasted.split(''));
+            const last = document.getElementById('otp-5');
+            last?.focus();
+        }
+    };
+
+    const handleVerifyOTP = async () => {
+        const code = otpCode.join('');
+        if (code.length !== 6) {
+            setError('Introduce el código completo de 6 dígitos.');
+            return;
+        }
+        setLoading(true);
+        setError('');
+        try {
+            const { data, error } = await supabase.auth.verifyOtp({
+                email: email,
+                token: code,
+                type: 'signup'
+            });
+            if (error) throw error;
+            if (data.session) {
+                await refreshPerfil();
+            }
+        } catch (err: any) {
+            setError(err.message === 'Token has expired or is invalid'
+                ? 'Código expirado o inválido. Solicita uno nuevo.'
+                : (err.message || 'Error al verificar el código.'));
+            setOtpCode(['', '', '', '', '', '']);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const BackgroundDesign = () => (
         <div className="absolute inset-0 overflow-hidden bg-[#0A0F1A] z-0 pointer-events-none">
             {/* Base dark background is #0A0F1A */}
@@ -245,31 +304,48 @@ export function LoginPage() {
         </div>
     );
 
-    // ── Pantalla de "Revisa tu Email" ──
+    // ── Pantalla de Verificación OTP ──
     if (emailSent) {
         return (
             <div className="h-[100dvh] w-full bg-[#0A0F1A] flex items-center justify-center p-4 relative overflow-hidden font-sans">
                 <BackgroundDesign />
                 <div className="w-full max-w-sm relative z-10">
                     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl text-center">
-                        {/* Icono animado de email */}
+                        {/* Icono */}
                         <div className="w-20 h-20 mx-auto mb-6 bg-emerald-500/20 rounded-2xl flex items-center justify-center border border-emerald-400/30 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
-                            <Mail className="w-10 h-10 text-emerald-400 animate-bounce" />
+                            <ShieldCheck className="w-10 h-10 text-emerald-400" />
                         </div>
 
-                        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">¡Revisa tu email!</h2>
-                        <p className="text-slate-400 text-sm mb-2">
-                            Hemos enviado un enlace de confirmación a:
+                        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Verifica tu cuenta</h2>
+                        <p className="text-slate-400 text-sm mb-1">
+                            Hemos enviado un código de 6 dígitos a:
                         </p>
                         <p className="text-cyan-400 font-bold text-sm mb-6 break-all">
                             {email}
                         </p>
 
-                        <div className="bg-white/5 rounded-xl p-4 mb-6 border border-white/10">
+                        {/* OTP Input */}
+                        <div className="flex gap-2 justify-center mb-4">
+                            {otpCode.map((digit, i) => (
+                                <input
+                                    key={i}
+                                    id={`otp-${i}`}
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={1}
+                                    value={digit}
+                                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                    onPaste={i === 0 ? handleOtpPaste : undefined}
+                                    className="w-11 h-13 text-center text-xl font-bold text-white bg-white/10 border border-white/20 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 outline-none transition-all"
+                                    autoFocus={i === 0}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="bg-white/5 rounded-xl p-3 mb-4 border border-white/10">
                             <p className="text-slate-300 text-xs leading-relaxed">
-                                📧 Haz clic en el enlace del email para activar tu cuenta.
-                                <br /><br />
-                                💡 <strong>¿No lo ves?</strong> Revisa la carpeta de <strong>spam</strong> o correo no deseado.
+                                💡 Revisa tu bandeja de entrada y <strong>spam</strong>.
                             </p>
                         </div>
 
@@ -280,31 +356,42 @@ export function LoginPage() {
                             </div>
                         )}
 
-                        {/* Botón Reenviar */}
+                        {/* Verificar */}
                         <button
-                            onClick={handleResendEmail}
-                            disabled={loading || resendCooldown > 0}
+                            onClick={handleVerifyOTP}
+                            disabled={loading || otpCode.join('').length !== 6}
                             className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-3"
                         >
                             {loading ? (
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
-                                <RefreshCw className="w-4 h-4" />
+                                <ShieldCheck className="w-4 h-4" />
                             )}
+                            Verificar código
+                        </button>
+
+                        {/* Reenviar */}
+                        <button
+                            onClick={handleResendEmail}
+                            disabled={loading || resendCooldown > 0}
+                            className="text-slate-400 hover:text-emerald-400 text-xs font-medium transition-colors mb-2 flex items-center justify-center gap-1 mx-auto"
+                        >
+                            <RefreshCw className="w-3 h-3" />
                             {resendCooldown > 0
                                 ? `Reenviar en ${resendCooldown}s`
-                                : 'Reenviar email de confirmación'
+                                : 'Reenviar código'
                             }
                         </button>
 
-                        {/* Volver al login */}
+                        {/* Volver */}
                         <button
                             onClick={() => {
                                 setEmailSent(false);
                                 setIsSignUp(false);
                                 setError('');
+                                setOtpCode(['', '', '', '', '', '']);
                             }}
-                            className="text-slate-400 hover:text-white text-xs font-medium transition-colors"
+                            className="text-slate-500 hover:text-white text-xs font-medium transition-colors"
                         >
                             ← Volver al inicio de sesión
                         </button>

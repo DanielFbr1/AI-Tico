@@ -70,3 +70,8 @@
 - **Reenvío de Email**: Añadido botón para reenviar el email de confirmación con cooldown de 60 segundos para evitar spam.
 - **Redirección Post-Confirmación**: Configurado `emailRedirectTo` en el registro para que el enlace de confirmación redirija correctamente a la app.
 - **Detección de Enlaces Expirados**: La app ahora detecta errores de verificación en la URL y muestra un toast informativo cuando un enlace ha expirado o es inválido.
+
+## Versión 1.6.13 (Verificación por Código OTP)
+- **Código OTP de 6 dígitos**: El registro ahora envía un código numérico al email en lugar de un enlace, solucionando el problema de escáneres de seguridad que consumían los enlaces de verificación.
+- **Pantalla OTP Premium**: Interfaz con 6 cajas individuales para introducir el código, con auto-focus, soporte de pegar (paste) y feedback visual.
+- **Verificación Manual**: El usuario introduce el código recibido por email y lo verifica directamente en la app con `verifyOtp`.
