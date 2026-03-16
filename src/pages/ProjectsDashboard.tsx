@@ -199,28 +199,36 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
             // 2. Fetch projects where collaborator
             const { data: collaborations, error: collabError } = await supabase
                 .from('proyecto_colaboradores')
-                .select('proyecto_id, proyectos(*)')
+                .select('proyecto_id, created_at, proyectos(*)')
                 .eq('profesor_id', user.id);
 
             if (collabError) throw collabError;
 
-            const sharedProjects = (collaborations || [])
-                .map((c: any) => c.proyectos)
-                .filter(Boolean);
+            // 3. Combine with activity dates for sorting
+            const ownedList = (ownedProjects || []).map(p => ({ ...p, activity_date: p.created_at }));
+            const sharedList = (collaborations || [])
+                .filter((c: any) => c.proyectos)
+                .map((c: any) => ({ ...c.proyectos, activity_date: c.created_at }));
 
-            // 3. Combine and filter duplicates
-            const allProjects = [...(ownedProjects || []), ...sharedProjects];
-            const uniqueProjects = Array.from(new Map(allProjects.map(p => [p.id, p])).values());
+            // 4. Combine, filter duplicates and Sort
+            const allProjects = [...ownedList, ...sharedList];
+            
+            // Deduplicate preserving the most recent activity_date
+            const sortedProjects = Array.from(new Map(
+                allProjects
+                    .sort((a, b) => new Date(a.activity_date).getTime() - new Date(b.activity_date).getTime())
+                    .map(p => [p.id, p])
+            ).values()).reverse();
 
-            console.log("🔍 DEBUG: Total Projects (Owned + Shared):", uniqueProjects.length);
+            console.log("🔍 DEBUG: Sorted Projects (Recent First):", sortedProjects.length);
 
-            setProyectos(uniqueProjects);
+            setProyectos(sortedProjects);
 
-            if (uniqueProjects.length > 0) {
+            if (sortedProjects.length > 0) {
                 const { data: gruposData } = await supabase
                     .from('grupos')
                     .select('*')
-                    .in('proyecto_id', uniqueProjects.map(p => p.id));
+                    .in('proyecto_id', sortedProjects.map(p => p.id));
 
                 if (gruposData) {
                     setTodosMisGrupos(gruposData as Grupo[]);

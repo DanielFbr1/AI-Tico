@@ -1,5 +1,9 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [v1.8.4] - 2026-03-16
+- **Mejora**: Entrada automática al detalle de un grupo inmediatamente después de crearlo.
+- **Mejora**: Ordenación global de proyectos en el dashboard. Ahora los proyectos (propios y compartidos) se ordenan por fecha de actividad reciente (creación o unión), apareciendo siempre lo más nuevo arriba.
+
 ## [v1.8.3] - 2026-03-16
 - **Mejora**: Ahora es posible crear equipos/grupos sin necesidad de añadir alumnos en el momento. Los alumnos pueden ser asignados después desde el tablero de gestión.
 - **Corregido**: Limpieza de código en el sistema de creación de grupos (estandarización de la columna descripción).

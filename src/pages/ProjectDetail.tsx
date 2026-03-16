@@ -169,7 +169,11 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
                 .insert([{ ...nuevoGrupo, proyecto_id: proyecto.id }])
                 .select();
             if (error) throw error;
-            if (data) setLocalGrupos([...localGrupos, data[0]]);
+            if (data) {
+                const created = data[0];
+                setLocalGrupos([...localGrupos, created]);
+                onSelectGrupo(created as Grupo); // Auto-entry
+            }
         } catch (err) {
             console.error('Error creating group:', err);
         }
