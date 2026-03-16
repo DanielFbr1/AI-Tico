@@ -558,7 +558,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            v3.6.3 (Audio Fix)
+                            v3.6.4 (UX Chat)
                         </div>
                     </div>
                 </aside>

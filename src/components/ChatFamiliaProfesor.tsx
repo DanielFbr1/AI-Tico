@@ -152,7 +152,7 @@ export function ChatFamiliaProfesor({
     const accentColor = currentRole === 'familia' ? 'emerald' : 'blue';
 
     return (
-        <div className="h-[100dvh] bg-[#fcfdff] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-[#fcfdff] flex flex-col overflow-hidden z-[70]">
             {/* Header */}
             <header className="bg-white border-b border-slate-200 shrink-0 sticky top-0 z-10">
                 <div className="max-w-3xl mx-auto px-4 md:px-6 py-4">
