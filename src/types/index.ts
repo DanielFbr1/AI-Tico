@@ -109,7 +109,7 @@ export interface AlumnoConectado {
     last_active: string;
 }
 
-export type DashboardSection = 'resumen' | 'grupos' | 'interacciones' | 'evaluacion' | 'trabajo-compartido';
+export type DashboardSection = 'resumen' | 'grupos' | 'interacciones' | 'evaluacion' | 'trabajo-compartido' | 'solicitudes';
 
 
 export interface Recurso {

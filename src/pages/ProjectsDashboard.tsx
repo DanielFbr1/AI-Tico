@@ -4,10 +4,12 @@ import { Proyecto, Organizacion } from '../types';
 import { Layout, ArrowRight, Users, Key, Plus, Loader2, Sparkles, LogOut, RefreshCw, Trash2, Folder, BookOpen, GraduationCap, School, Search, X, MessageCircle, ChevronLeft } from 'lucide-react';
 import { PROYECTOS_MOCK } from '../data/mockData';
 import { ModalCrearProyecto } from '../components/ModalCrearProyecto';
+import { ModalUnirseProyectoProfesor } from '../components/ModalUnirseProyectoProfesor';
 import { MensajesFamiliasProfesor } from '../components/MensajesFamiliasProfesor';
 import { getAsignaturaStyles } from '../data/asignaturas';
 import { ModalChatAlumnosDocente } from '../components/ModalChatAlumnosDocente';
 import { Grupo } from '../types';
+import { toast } from 'sonner';
 
 interface ProjectsDashboardProps {
     onSelectProject: (proyecto: Proyecto) => void;
@@ -21,6 +23,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
     const [loading, setLoading] = useState(true);
     const [isSeeding, setIsSeeding] = useState(false);
     const [showModalProyecto, setShowModalProyecto] = useState(false);
+    const [showModalUnirse, setShowModalUnirse] = useState(false);
     const [filtroBusqueda, setFiltroBusqueda] = useState('');
     const [showMensajesFamilias, setShowMensajesFamilias] = useState(false);
     const [unreadFamilyMessages, setUnreadFamilyMessages] = useState(0);
@@ -99,49 +102,38 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
     };
 
     useEffect(() => {
-        const setupMessageSubscriptions = async () => {
+        let subscriptionFamilies: any = null;
+        let subscriptionStudents: any = null;
+        let subscriptionCollab: any = null;
+
+        const setupSubscriptions = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             const savedId = user?.id;
 
             if (savedId) {
-                // Initial fetch for student messages
-                const { count: studentCount, error: countStudentError } = await supabase
-                    .from('mensajes_profesor_alumno')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('profesor_user_id', savedId)
-                    .neq('sender_id', savedId)
-                    .eq('leido', false);
-
-                if (!countStudentError) {
-                    setUnreadStudentMessages(studentCount || 0);
-                }
-
-                // Suscripciones
-                const subscriptionFamilies = supabase.channel(`mensajes_familia_profesor`)
+                // Mensajes Familias
+                subscriptionFamilies = supabase.channel(`mensajes_familia_profesor`)
                     .on('postgres_changes', {
                         event: '*',
                         schema: 'public',
                         table: 'mensajes_familia_profesor',
-                        filter: `profesor_user_id=eq.${savedId}` // Corrected filter to profesor_user_id
+                        filter: `profesor_user_id=eq.${savedId}`
                     }, payload => {
                         const newMsg = payload.new as any;
                         if (payload.eventType === 'INSERT' && newMsg && !newMsg.leido && newMsg.sender_id !== savedId) {
                             setUnreadFamilyMessages(prev => prev + 1);
                         } else if (payload.eventType === 'UPDATE') {
-                            // Re-fetch count simply to keep synced if states change to read
-                            supabase
-                                .from('mensajes_familia_profesor')
+                            supabase.from('mensajes_familia_profesor')
                                 .select('*', { count: 'exact', head: true })
-                                .eq('profesor_user_id', savedId) // Corrected filter to profesor_user_id
+                                .eq('profesor_user_id', savedId)
                                 .eq('leido', false)
-                                .then(({ count }) => {
-                                    setUnreadFamilyMessages(count || 0);
-                                });
+                                .then(({ count }) => setUnreadFamilyMessages(count || 0));
                         }
                     })
                     .subscribe();
 
-                const subscriptionStudents = supabase.channel(`mensajes_profesor_alumno`)
+                // Mensajes Alumnos
+                subscriptionStudents = supabase.channel(`mensajes_profesor_alumno`)
                     .on('postgres_changes', {
                         event: '*',
                         schema: 'public',
@@ -152,8 +144,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                         if (payload.eventType === 'INSERT' && newMsg && !newMsg.leido && newMsg.sender_id !== savedId) {
                             setUnreadStudentMessages(prev => prev + 1);
                         } else if (payload.eventType === 'UPDATE') {
-                            supabase
-                                .from('mensajes_profesor_alumno')
+                            supabase.from('mensajes_profesor_alumno')
                                 .select('*', { count: 'exact', head: true })
                                 .eq('profesor_user_id', savedId)
                                 .neq('sender_id', savedId)
@@ -163,14 +154,28 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                     })
                     .subscribe();
 
-                return () => {
-                    supabase.removeChannel(subscriptionFamilies);
-                    supabase.removeChannel(subscriptionStudents);
-                };
+                // Colaboraciones
+                subscriptionCollab = supabase.channel('public:proyecto_colaboradores_updates')
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'proyecto_colaboradores',
+                        filter: `profesor_id=eq.${savedId}`
+                    }, () => {
+                        console.log("🚀 Realtime: New collaboration detected!");
+                        fetchProyectos();
+                    })
+                    .subscribe();
             }
         };
 
-        setupMessageSubscriptions();
+        setupSubscriptions();
+
+        return () => {
+            if (subscriptionFamilies) supabase.removeChannel(subscriptionFamilies);
+            if (subscriptionStudents) supabase.removeChannel(subscriptionStudents);
+            if (subscriptionCollab) supabase.removeChannel(subscriptionCollab);
+        };
     }, [session?.user?.id]);
 
 
@@ -182,22 +187,40 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
 
             if (!user) return;
 
-            const { data, error } = await supabase
+            // 1. Fetch projects where owner
+            const { data: ownedProjects, error: ownedError } = await supabase
                 .from('proyectos')
                 .select('*')
-                .eq('created_by', user.id) // Filter by owner explicitly
+                .eq('created_by', user.id)
                 .order('created_at', { ascending: false });
 
-            console.log("🔍 DEBUG: Fetched Projects for User:", user.id, data);
+            if (ownedError) throw ownedError;
 
-            if (error) throw error;
-            setProyectos(data || []);
+            // 2. Fetch projects where collaborator
+            const { data: collaborations, error: collabError } = await supabase
+                .from('proyecto_colaboradores')
+                .select('proyecto_id, proyectos(*)')
+                .eq('profesor_id', user.id);
 
-            if (data && data.length > 0) {
+            if (collabError) throw collabError;
+
+            const sharedProjects = (collaborations || [])
+                .map((c: any) => c.proyectos)
+                .filter(Boolean);
+
+            // 3. Combine and filter duplicates
+            const allProjects = [...(ownedProjects || []), ...sharedProjects];
+            const uniqueProjects = Array.from(new Map(allProjects.map(p => [p.id, p])).values());
+
+            console.log("🔍 DEBUG: Total Projects (Owned + Shared):", uniqueProjects.length);
+
+            setProyectos(uniqueProjects);
+
+            if (uniqueProjects.length > 0) {
                 const { data: gruposData } = await supabase
                     .from('grupos')
                     .select('*')
-                    .in('proyecto_id', data.map(p => p.id));
+                    .in('proyecto_id', uniqueProjects.map(p => p.id));
 
                 if (gruposData) {
                     setTodosMisGrupos(gruposData as Grupo[]);
@@ -213,12 +236,20 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
     const handleCrearProyecto = async (nuevoProyecto: Omit<Proyecto, 'id' | 'grupos'>) => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('proyectos')
-                .insert([{ ...nuevoProyecto, created_by: user?.id }]);
+                .insert([{ ...nuevoProyecto, created_by: user?.id }])
+                .select()
+                .single();
 
             if (error) throw error;
-            await fetchProyectos();
+            
+            toast.success('Proyecto creado con éxito');
+            if (data) {
+                onSelectProject(data as Proyecto);
+            } else {
+                await fetchProyectos();
+            }
         } catch (err: any) {
             console.error('Error creating project:', err);
             alert(`Error al crear el proyecto: ${err.message || 'Error desconocido'}`);
@@ -452,6 +483,14 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                             )}
                         </button>
                         <button
+                            onClick={() => setShowModalUnirse(true)}
+                            className="relative flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-xl md:rounded-2xl font-black transition-all border-2 border-amber-200 hover:border-amber-400 shadow-sm"
+                            title="Unirse a Proyecto por Código"
+                        >
+                            <Key className="w-4 h-4 md:w-5 md:h-5" />
+                            <span className="text-[10px] md:text-xs uppercase tracking-widest hidden lg:inline">Unirse</span>
+                        </button>
+                        <button
                             onClick={() => setShowModalProyecto(true)}
                             className="relative flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl md:rounded-2xl font-black transition-all shadow-md shadow-blue-200"
                             title="Crear Nuevo Proyecto"
@@ -554,7 +593,6 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {proyectosClase
-                                    .filter(p => p.created_by === session?.user?.id)
                                     .map((proyecto) => {
                                         const asigStyles = getAsignaturaStyles(proyecto.asignatura);
                                         return (
@@ -637,13 +675,19 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                     </div>
                 )}
             </div>
-
             {showModalProyecto && (
                 <ModalCrearProyecto
                     onClose={() => setShowModalProyecto(false)}
                     onCrear={handleCrearProyecto}
                     nombreUsuario={session?.user?.email || 'Docente'}
                     clasesExistentes={clasesExistentes}
+                />
+            )}
+
+            {showModalUnirse && (
+                <ModalUnirseProyectoProfesor
+                    onClose={() => setShowModalUnirse(false)}
+                    onSuccess={() => fetchProyectos()}
                 />
             )}
 

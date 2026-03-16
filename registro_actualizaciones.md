@@ -1,4 +1,26 @@
-# Registro de Actualizaciones
+# Registro de Actualizaciones - TICO.ia
+
+## [v1.8.3] - 2026-03-16
+- **Mejora**: Ahora es posible crear equipos/grupos sin necesidad de añadir alumnos en el momento. Los alumnos pueden ser asignados después desde el tablero de gestión.
+- **Corregido**: Limpieza de código en el sistema de creación de grupos (estandarización de la columna descripción).
+
+## [v1.8.2] - 2026-03-16
+- **Mejora**: Los proyectos aceptados ahora aparecen automáticamente en el dashboard sin necesidad de refrescar la página (Real-time).
+- **Mejora**: Al crear un nuevo grupo, este aparece ahora arriba del todo (ordenado por ID más reciente).
+- **Corregido**: Estructura de suscripciones y limpieza de memoria en el dashboard.
+
+## [v1.8.1] - 2026-03-16
+- **Mejora**: Habilitada la visibilidad de proyectos compartidos en el dashboard (se eliminó el filtro restrictivo).
+- **Mejora**: Entrada automática al proyecto inmediatamente después de su creación.
+
+## [v1.8.0] - 2026-03-16
+- **Mejorado**: Acceso total para colaboradores. Ahora los colaboradores aceptados pueden gestionar grupos, recursos, chat y evaluaciones del proyecto compartido.
+- **Corregido**: Restricción de acceso que impedía a los colaboradores "entrar" en los proyectos desde su dashboard.
+
+## [v1.7.7] - 2026-03-16
+- **Corregido**: Error crítico 500 en la carga de proyectos causado por recursividad infinita en las políticas de seguridad (RLS).
+- **Mejorado**: Estructura de permisos de colaboración más eficiente y lineal.
+- **Estabilizado**: Acceso garantizado tanto para dueños como para colaboradores en el dashboard.
 
 ## Versión 1.2.7 (Juego Oraciones - Arreglo Definitivo Drag & Drop Tablets)
 - **Reversión Híbrida Inteligente:** Se recupera el Arrastre y el Toque Simple.
@@ -95,6 +117,17 @@
 - **Chat de Grupo en Tiempo Real**: Implementada sincronización instantánea tanto para profesores como para alumnos.
 - **Actualizaciones Optimistas**: Ahora los mensajes aparecen inmediatamente al enviarlos, eliminando la sensación de retraso.
 - **Canales Dedicados**: Refactorización del sistema de suscripciones para usar canales únicos por grupo, mejorando la fiabilidad del Realtime.
+
+## v1.7.0 (16/03/2026): Implementación de colaboración multi-docente.
+    - Nuevo botón "Unirse a Proyecto" en el panel de proyectos.
+    - Sistema de peticiones de colaboración con notificaciones Realtime.
+    - Panel de gestión para aceptar/rechazar colaboradores (estilo revisión tareas).
+    - Acceso compartido a proyectos para múltiples docentes.
+
+## v1.6.22: Integración del botón de Horario Personal en el Dashboard Docente (acceso rápido junto al código de la clase).
+
+## v1.6.21
+- **Sincronización en tiempo real de archivos y recursos compartidos (Supabase Realtime)**: Actualizaciones instantáneas en el repositorio colaborativo sin recarga.
 
 ## v1.6.19
 - Corregido error en las notificaciones del chat docente: los avisos rojos ahora desaparecen correctamente en tiempo real al leer los mensajes.

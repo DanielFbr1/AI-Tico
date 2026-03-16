@@ -1,4 +1,4 @@
-import { LayoutList, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices, Gamepad2, LayoutDashboard } from 'lucide-react';
+import { LayoutList, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices, Gamepad2, LayoutDashboard, Calendar } from 'lucide-react';
 import { useState } from 'react';
 import { Card_Grupo } from './Card_Grupo';
 import { EvaluacionRubricas } from './EvaluacionRubricas';
@@ -24,6 +24,8 @@ import { supabase } from '../lib/supabase';
 import { useEffect } from 'react';
 import { getAsignaturaStyles } from '../data/asignaturas';
 import { ModalChatAlumnosDocente } from './ModalChatAlumnosDocente';
+import { ModalHorario } from './ModalHorario';
+import { SolicitudesColaboracion } from './ModalSolicitudesColaboracion';
 
 interface DashboardDocenteProps {
     onSelectGrupo: (grupo: Grupo) => void;
@@ -79,10 +81,13 @@ export function DashboardDocente({
     const [modalAsistenciaOpen, setModalAsistenciaOpen] = useState(false);
     const [modalSubirRecursoAbierto, setModalSubirRecursoAbierto] = useState(false);
     const [modalRuletaAbierta, setModalRuletaAbierta] = useState(false);
+    const [modalHorarioAbierto, setModalHorarioAbierto] = useState(false);
     const [modalTicoAbierto, setModalTicoAbierto] = useState(false);
     const [alumnoParaEvaluar, setAlumnoParaEvaluar] = useState<{ nombre: string, grupo: Grupo } | null>(null);
     const [unreadStudentMessages, setUnreadStudentMessages] = useState(0);
     const [unreadFamilyMessages, setUnreadFamilyMessages] = useState(0);
+    const [solicitudesPendientes, setSolicitudesPendientes] = useState(0);
+    const [solicitudEmergente, setSolicitudEmergente] = useState<any | null>(null);
 
     // Project Renaming State
     const [isEditingProjectName, setIsEditingProjectName] = useState(false);
@@ -130,8 +135,64 @@ export function DashboardDocente({
                 }
             };
 
-            fetchUnreadStudentMessages();
-            fetchUnreadFamilyMessages();
+            const fetchSolicitudesPendientes = async () => {
+                try {
+                    console.log("🔍 Fetching solicitudes for user:", user.id);
+                    const { data, error } = await supabase
+                        .from('peticiones_colaboracion')
+                        .select(`
+                            id, 
+                            proyecto_id, 
+                            profesor_solicitante_id, 
+                            estado, 
+                            created_at,
+                            proyectos (nombre),
+                            profesor_solicitante:profiles!profesor_solicitante_id (nombre, email)
+                        `)
+                        .eq('profesor_propietario_id', user.id)
+                        .eq('estado', 'pendiente')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('❌ Error 400 Detail:', error);
+                        // Intento alternativo sin joins si falla
+                        const { data: simpleData } = await supabase
+                            .from('peticiones_colaboracion')
+                            .select('*')
+                            .eq('profesor_propietario_id', user.id)
+                            .eq('estado', 'pendiente');
+                        
+                        if (simpleData && simpleData.length > 0) {
+                            setSolicitudesPendientes(simpleData.length);
+                            setSolicitudEmergente(simpleData[0]);
+                        }
+                        return;
+                    }
+
+                    if (data && data.length > 0) {
+                        setSolicitudesPendientes(data.length);
+                        // Mapeamos para mantener compatibilidad con el componente
+                        const mappedData = data.map((s: any) => ({
+                            ...s,
+                            proyecto: s.proyectos,
+                            perfil_solicitante: s.profesor_solicitante
+                        }));
+                        setSolicitudEmergente(mappedData[0]);
+                    } else {
+                        setSolicitudesPendientes(0);
+                    }
+                } catch (err) {
+                    console.error('Error fetching collab requests:', err);
+                }
+            };
+
+            const refreshData = () => {
+                fetchUnreadStudentMessages();
+                fetchUnreadFamilyMessages();
+                fetchSolicitudesPendientes();
+            };
+
+            refreshData();
 
             studentSub = supabase.channel(`student_msgs_docente_${user.id}`)
                 .on('postgres_changes', {
@@ -152,16 +213,28 @@ export function DashboardDocente({
                 }, payload => {
                     fetchUnreadFamilyMessages();
                 }).subscribe();
-        }
+            
+            const collabSub = supabase.channel(`collab_requests_docente_${user.id}`)
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'peticiones_colaboracion',
+                    filter: `profesor_propietario_id=eq.${user.id}`
+                }, async (payload) => {
+                    console.log("🔍 DEBUG: Collab Notification Event:", payload.eventType);
+                    if (payload.eventType === 'INSERT') {
+                        toast.info('¡Nueva solicitud de colaboración!');
+                    }
+                    // Refetch completo para obtener los joins actualizados
+                    fetchSolicitudesPendientes();
+                }).subscribe();
 
-        return () => {
-            if (studentSub) {
-                supabase.removeChannel(studentSub);
-            }
-            if (familySub) {
-                supabase.removeChannel(familySub);
-            }
-        };
+            return () => {
+                if (studentSub) supabase.removeChannel(studentSub);
+                if (familySub) supabase.removeChannel(familySub);
+                if (collabSub) supabase.removeChannel(collabSub);
+            };
+        }
     }, [user]);
 
     const numPendientes = grupos.reduce((acc, g) =>
@@ -566,11 +639,20 @@ export function DashboardDocente({
                                                     </button>
                                                 </div>
 
-                                                <div className="flex items-center gap-2">
+                                                 <div className="flex items-center gap-2">
                                                     <span className={`bg-blue-600 text-white text-sm font-black px-4 py-1.5 rounded-xl shadow-lg ${proyectoActual.asignatura ? `shadow-${getAsignaturaStyles(proyectoActual.asignatura).borderClass.split('-')[1]}-200` : 'shadow-blue-200'} tracking-wider flex items-center gap-2`}>
                                                         <Key className="w-4 h-4" />
                                                         CÓDIGO: <span className="text-lg">{proyectoActual.codigo_sala}</span>
                                                     </span>
+
+                                                    <button
+                                                        onClick={() => setModalHorarioAbierto(true)}
+                                                        className="flex items-center gap-2 px-4 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100 rounded-xl transition-all font-black text-xs shadow-sm"
+                                                        title="Ver mi horario"
+                                                    >
+                                                        <Calendar className="w-4 h-4" />
+                                                        <span>HORARIO</span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         )}
@@ -593,8 +675,17 @@ export function DashboardDocente({
                                         <FolderOpen className="w-3.5 h-3.5" />
                                         {unreadFamilyMessages > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-bounce border border-white" />}
                                     </button>
+                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Sala: {proyectoActual?.codigo_sala}</span>
+                                    <button
+                                        onClick={() => setModalHorarioAbierto(true)}
+                                        className="p-1 px-2 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black flex items-center gap-1 border border-emerald-100"
+                                    >
+                                        <Calendar className="w-2.5 h-2.5" />
+                                        HORARIO
+                                    </button>
                                 </div>
-                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Sala: {proyectoActual?.codigo_sala}</span>
                             </div>
                         </div>
 
@@ -851,7 +942,7 @@ export function DashboardDocente({
 
                                 {/* Simple Grid View (No Departments) */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {grupos.map(grupo => (
+                                    {[...grupos].sort((a, b) => Number(b.id) - Number(a.id)).map(grupo => (
                                         <Card_Grupo
                                             key={grupo.id}
                                             grupo={grupo}
@@ -938,6 +1029,23 @@ export function DashboardDocente({
                 </div>
             )}
 
+            {solicitudEmergente && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[200] p-4 animate-in fade-in zoom-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-xl shadow-2xl overflow-hidden border border-white/20 flex flex-col max-h-[90vh]">
+                        <div className="p-8 overflow-y-auto">
+                            <SolicitudesColaboracion 
+                                solicitudDirecta={solicitudEmergente}
+                                onClose={() => setSolicitudEmergente(null)}
+                                onUpdate={() => {
+                                    setSolicitudEmergente(null);
+                                    window.location.reload(); 
+                                }} 
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {alumnoParaEvaluar && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
                     <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -994,6 +1102,14 @@ export function DashboardDocente({
                         <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'evaluacion' ? 'opacity-100' : 'opacity-80'}`}>Evaluación</span>
                     </button>
                 </nav>
+            )}
+
+            {modalHorarioAbierto && user && (
+                <ModalHorario
+                    isOpen={modalHorarioAbierto}
+                    onClose={() => setModalHorarioAbierto(false)}
+                    alumnoId={user.id}
+                />
             )}
         </div>
     );

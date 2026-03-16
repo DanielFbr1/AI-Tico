@@ -105,8 +105,9 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
       fetchRecursos();
 
       // Suscripción a cambios en tiempo real
+      const channelId = `recursos_db_${filterByGroupId || proyectoId || 'all'}_${Date.now()}`;
       const channel = supabase
-        .channel(`recursos_db_${filterByGroupId || proyectoId || 'all'}`)
+        .channel(channelId)
         .on(
           'postgres_changes',
           {
@@ -116,10 +117,14 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
             filter: filterByGroupId ? `grupo_id=eq.${filterByGroupId}` : (proyectoId ? `proyecto_id=eq.${proyectoId}` : undefined)
           },
           (payload) => {
+            console.log("🔔 Realtime resource update received:", payload);
+            
             if (payload.eventType === 'INSERT') {
               const r = payload.new;
-              if (filterByGroupId && String(r.grupo_id) !== String(filterByGroupId)) return;
-              if (proyectoId && String(r.proyecto_id) !== String(proyectoId)) return;
+              
+              // Verificaciones extras de seguridad
+              if (filterByGroupId && r.grupo_id && String(r.grupo_id) !== String(filterByGroupId)) return;
+              if (proyectoId && r.proyecto_id && String(r.proyecto_id) !== String(proyectoId)) return;
 
               const nuevo: Recurso = {
                 id: r.id,
@@ -133,11 +138,32 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
                 contenido: r.contenido,
                 usuario_id: r.usuario_id
               };
-              setRecursos(prev => [nuevo, ...prev]);
-              if (!esDocente) toast("¡Nuevo recurso!");
-            }
-            if (payload.eventType === 'DELETE') {
+
+              setRecursos(prev => {
+                // Evitar duplicados (por si acaso el polling o onSuccess ya lo añadió)
+                if (prev.some(item => item.id === nuevo.id)) return prev;
+                return [nuevo, ...prev];
+              });
+
+              if (!esDocente) {
+                toast("¡Nuevo recurso compartido!", {
+                  icon: '📂',
+                  description: nuevo.titulo
+                });
+              }
+            } else if (payload.eventType === 'DELETE') {
               setRecursos(prev => prev.filter(r => r.id !== payload.old.id));
+            } else if (payload.eventType === 'UPDATE') {
+              // Manejar actualizaciones (si se edita el título o descripción)
+              const r = payload.new;
+              setRecursos(prev => prev.map(item => item.id === r.id ? {
+                ...item,
+                titulo: r.titulo,
+                descripcion: r.descripcion,
+                tipo: r.tipo as any,
+                url: r.url,
+                contenido: r.contenido
+              } : item));
             }
           }
         )

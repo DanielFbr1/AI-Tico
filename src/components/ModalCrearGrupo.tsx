@@ -85,7 +85,7 @@ export function ModalCrearGrupo({ onClose, onCrear, grupoEditando, proyectoId, c
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (nombre.trim() && miembros.length > 0) {
+    if (nombre.trim()) {
       onCrear({
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
@@ -254,7 +254,7 @@ export function ModalCrearGrupo({ onClose, onCrear, grupoEditando, proyectoId, c
                 {miembros.length === 0 && (
                   <div className="h-full flex flex-col items-center justify-center py-6 text-center">
                     <Users className="w-6 h-6 text-slate-200 mb-2" />
-                    <p className="text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-widest leading-relaxed px-4">Selecciona alumnos arriba para formar el equipo</p>
+                    <p className="text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-widest leading-relaxed px-4">Puedes añadir alumnos ahora o hacerlo más tarde desde el tablero</p>
                   </div>
                 )}
               </div>
@@ -273,7 +273,7 @@ export function ModalCrearGrupo({ onClose, onCrear, grupoEditando, proyectoId, c
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!nombre.trim() || miembros.length === 0}
+            disabled={!nombre.trim()}
             className="flex-[2] md:flex-none px-8 md:px-12 py-3.5 md:py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] md:text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 transition-all flex items-center justify-center gap-3"
           >
             <Check className="w-5 h-5" />
