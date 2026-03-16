@@ -275,7 +275,7 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
                     {alumnoSeleccionado ? (
                         <>
                             {/* Chat Header */}
-                            <div className="h-[72px] border-b border-slate-200 px-4 md:px-6 flex items-center gap-4 shrink-0 bg-white">
+                            <div className="h-[72px] border-b border-slate-200 px-4 md:px-6 flex items-center gap-4 shrink-0 bg-white sticky top-0 z-10">
                                 <button
                                     onClick={() => setAlumnoSeleccionado(null)}
                                     className="md:hidden p-2 -ml-2 text-slate-400 hover:bg-slate-100 rounded-xl"
@@ -333,7 +333,7 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
                             </div>
 
                             {/* Chat Input */}
-                            <div className="px-4 py-4 md:px-6 md:py-5 border-t border-slate-200 bg-white">
+                            <div className="px-4 py-4 md:px-6 md:py-5 border-t border-slate-200 bg-white sticky bottom-0 z-10">
                                 <form onSubmit={handleEnviarMensaje} className="flex items-center gap-3">
                                     <input
                                         type="text"

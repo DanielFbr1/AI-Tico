@@ -6,7 +6,7 @@ import { FamiliaNotasAlumno } from './FamiliaNotasAlumno';
 import { ChatFamiliaProfesor } from './ChatFamiliaProfesor';
 import { toast } from 'sonner';
 
-const VERSION = 'v4.5.2 (Audio Fix)';
+const VERSION = 'v4.5.3 (Chat UI Fix)';
 
 interface AlumnoVinculado {
     id: string;

@@ -116,9 +116,9 @@ export function MensajesFamiliasProfesor({ profesorId, profesorNombre, onBack }:
     }
 
     return (
-        <div className="min-h-screen bg-[#fcfdff]">
+        <div className="h-[100dvh] bg-[#fcfdff] flex flex-col overflow-hidden">
             {/* Header */}
-            <header className="bg-white border-b border-slate-200">
+            <header className="bg-white border-b border-slate-200 shrink-0 sticky top-0 z-10">
                 <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
                     <div className="flex items-center gap-4">
                         <button
@@ -141,9 +141,10 @@ export function MensajesFamiliasProfesor({ profesorId, profesorNombre, onBack }:
                     </div>
                 </div>
             </header>
-
+ 
             {/* Content */}
-            <main className="max-w-4xl mx-auto px-4 md:px-6 py-8">
+            <main className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
                         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
@@ -193,6 +194,7 @@ export function MensajesFamiliasProfesor({ profesorId, profesorNombre, onBack }:
                         ))}
                     </div>
                 )}
+                </div>
             </main>
         </div>
     );

@@ -152,9 +152,9 @@ export function ChatFamiliaProfesor({
     const accentColor = currentRole === 'familia' ? 'emerald' : 'blue';
 
     return (
-        <div className="min-h-screen bg-[#fcfdff] flex flex-col">
+        <div className="h-[100dvh] bg-[#fcfdff] flex flex-col overflow-hidden">
             {/* Header */}
-            <header className={`bg-white border-b border-slate-200 shrink-0`}>
+            <header className="bg-white border-b border-slate-200 shrink-0 sticky top-0 z-10">
                 <div className="max-w-3xl mx-auto px-4 md:px-6 py-4">
                     <div className="flex items-center gap-4">
                         <button
@@ -237,7 +237,7 @@ export function ChatFamiliaProfesor({
             </main>
 
             {/* Message Input */}
-            <div className="bg-white border-t border-slate-200 shrink-0">
+            <div className="bg-white border-t border-slate-200 shrink-0 sticky bottom-0 z-10">
                 <form onSubmit={handleSend} className="max-w-3xl mx-auto px-4 md:px-6 py-4">
                     <div className="flex items-center gap-3">
                         <input
