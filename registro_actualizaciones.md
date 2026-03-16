@@ -1,5 +1,22 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [v1.8.8] - 2026-03-16
+- **Error corregido**: Solucionado el problema visual del texto `=20` en los correos electrónicos mediante la optimización del encoding y minificado de la plantilla HTML.
+- **Despliegue**: Subida de todas las mejoras de la rama (v1.8.4 - v1.8.8) a producción en Vercel.
+
+## [v1.8.7] - 2026-03-16
+- **Error corregido**: Solucionado el problema de mensajes duplicados en los chats de Profesores/Familias y Grupos.
+- **Error corregido**: Reparada la plantilla de email que mostraba variables sin procesar (ej. `${senderName}`).
+- **Mejora**: Sincronización de chat más robusta basada exclusivamente en Real-time.
+
+## [v1.8.6] - 2026-03-16
+- **Mejora**: Optimización de la plantilla de correo para máxima compatibilidad. Se ha sustituido el diseño basado en Flexbox por tablas HTML tradicionales para evitar que el contenido se vea "cortado" en clientes como Outlook o Gmail móvil.
+- **Mejora**: Aumento del límite de caracteres en la previsualización del mensaje en el email.
+
+## [v1.8.5] - 2026-03-16
+- **Mejora**: Migración de la cuenta de envío de notificaciones a `valimanadesigns@gmail.com`.
+- **Mejora**: Rediseño visual de las notificaciones por email con una estética más moderna y colores corporativos (Coral Tico).
+
 ## [v1.8.4] - 2026-03-16
 - **Mejora**: Entrada automática al detalle de un grupo inmediatamente después de crearlo.
 - **Mejora**: Ordenación global de proyectos en el dashboard. Ahora los proyectos (propios y compartidos) se ordenan por fecha de actividad reciente (creación o unión), apareciendo siempre lo más nuevo arriba.

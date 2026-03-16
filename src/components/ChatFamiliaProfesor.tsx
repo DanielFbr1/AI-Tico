@@ -131,15 +131,6 @@ export function ChatFamiliaProfesor({
             if (error) throw error;
             setNewMessage('');
             inputRef.current?.focus();
-
-            // Optimistic update
-            setMensajes(prev => [...prev, {
-                id: crypto.randomUUID(),
-                mensaje: newMessage.trim(),
-                sender_id: currentUserId,
-                created_at: new Date().toISOString(),
-                leido: false
-            }]);
         } catch (err) {
             console.error('Error sending message:', err);
         } finally {

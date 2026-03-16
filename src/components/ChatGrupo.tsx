@@ -109,23 +109,8 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
         
         if (!audioUrl) setInput('');
 
-        // Optimistic UI Update
-        const optimisticMsg: MensajeChat = {
-            id: tempId,
-            created_at: new Date().toISOString(),
-            grupo_id: grupoId,
-            remitente: miembroActual,
-            contenido: audioUrl ? '🎤 Mensaje de voz' : msgContent,
-            audio_url: audioUrl || undefined,
-            tipo: esProfesor ? 'profesor' : 'alumno',
-            modo: 'equipo'
-        };
-
-        setMensajes(prev => [...prev, optimisticMsg]);
-        setTimeout(scrollToBottom, 100);
-
         try {
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('mensajes_chat')
                 .insert([{
                     grupo_id: grupoId,
@@ -134,15 +119,9 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
                     audio_url: audioUrl || null,
                     tipo: esProfesor ? 'profesor' : 'alumno',
                     modo: 'equipo'
-                }])
-                .select();
+                }]);
 
             if (error) throw error;
-            
-            // Reemplazar el mensaje optimista con el real para tener el ID correcto de la DB
-            if (data && data[0]) {
-                setMensajes(prev => prev.map(m => m.id === tempId ? data[0] : m));
-            }
         } catch (err) {
             console.error('Error sending message:', err);
             toast.error('Error al enviar mensaje');

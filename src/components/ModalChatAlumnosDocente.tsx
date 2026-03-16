@@ -143,23 +143,6 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
         const newMessageTexto = nuevoMensaje.trim();
         setNuevoMensaje('');
 
-        // Optimistic UI Update
-        const tempMsg: Mensaje = {
-            id: Date.now().toString(),
-            sender_id: docenteId,
-            profesor_user_id: docenteId,
-            alumno_user_id: alumnoSeleccionado,
-            alumno_nombre: alumAct.nombre,
-            mensaje: newMessageTexto,
-            created_at: new Date().toISOString(),
-            leido: false
-        };
-
-        setMensajes(prev => {
-            const thread = prev[alumnoSeleccionado] || [];
-            return { ...prev, [alumnoSeleccionado]: [...thread, tempMsg] };
-        });
-
         // Insert to DB
         const { error } = await supabase
             .from('mensajes_profesor_alumno')
