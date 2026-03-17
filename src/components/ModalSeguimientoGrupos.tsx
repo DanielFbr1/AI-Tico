@@ -156,7 +156,7 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Hub de Misión</h2>
-                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200/50">V5.4.4</span>
+                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200/50">V5.5.2</span>
                             </div>
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{tarea.titulo} (Máx: 10 pts)</p>
                         </div>

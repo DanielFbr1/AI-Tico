@@ -16,13 +16,20 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
     const [decisiones, setDecisiones] = useState<Record<string, { accion: 'aprobar' | 'rechazar' | 'pendiente', comentario?: string }>>({});
 
     // Filter groups that have things to review
-    const gruposConRevision = grupos.filter(g => {
-        const tieneHitos = (g.hitos || []).some(h => h.estado === 'revision');
-        const tieneTareas = tareasGlobales.some(t => t.grupo_id === Number(g.id) && t.estado === 'revision');
-        return tieneHitos || tieneTareas;
-    });
+    const tieneTareasGlobales = tareasGlobales.some(t => t.grupo_id === null && t.estado === 'revision');
 
-    const selectedGrupo = grupos.find(g => g.id === selectedGroupId);
+    const gruposConRevision = [
+        ...(tieneTareasGlobales ? [{ id: 'global', nombre: 'Misiones Globales', miembros: [] }] : []),
+        ...grupos.filter(g => {
+            const tieneHitos = (g.hitos || []).some(h => h.estado === 'revision');
+            const tieneTareas = tareasGlobales.some(t => t.grupo_id === Number(g.id) && t.estado === 'revision');
+            return tieneHitos || tieneTareas;
+        })
+    ];
+
+    const selectedGrupo = selectedGroupId === 'global' 
+        ? { id: 'global', nombre: 'Misiones Globales', miembros: [], hitos: [] } as any
+        : grupos.find(g => g.id === selectedGroupId);
 
     const handleDecision = (id: string, accion: 'aprobar' | 'rechazar') => {
         setDecisiones(prev => ({
@@ -42,7 +49,7 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
         if (!selectedGroupId) return;
 
         // 1. Handle Legacy Milestones
-        const hitosPendientes = (selectedGrupo?.hitos || []).filter(h => h.estado === 'revision');
+        const hitosPendientes = ((selectedGrupo as any)?.hitos || []).filter((h: any) => h.estado === 'revision');
         const milestoneUpdates: { hitoId: string, nuevoEstado: 'aprobado' | 'rechazado' | 'pendiente' | 'revision' }[] = [];
 
         for (const hito of hitosPendientes) {
@@ -56,7 +63,11 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
         }
 
         // 2. Handle New Tasks (from `tareas` table)
-        const tareasPendientes = tareasGlobales.filter(t => t.grupo_id === Number(selectedGroupId) && t.estado === 'revision');
+        const filterFn = selectedGroupId === 'global' 
+            ? (t: TareaDetallada) => t.grupo_id === null && t.estado === 'revision'
+            : (t: TareaDetallada) => t.grupo_id === Number(selectedGroupId) && t.estado === 'revision';
+
+        const tareasPendientes = tareasGlobales.filter(filterFn);
         for (const tarea of tareasPendientes) {
             const decision = decisiones[tarea.id];
             if (decision && decision.accion !== 'pendiente' && onUpdateTarea) {
@@ -73,8 +84,10 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
     };
 
     const allItemsToReviewCount = selectedGrupo 
-        ? (selectedGrupo.hitos || []).filter(h => h.estado === 'revision').length + 
-          tareasGlobales.filter(t => t.grupo_id === Number(selectedGroupId) && t.estado === 'revision').length
+        ? (selectedGroupId === 'global' 
+            ? tareasGlobales.filter(t => t.grupo_id === null && t.estado === 'revision').length
+            : ((selectedGrupo as any).hitos || []).filter((h: any) => h.estado === 'revision').length + 
+              tareasGlobales.filter(t => t.grupo_id === Number(selectedGroupId) && t.estado === 'revision').length)
         : 0;
 
     return (
@@ -110,8 +123,10 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
                             </div>
                         ) : (
                             gruposConRevision.map(g => {
-                                const numHitos = (g.hitos || []).filter(h => h.estado === 'revision').length;
-                                const numTareas = tareasGlobales.filter(t => t.grupo_id === Number(g.id) && t.estado === 'revision').length;
+                                const numHitos = ((g as any).hitos || []).filter((h: any) => h.estado === 'revision').length;
+                                const numTareas = g.id === 'global' 
+                                    ? tareasGlobales.filter(t => t.grupo_id === null && t.estado === 'revision').length
+                                    : tareasGlobales.filter(t => t.grupo_id === Number(g.id) && t.estado === 'revision').length;
                                 return (
                                     <button
                                         key={g.id}
@@ -142,7 +157,7 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
                     <>
                         <div className="flex-1 overflow-y-auto pr-2 mb-6 space-y-4">
                             {/* Hitos */}
-                            {(selectedGrupo.hitos || []).filter(h => h.estado === 'revision').map((hito) => {
+                            {((selectedGrupo as any).hitos || []).filter((h: any) => h.estado === 'revision').map((hito: any) => {
                                 const decision = decisiones[hito.id] || { accion: 'pendiente' };
                                 return (
                                     <div key={hito.id} className={`p-5 rounded-2xl border transition-all ${
@@ -164,8 +179,11 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
                                 );
                             })}
 
-                            {/* Tareas Globales */}
-                            {tareasGlobales.filter(t => t.grupo_id === Number(selectedGroupId) && t.estado === 'revision').map((tarea) => {
+                            {/* Tareas */}
+                            {tareasGlobales.filter(t => 
+                                (selectedGroupId === 'global' ? t.grupo_id === null : t.grupo_id === Number(selectedGroupId)) && 
+                                t.estado === 'revision'
+                            ).map((tarea) => {
                                 const decision = decisiones[tarea.id] || { accion: 'pendiente' };
                                 return (
                                     <div key={tarea.id} className={`p-5 rounded-2xl border transition-all ${

@@ -1,5 +1,11 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.5.2] - 2026-03-17
+### Corregido
+- **Revisiones Globales (Docente)**: Se ha solucionado un error en el modal de revisiones pendientes donde las tareas globales (sin grupo asignado) no aparecían para el docente.
+- **Categoría "Misiones Globales"**: Se ha añadido una nueva sección virtual en el modal de revisiones para gestionar las tareas enviadas por alumnos que no pertenecen a un grupo específico o que son compartidas para todo el proyecto.
+- **Filtrado de Notificaciones**: Corregida la lógica de conteo y filtrado para asegurar que el indicador de "Pendientes" sea coherente con lo que se muestra dentro del modal.
+
 ## [V5.5.1] - 2026-03-17
 ### Ajustado
 - **Reubicación de Calendario (Alumno)**: Se ha movido el acceso al calendario junto al botón de horario en el header para un acceso más contextual y rápido.
