@@ -21,6 +21,22 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
     const [subiendoArchivo, setSubiendoArchivo] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const handleDeleteFile = async (idx: number) => {
+        const nuevosArchivos = archivosAlumno.filter((_, i) => i !== idx);
+        setArchivosAlumno(nuevosArchivos);
+        if (onSaveAlumnoContent) {
+            await onSaveAlumnoContent(tarea.id, contenidoAlumno, nuevosArchivos);
+        }
+        toast.success('Evidencia eliminada');
+    };
+
+    const handleAnularEntrega = async () => {
+        if (confirm('¿Quieres anular el envío y volver a editar la tarea?')) {
+            onEstadoChange(tarea.id, 'en_progreso');
+            toast.info('Envío anulado. Ya puedes editar de nuevo.');
+        }
+    };
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
         
@@ -118,9 +134,9 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                             <div className="flex items-center gap-3">
                                 <button 
                                     onClick={onClose}
-                                    className="p-2.5 bg-white/10 hover:bg-white/25 rounded-xl transition-all text-white backdrop-blur-md border border-white/20 group shadow-lg active:scale-90"
+                                    className="p-3 bg-white/10 hover:bg-white/25 rounded-2xl transition-all text-white backdrop-blur-md border border-white/20 group shadow-lg active:scale-90"
                                 >
-                                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                                    <X className="w-8 h-8 group-hover:rotate-90 transition-transform" />
                                 </button>
                             </div>
                         </div>
@@ -208,6 +224,15 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                 {guardando ? 'Guardando...' : 'Entregar Misión'}
                                             </button>
                                         )}
+                                        {isStudent && tarea.estado === 'revision' && (
+                                            <button
+                                                onClick={handleAnularEntrega}
+                                                className="px-6 py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-white hover:text-rose-500 hover:border-rose-200 transition-all active:scale-95 flex items-center gap-2"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                                Anular Entrega
+                                            </button>
+                                        )}
                                     </div>
                                     
                                     <div className="space-y-4">
@@ -223,18 +248,27 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
 
                                         <div className="flex flex-wrap gap-2">
                                             {(archivosAlumno || []).map((archivo: any, idx: number) => (
-                                                <a 
-                                                    key={idx} 
-                                                    href={archivo.url} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer" 
-                                                    className="flex items-center gap-3 px-3 py-2 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group max-w-[240px]"
-                                                >
-                                                    <div className="text-base">{getFileIcon(archivo.tipo)}</div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-[10px] font-black text-slate-700 truncate group-hover:text-indigo-600 transition-colors uppercase">{archivo.nombre}</p>
-                                                    </div>
-                                                </a>
+                                                <div key={idx} className="relative group/file">
+                                                    <a 
+                                                        href={archivo.url} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        className="flex items-center gap-3 px-3 py-2 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group max-w-[240px]"
+                                                    >
+                                                        <div className="text-base">{getFileIcon(archivo.tipo)}</div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-[10px] font-black text-slate-700 truncate group-hover:text-indigo-600 transition-colors uppercase">{archivo.nombre}</p>
+                                                        </div>
+                                                    </a>
+                                                    {isStudent && tarea.estado !== 'revision' && tarea.estado !== 'aprobado' && (
+                                                        <button 
+                                                            onClick={() => handleDeleteFile(idx)}
+                                                            className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover/file:opacity-100 transition-opacity hover:scale-110 active:scale-90"
+                                                        >
+                                                            <Trash2 className="w-2.5 h-2.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             ))}
                                             
                                             {isStudent && tarea.estado !== 'revision' && tarea.estado !== 'aprobado' && (
@@ -357,7 +391,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                     onClick={onClose}
                                     className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200 uppercase tracking-[0.2em]"
                                 >
-                                    Salir del Hub
+                                    Salir
                                 </button>
                             </div>
                         </div>

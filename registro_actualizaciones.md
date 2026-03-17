@@ -1,5 +1,14 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.6.7] - 2026-03-17
+### Control Total y Refinamiento del Hub
+- **Gestión de Evidencias**: Ahora los alumnos pueden eliminar archivos subidos incorrectamente antes de entregar la misión.
+- **Anulación de Entrega**: Se ha añadido la posibilidad de anular un envío "En Revisión" para realizar correcciones de última hora.
+- **Mejoras de UX**:
+    - El botón de cierre (`X`) del Hub es ahora un 40% más grande y fácil de pulsar.
+    - El texto del botón de salida se ha simplificado a "Salir" para una interfaz más limpia.
+- **Versión**: Actualización global a V5.6.7.
+
 ## [V5.6.6] - 2026-03-17
 ### Botón de Evidencias Mejorado
 - **Claridad Visual**: El botón "Adjuntar Evidencias" se ha transformado en un botón de acción principal ("Subir Archivos de Evidencia") con fondo sólido `indigo-600` y mayor tamaño para que sea inconfundible.
