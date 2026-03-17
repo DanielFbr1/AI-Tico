@@ -1,4 +1,4 @@
-import { FileText, Video, Music, Image as ImageIcon, Download, Eye } from 'lucide-react';
+import { FileText, Video, Music, Image as ImageIcon, Download, Eye, Rocket } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -64,21 +64,42 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
     } else {
       const fetchRecursos = async () => {
         try {
-          // Fetch de recursos reales
-          let query = supabase
-            .from('recursos')
-            .select('*')
-            .order('created_at', { ascending: false });
+          // Obtener rol del usuario actual
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          const { data: profile } = await supabase.from('profiles').select('rol').eq('id', user.id).maybeSingle();
+          const esProfe = esDocente || profile?.rol === 'profesor';
 
-          if (proyectoId) {
-            query = query.eq('proyecto_id', proyectoId);
+          // Construcción de la consulta con join para obtener el rol del creador
+          let query;
+          
+          if (!filterByGroupId) {
+            // VISTA GLOBAL (Biblioteca Docente): Solo recursos de PROFESORES
+            query = supabase
+              .from('recursos')
+              .select('*, profiles!inner(rol)')
+              .eq('proyecto_id', proyectoId)
+              .eq('profiles.rol', 'profesor');
+            
+            if (!esProfe) {
+              // Los alumnos solo ven lo publicado
+              query = query.eq('publicado', true);
+            }
+          } else {
+            // VISTA DE GRUPO (Equipo): Se ven recursos del equipo
+            query = supabase
+              .from('recursos')
+              .select('*, profiles(rol)')
+              .eq('proyecto_id', proyectoId)
+              .eq('grupo_id', filterByGroupId);
+
+            if (!esProfe) {
+              // Los alumnos solo ven lo publicado en su grupo
+              query = query.eq('publicado', true);
+            }
           }
 
-          if (filterByGroupId) {
-            query = query.eq('grupo_id', filterByGroupId);
-          }
-
-          const { data, error } = await query;
+          const { data, error } = await query.order('created_at', { ascending: false });
 
           if (error) throw error;
 
@@ -92,13 +113,15 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
             fechaSubida: new Date(r.created_at),
             url: r.url,
             contenido: r.contenido,
-            usuario_id: r.usuario_id
+            usuario_id: r.usuario_id,
+            publicado: r.publicado,
+            uploaderRole: (r as any).profiles?.rol
           }));
 
           setRecursos(recursosMapeados);
         } catch (err) {
           console.error("Error fetching resources:", err);
-          toast.error("Error al cargar recursos compartidos");
+          // toast.error("Error al cargar recursos");
         }
       };
 
@@ -119,51 +142,11 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
           (payload) => {
             console.log("🔔 Realtime resource update received:", payload);
             
-            if (payload.eventType === 'INSERT') {
-              const r = payload.new;
-              
-              // Verificaciones extras de seguridad
-              if (filterByGroupId && r.grupo_id && String(r.grupo_id) !== String(filterByGroupId)) return;
-              if (proyectoId && r.proyecto_id && String(r.proyecto_id) !== String(proyectoId)) return;
-
-              const nuevo: Recurso = {
-                id: r.id,
-                grupoId: r.grupo_id,
-                grupoNombre: r.grupo_nombre,
-                tipo: r.tipo as any,
-                titulo: r.titulo,
-                descripcion: r.descripcion,
-                fechaSubida: new Date(r.created_at),
-                url: r.url,
-                contenido: r.contenido,
-                usuario_id: r.usuario_id
-              };
-
-              setRecursos(prev => {
-                // Evitar duplicados (por si acaso el polling o onSuccess ya lo añadió)
-                if (prev.some(item => item.id === nuevo.id)) return prev;
-                return [nuevo, ...prev];
-              });
-
-              if (!esDocente) {
-                toast("¡Nuevo recurso compartido!", {
-                  icon: '📂',
-                  description: nuevo.titulo
-                });
-              }
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              // Recargar para aplicar filtros complejos de rol y publicación
+              fetchRecursos();
             } else if (payload.eventType === 'DELETE') {
               setRecursos(prev => prev.filter(r => r.id !== payload.old.id));
-            } else if (payload.eventType === 'UPDATE') {
-              // Manejar actualizaciones (si se edita el título o descripción)
-              const r = payload.new;
-              setRecursos(prev => prev.map(item => item.id === r.id ? {
-                ...item,
-                titulo: r.titulo,
-                descripcion: r.descripcion,
-                tipo: r.tipo as any,
-                url: r.url,
-                contenido: r.contenido
-              } : item));
             }
           }
         )
@@ -246,6 +229,30 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
     }
   };
 
+  const handlePublicarRecurso = async (recurso: Recurso) => {
+    try {
+      const { error } = await supabase
+        .from('recursos')
+        .update({ publicado: true })
+        .eq('id', recurso.id);
+
+      if (error) throw error;
+
+      toast.success("Recurso publicado para los alumnos");
+      
+      // La actualización en tiempo real se encargará de refrescar la lista si está bien configurada,
+      // pero por si acaso actualizamos el estado local también.
+      setRecursos(prev => prev.map(r => r.id === recurso.id ? { ...r, publicado: true } : r));
+      if (recursoSeleccionado?.id === recurso.id) {
+        setRecursoSeleccionado({ ...recursoSeleccionado, publicado: true });
+      }
+
+    } catch (error: any) {
+      console.error("Error publishing:", error);
+      toast.error("Error al publicar: " + error.message);
+    }
+  };
+
   const getTipoIcon = (tipo: Recurso['tipo']) => {
     switch (tipo) {
       case 'texto': return FileText;
@@ -278,7 +285,8 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
                 key={recurso.id}
                 recurso={recurso}
                 onClick={setRecursoSeleccionado}
-                onClickDelete={(mostrarEjemplo || (recurso.usuario_id && true)) ? (r) => { // Simplificado: validaremos dentro de handleDelete
+                onPublish={esDocente ? handlePublicarRecurso : undefined}
+                onClickDelete={(mostrarEjemplo || (recurso.usuario_id && true)) ? (r) => { 
                   handleBorrarRecurso(r);
                 } : undefined}
               />
@@ -406,6 +414,17 @@ export function RepositorioColaborativo({ grupo, mostrarEjemplo = false, classNa
                   <Download className="w-4 h-4" />
                   Descargar Archivo
                 </button>
+
+                {/* Botón Publicar (Solo si es borrador y es docente) */}
+                {recursoSeleccionado.publicado === false && esDocente && (
+                  <button
+                    onClick={() => handlePublicarRecurso(recursoSeleccionado)}
+                    className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-all font-bold uppercase tracking-widest text-xs shadow-lg"
+                  >
+                    <Rocket className="w-4 h-4" />
+                    Publicar Ahora
+                  </button>
+                )}
 
                 {/* Botón Borrar (Solo visible si es ejemplo o tiene usuario_id y coincide, o si es docente) */}
                 {(mostrarEjemplo || recursoSeleccionado.usuario_id) && (

@@ -1,14 +1,15 @@
-import { FileText, Video, Music, Image as ImageIcon, Eye, Trash2 } from 'lucide-react';
+import { FileText, Video, Music, Image as ImageIcon, Eye, Trash2, Rocket } from 'lucide-react';
 import { Recurso } from '../types';
 
 interface RecursoCardProps {
     recurso: Recurso;
     onClick: (recurso: Recurso) => void;
     onClickDelete?: (recurso: Recurso) => void;
+    onPublish?: (recurso: Recurso) => void;
     className?: string;
 }
 
-export function RecursoCard({ recurso, onClick, onClickDelete, className = '' }: RecursoCardProps) {
+export function RecursoCard({ recurso, onClick, onClickDelete, onPublish, className = '' }: RecursoCardProps) {
     const getTipoIcon = (tipo: Recurso['tipo']) => {
         switch (tipo) {
             case 'texto': return FileText;
@@ -44,6 +45,11 @@ export function RecursoCard({ recurso, onClick, onClickDelete, className = '' }:
                         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-100">
                             {recurso.grupoNombre.split('–')[1]?.trim() || recurso.grupoNombre}
                         </span>
+                        {recurso.publicado === false && (
+                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                Borrador
+                            </span>
+                        )}
                     </div>
                     <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{recurso.descripcion}</p>
                 </div>
@@ -56,18 +62,33 @@ export function RecursoCard({ recurso, onClick, onClickDelete, className = '' }:
                     <Eye className="w-3 h-3" />
                     Ver
                 </button>
-                {onClickDelete && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onClickDelete(recurso);
-                        }}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-white text-rose-500 border border-slate-200 rounded-lg hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all text-xs font-bold uppercase tracking-wider ml-2"
-                        title="Borrar recurso"
-                    >
-                        <Trash2 className="w-3 h-3" />
-                    </button>
-                )}
+                <div className="flex items-center gap-2 ml-2">
+                    {recurso.publicado === false && onPublish && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onPublish(recurso);
+                            }}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all text-xs font-bold uppercase tracking-wider"
+                            title="Publicar ahora"
+                        >
+                            <Rocket className="w-3 h-3" />
+                            Publicar
+                        </button>
+                    )}
+                    {onClickDelete && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onClickDelete(recurso);
+                            }}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-white text-rose-500 border border-slate-200 rounded-lg hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all text-xs font-bold uppercase tracking-wider"
+                            title="Borrar recurso"
+                        >
+                            <Trash2 className="w-3 h-3" />
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

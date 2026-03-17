@@ -882,7 +882,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.5.1</span>
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.6.3</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -1285,10 +1285,6 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         {vistaActiva === 'tareas' && grupoDisplay && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-full mx-auto w-full pb-20 px-4 md:px-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-              <div>
-                <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter italic">Centro de Misiones</h3>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Gestiona tus objetivos y progresa con tu equipo</p>
-              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -1325,7 +1321,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
                            <Award className="w-3.5 h-3.5 text-amber-500" />
-                           <span className="text-[10px] font-black text-slate-400 uppercase">{t.puntos_maximos} XP</span>
+                           <span className="text-[10px] font-black text-slate-400 uppercase">{t.puntos_maximos} Puntos</span>
                         </div>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleUpdateTareaEstado(t.id, 'revision'); }}
@@ -1412,7 +1408,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       <h5 className="font-black text-slate-800 text-sm leading-tight mb-2 line-through decoration-emerald-500/30">{t.titulo}</h5>
                       <div className="flex items-center gap-1.5">
                          <div className="px-3 py-1 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-tighter shadow-sm">¡Excelente!</div>
-                         <span className="text-[10px] font-black text-emerald-600">+{t.puntos_maximos} XP</span>
+                         <span className="text-[10px] font-black text-emerald-600">+{t.puntos_maximos} Puntos</span>
                       </div>
                     </div>
                   ))}

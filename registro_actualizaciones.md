@@ -1,5 +1,49 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.6.4] - 2026-03-17
+### Hub de Misión Compacto (Sin Scroll)
+- **Optimización de Layout**: Se ha migrado a un diseño de dos columnas (Principal y Barra Lateral) que maximiza el uso del espacio horizontal y elimina la necesidad de scroll en pantallas estándar.
+- **Inspiración "Subir Aportación"**: La estética se ha alineado con la interfaz de entrega del alumno, utilizando tarjetas más limpias, fondos `bg-slate-50` y un escalado de fuentes y paddings más eficiente.
+- **Acciones Rápidas**: Los botones de aprobación, rechazo y entrega se han reposicionado para ser accesibles de inmediato sin desplazar el contenido.
+- **Jerarquía Visual**: Mejora en la distinción entre instrucciones ("Hoja de Ruta"), herramientas adjuntas y el panel de evidencias del alumno.
+- **Limpieza de Interfaz**: Eliminación de títulos y subtítulos redundantes en la vista de tareas del alumno para un diseño más minimalista.
+- **Versión**: Actualización global a V5.6.4 (Hub Compacto).
+
+## [V5.6.3] - 2026-03-17
+### Nuevo Sistema de Puntos de Misión
+- **Transición de Estrellas a Puntos**: Se ha sustituido el sistema visual de "Estrellas" por un sistema de "Puntos de Misión" más coherente y motivador, utilizando el icono de Medalla (`Award`).
+- **Sumatonia Automática de Puntos**: Al aprobar una misión desde el panel del docente, los puntos se suman automáticamente al total acumulado de cada alumno (o del equipo asignado).
+- **Asignación por Defecto**: Las misiones nuevas ahora tienen un valor predeterminado de 1 punto (ajustable por el docente).
+- **Consistencia UI**: Se han actualizado las etiquetas de "XP", "Estrellas" y "Puntos" en todas las vistas (Docente, Alumno y Familia) para usar una terminología unificada.
+- **Versión**: Actualización de etiquetas de sistema a V5.6.3.
+
+
+## [V5.6.2] - 2026-03-17
+### Rediseño del Hub de Detalle de Misión
+- **Nueva Interfaz "Hub de Misión"**: Rediseño estético completo del modal de detalles de tarea, ahora denominado Hub de Misión para una experiencia más inmersiva.
+- **Glassmorphism Premium**: Aplicación de efectos de cristal con desenfoque de fondo y bordes brillantes.
+- **Widgets de Información**: Los datos clave (Puntos, Destinatarios, Deadline) se han transformado en widgets visuales modernos con iconografía dinámica.
+- **Panel de Entrega Mejorado**: Área de respuesta y adjuntos rediseñada con mejor contraste y jerarquía.
+- **Micro-animaciones**: Transiciones suaves y efectos visuales al interactuar con el panel y los estados de misión.
+- **Versión**: Actualización de etiquetas a V5.6.2.
+
+## [V5.6.1] - 2026-03-17
+### Gestión de Grupo (Visibilidad de Recursos)
+- **Acceso Docente a Archivos de Grupo**: Ahora el profesor puede ver todos los archivos, documentos y textos subidos por los alumnos dentro de la gestión detallada de cada grupo.
+- **Colaboración Docente-Alumno**: Se ha añadido la capacidad para que el docente comparta archivos directamente dentro de un grupo específico desde la vista de detalles del grupo.
+- **Sincronización**: Integración total con `RepositorioColaborativo` para asegurar que el docente tenga una visión completa del trabajo del equipo.
+- **Versión**: Actualización de etiquetas visuales a V5.6.1.
+
+## [V5.6.0] - 2026-03-17
+### Rediseño de Repositorio (Biblioteca Docente)
+- **Estados de Publicación**: Añadida columna `publicado` a la tabla `recursos`.
+- **Modo Borrador**: Los profesores ahora pueden subir recursos como "Borrador" (solo visibles para ellos) o "Publicado".
+- **Gestión de Estados**: Añadida la posibilidad de publicar un recurso directamente desde la tarjeta o el modal de previsualización si este se encuentra en estado de borrador.
+- **Biblioteca Docente Global**: El repositorio global ahora solo muestra recursos subidos por profesores, eliminando el intercambio directo entre alumnos en ese espacio.
+- **Filtrado Inteligente**: Al alumnos solo ven contenido publicado por sus profesores en la vista global y contenido publicado por su equipo en la vista de grupo.
+- **UI**: Indicadores visuales de "Borrador" en las tarjetas de recursos para el profesor.
+- **Seguridad**: Restricción de subida de archivos para alumnos en el espacio global.
+
 ## [V5.5.2] - 2026-03-17
 ### Corregido
 - **Revisiones Globales (Docente)**: Se ha solucionado un error en el modal de revisiones pendientes donde las tareas globales (sin grupo asignado) no aparecían para el docente.

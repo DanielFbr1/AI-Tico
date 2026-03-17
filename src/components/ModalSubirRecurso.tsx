@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, FileText, Video, Music, Image as ImageIcon, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Grupo } from '../types';
 import { supabase } from '../lib/supabase';
 import { Recurso } from '../types';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface ModalSubirRecursoProps {
     grupo: Grupo;
@@ -19,7 +20,20 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
     const [archivo, setArchivo] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [tipoSeleccionado, setTipoSeleccionado] = useState<Recurso['tipo']>('texto');
+    const [publicado, setPublicado] = useState(true);
+    const [esProfesor, setEsProfesor] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const checkRole = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data } = await supabase.from('profiles').select('rol').eq('id', user.id).maybeSingle();
+                if (data?.rol === 'profesor') setEsProfesor(true);
+            }
+        };
+        checkRole();
+    }, []);
 
     const TiposDisponibles: { id: Recurso['tipo']; label: string; icon: any; color: string }[] = [
         { id: 'texto', label: 'Texto / Documento', icon: FileText, color: 'text-purple-600 bg-purple-50 border-purple-200' },
@@ -108,7 +122,8 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
                 descripcion: finalDescripcion,
                 url: mediaUrl || undefined,
                 contenido: tipoSeleccionado === 'texto' ? contenidoTexto : undefined,
-                usuario_id: user?.id
+                usuario_id: user?.id,
+                publicado: esProfesor ? publicado : true // Los alumnos siempre publican directamente (o según lógica de grupo)
             };
 
             const { data, error } = await supabase
@@ -128,7 +143,8 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
                 descripcion: data.descripcion,
                 fechaSubida: new Date(data.created_at),
                 url: data.url,
-                contenido: data.contenido
+                contenido: data.contenido,
+                publicado: data.publicado
             };
 
             toast.success('Recurso publicado con éxito');
@@ -227,7 +243,30 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
                         </div>
                     </div>
 
-                    {/* ZONE 3: Extra Content */}
+                    {/* ZONE 3: Visibility (Only for Teachers) */}
+                    {esProfesor && (
+                        <div className="space-y-3 animate-in fade-in slide-in-from-top-4">
+                            <label className="block text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Estado de Publicación</label>
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setPublicado(true)}
+                                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl border-2 transition-all font-black text-[10px] md:text-xs uppercase tracking-widest ${publicado ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-lg shadow-indigo-100' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                                >
+                                    <Eye className="w-4 h-4" />
+                                    Publicado
+                                </button>
+                                <button
+                                    onClick={() => setPublicado(false)}
+                                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl border-2 transition-all font-black text-[10px] md:text-xs uppercase tracking-widest ${!publicado ? 'bg-amber-50 border-amber-500 text-amber-700 shadow-lg shadow-amber-100' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                                >
+                                    <EyeOff className="w-4 h-4" />
+                                    Borrador
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ZONE 4: Extra Content */}
                     {!archivo && (
                         <div className="space-y-2 animate-in fade-in slide-in-from-top-4">
                             <label className="block text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Tu mensaje</label>

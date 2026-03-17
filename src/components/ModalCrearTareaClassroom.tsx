@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Upload, Link2, FileText, Calendar, Users, Star, Paperclip, Trash2, Bold, Italic, Underline, List, Strikethrough } from 'lucide-react';
+import { X, Upload, Link2, FileText, Calendar, Users, Award, Paperclip, Trash2, Bold, Italic, Underline, List, Strikethrough } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Grupo, TareaDetallada } from '../types';
@@ -22,7 +22,7 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
     const { user } = useAuth();
     const [titulo, setTitulo] = useState('');
     const [instrucciones, setInstrucciones] = useState('');
-    const [puntos, setPuntos] = useState(100);
+    const [puntos, setPuntos] = useState(1);
     const [fechaEntrega, setFechaEntrega] = useState('');
     const [grupoSeleccionado, setGrupoSeleccionado] = useState<string>(preselectedGrupoId || 'todos');
     const [archivos, setArchivos] = useState<ArchivoLocal[]>([]);
@@ -367,10 +367,10 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                                     className="w-24 px-3 py-2.5 bg-white rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all cursor-pointer appearance-none"
                                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
                                 >
+                                    <option value={1}>1</option>
+                                    <option value={2}>2</option>
+                                    <option value={5}>5</option>
                                     <option value={10}>10</option>
-                                    <option value={20}>20</option>
-                                    <option value={50}>50</option>
-                                    <option value={100}>100</option>
                                 </select>
                             </div>
                         </div>
@@ -419,8 +419,8 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                                     <span className="font-bold">{grupoSeleccionado === 'todos' ? 'Todos los alumnos' : grupos.find(g => String(g.id) === grupoSeleccionado)?.nombre || '-'}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-slate-500">
-                                    <Star className="w-3.5 h-3.5" />
-                                    <span className="font-bold">{puntos} puntos</span>
+                                    <Award className="w-3.5 h-3.5" />
+                                    <span className="font-bold">{puntos} puntos de misión</span>
                                 </div>
                                 {fechaEntrega && (
                                     <div className="flex items-center gap-2 text-xs text-slate-500">

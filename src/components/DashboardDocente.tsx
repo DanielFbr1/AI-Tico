@@ -29,6 +29,7 @@ import { SolicitudesColaboracion } from './ModalSolicitudesColaboracion';
 import { VistaCalendario } from './VistaCalendario';
 import { ModalDetalleTarea } from './ModalDetalleTarea';
 import { ModalSeguimientoGrupos } from './ModalSeguimientoGrupos';
+import { updatePuntosAlumno, addPointsToGroupMembers } from '../lib/puntos';
 
 interface DashboardDocenteProps {
     onSelectGrupo: (grupo: Grupo) => void;
@@ -386,6 +387,40 @@ export function DashboardDocente({
         }
     };
 
+    const handleEstadoChangeWithPoints = async (id: string, nuevoEstado: string, tareaRef?: TareaDetallada) => {
+        try {
+            const { error } = await supabase.from('tareas').update({ estado: nuevoEstado }).eq('id', id);
+            if (error) throw error;
+            
+            // SUMAR PUNTOS SI SE APRUEBA
+            if (nuevoEstado === 'aprobado' || nuevoEstado === 'completado') {
+                const currentTarea = tareaRef || tareasProyecto.find(t => t.id === id);
+                if (currentTarea) {
+                    if (currentTarea.grupo_id) {
+                        const grupo = grupos.find(g => g.id === currentTarea.grupo_id);
+                        if (grupo?.miembros) {
+                            await addPointsToGroupMembers(proyectoActual?.id || '', grupo.miembros, currentTarea.puntos_maximos);
+                            toast.success(`¡${currentTarea.puntos_maximos} puntos otorgados al equipo ${grupo.nombre}!`);
+                        }
+                    } else {
+                        // "Todos los alumnos" logic
+                        const { data: alumnos } = await supabase.from('profiles').select('nombre').eq('proyecto_id', proyectoActual?.id).eq('rol', 'alumno');
+                        if (alumnos) {
+                            const nombres = alumnos.map(a => a.nombre).filter(Boolean) as string[];
+                            await addPointsToGroupMembers(proyectoActual?.id || '', nombres, currentTarea.puntos_maximos);
+                            toast.success(`¡${currentTarea.puntos_maximos} puntos otorgados a toda la clase!`);
+                        }
+                    }
+                }
+            }
+            
+            fetchTareasProyecto();
+        } catch (err) {
+            console.error('Error changing task status:', err);
+            toast.error('Error al cambiar el estado');
+        }
+    };
+
     const totalInteracciones = grupos.reduce((sum, g) => sum + g.interacciones_ia, 0);
     
     // Cálculo de progreso basado en TAREAS (Issue 5)
@@ -519,15 +554,8 @@ export function DashboardDocente({
                         setTareaSeleccionadaDetalle(null);
                     }}
                     onEstadoChange={async (id, nuevoEstado) => {
-                        try {
-                            const { error } = await supabase.from('tareas').update({ estado: nuevoEstado }).eq('id', id);
-                            if (error) throw error;
-                            setTareasProyecto(prev => prev.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t));
-                            setTareaSeleccionadaDetalle(prev => prev ? { ...prev, estado: nuevoEstado as any } : null);
-                            toast.success(`Estado actualizado`);
-                        } catch (err) {
-                            toast.error('Error al cambiar el estado');
-                        }
+                        await handleEstadoChangeWithPoints(id, nuevoEstado, tareaSeleccionadaDetalle);
+                        setTareaSeleccionadaDetalle(null);
                     }}
                 />
             )}
@@ -609,7 +637,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">V5.5.2</span>
+                        <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">V5.6.4</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -689,7 +717,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            v5.5.2 (Quantum Evaluation Fixed)
+                            v5.6.4 (Hub Compacto)
                         </div>
                     </div>
                 </aside>
@@ -1260,18 +1288,8 @@ export function DashboardDocente({
                     grupos={grupos}
                     onClose={() => setTareaSeleccionadaDetalle(null)}
                     onEstadoChange={async (id, nuevoEstado) => {
-                        try {
-                            const { error } = await supabase
-                                .from('tareas')
-                                .update({ estado: nuevoEstado })
-                                .eq('id', id);
-                            if (error) throw error;
-                            fetchTareasProyecto();
-                            setTareaSeleccionadaDetalle(null);
-                            toast.success(`Estado actualizado a ${nuevoEstado}`);
-                        } catch (err) {
-                            toast.error('Error al actualizar el estado');
-                        }
+                        await handleEstadoChangeWithPoints(id, nuevoEstado, tareaSeleccionadaDetalle);
+                        setTareaSeleccionadaDetalle(null);
                     }}
                     onDelete={(id) => handleEliminarTareaGlobal(id, tareaSeleccionadaDetalle.titulo)}
                 />

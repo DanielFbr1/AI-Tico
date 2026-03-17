@@ -59,3 +59,11 @@ export async function updatePuntosAlumno(proyectoId: string, alumno: string, del
         return null;
     }
 }
+export async function addPointsToGroupMembers(proyectoId: string, miembros: string[], delta: number) {
+    if (!miembros || miembros.length === 0) return;
+    
+    console.log(`Otorgando ${delta} puntos a: ${miembros.join(', ')}`);
+    
+    const promises = miembros.map(nombre => updatePuntosAlumno(proyectoId, nombre, delta));
+    return Promise.all(promises);
+}

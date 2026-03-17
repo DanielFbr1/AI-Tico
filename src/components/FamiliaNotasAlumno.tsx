@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import {
     ArrowLeft, Loader2, Trophy, CheckCircle2, Star, AlertCircle,
     MessageSquare, FolderOpen, ChevronDown, ChevronUp, FileText,
-    Info, Users, Calendar, Filter, GraduationCap
+    Info, Users, Calendar, Filter, GraduationCap, Award
 } from 'lucide-react';
 import { getAsignaturaStyles } from '../data/asignaturas';
 
@@ -364,10 +364,10 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                         {proyecto.notaGrupal !== null ? proyecto.notaGrupal.toFixed(1) : '—'}
                                                                     </div>
                                                                 </div>
-                                                                <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
-                                                                    <span className="text-[8px] text-amber-500 font-black uppercase tracking-widest block mb-1">PUNTOS</span>
-                                                                    <div className="text-xl font-black text-amber-600 flex items-center gap-1">
-                                                                        {proyecto.puntos} <Star className="w-4 h-4 text-amber-500" fill="currentColor" />
+                                                                <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
+                                                                    <span className="text-[8px] text-indigo-500 font-black uppercase tracking-widest block mb-1">PUNTOS</span>
+                                                                    <div className="text-xl font-black text-indigo-600 flex items-center gap-1">
+                                                                        {proyecto.puntos} <Award className="w-4 h-4 text-indigo-500" />
                                                                     </div>
                                                                 </div>
                                                             </div>

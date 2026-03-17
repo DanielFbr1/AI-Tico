@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Circle, Brain, Share2, MessageSquare, Users, Bot, Pencil, ClipboardList, ExternalLink, User, Star, Calendar, FileText, Eye, Clock, Trash2, Plus, AlertCircle, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, Brain, Share2, MessageSquare, Users, Bot, Pencil, ClipboardList, ExternalLink, User, Star, Calendar, FileText, Eye, Clock, Trash2, Plus, AlertCircle, TrendingUp, CheckCircle, XCircle, Upload } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Grupo, ProyectoFase, Criterio, TareaDetallada } from '../types';
 import { EvaluacionGrupalContent } from './EvaluacionGrupalContent';
@@ -8,6 +8,7 @@ import { ChatGrupo } from './ChatGrupo';
 import { ModalConfiguracionIA } from './ModalConfiguracionIA';
 import { LivingTree } from './LivingTree';
 import { ModalDetalleTarea } from './ModalDetalleTarea';
+import { ModalSubirRecurso } from './ModalSubirRecurso';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
@@ -29,6 +30,8 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
   const [chatMode, setChatMode] = useState<'menu' | 'mentor' | 'group'>('menu');
   const [tareasGrupo, setTareasGrupo] = useState<TareaDetallada[]>([]);
   const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaDetallada | null>(null);
+  const [modalSubirRecursoAbierto, setModalSubirRecursoAbierto] = useState(false);
+  const [refreshRecursos, setRefreshRecursos] = useState(0);
 
   // Asegurar que empezamos arriba al entrar al detalle
   useEffect(() => {
@@ -469,12 +472,43 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 animate-in fade-in">
-              <RepositorioColaborativo
-                grupo={grupo}
-                todosLosGrupos={[]}
-                proyectoId={grupo.proyecto_id}
-              />
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos del Equipo</h2>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Archivos y documentos compartidos</p>
+                </div>
+                <button
+                  onClick={() => setModalSubirRecursoAbierto(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-700 transition-all font-black text-xs shadow-lg active:scale-95 uppercase tracking-wider"
+                >
+                  <Upload className="w-4 h-4" />
+                  Compartir con Equipo
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6">
+                <RepositorioColaborativo
+                  grupo={grupo}
+                  todosLosGrupos={[]}
+                  proyectoId={grupo.proyecto_id}
+                  esDocente={true}
+                  filterByGroupId={grupo.id}
+                  refreshTrigger={refreshRecursos}
+                />
+              </div>
+
+              {modalSubirRecursoAbierto && (
+                <ModalSubirRecurso
+                  grupo={grupo}
+                  proyectoId={grupo.proyecto_id}
+                  onClose={() => setModalSubirRecursoAbierto(false)}
+                  onSuccess={() => {
+                    setModalSubirRecursoAbierto(false);
+                    setRefreshRecursos(prev => prev + 1);
+                  }}
+                />
+              )}
             </div>
           )
         )}

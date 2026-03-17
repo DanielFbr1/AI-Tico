@@ -164,6 +164,8 @@ export interface Recurso {
     contenido?: string;
     fechaSubida?: string | Date; // Permite ambos para compatibilidad
     usuario_id?: string; // Nuevo: quién lo subió
+    publicado?: boolean; // Nuevo V5.6.0: estado de publicación
+    uploaderRole?: string; // Nuevo V5.6.0: rol de quien lo subió
 }
 
 export interface ProyectoActivo {
