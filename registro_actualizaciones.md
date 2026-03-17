@@ -1,5 +1,11 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.4.3] - 2026-03-17
+- **FIX**: Corregido error de permisos (RLS) que impedía guardar evaluaciones nuevas por parte del profesor.
+- **FIX**: **Escala Forzada a 10**: Eliminada cualquier referencia a 100 puntos en el Hub de Misión y Dashboard. Ahora todo es 0-10 de forma estricta.
+- **FEAT**: Añadidos botones de **Aprobado Rápido (10)** y **Rechazo Rápido (0)** en la lista de equipos para agilizar la evaluación.
+- **MAINTENANCE**: Versión visual actualizada a V5.4.3.
+
 ## [V5.4.2] - 2026-03-17
 - **FIX**: Corregido error PGRST204 al guardar evaluaciones (añadida columna `grupo_id` a `entregas_tareas`).
 - **FEAT**: Nueva **Escala de Evaluación**: Cambiada la puntuación máxima de 100 a **10 puntos** (ajustado en base de datos y UI).

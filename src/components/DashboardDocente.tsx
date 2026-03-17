@@ -609,7 +609,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">V5.4.0</span>
+                        <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">V5.4.3</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -689,7 +689,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            v4.9.0 (Smart Notifications)
+                            v5.4.3 (Quantum Evaluation)
                         </div>
                     </div>
                 </aside>
@@ -1058,7 +1058,7 @@ export function DashboardDocente({
                                                                 )}
                                                                 <div className="flex flex-col items-center gap-1 min-w-[65px]">
                                                                     {getEstadoBadgeInternal(t.estado)}
-                                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.puntos_maximos} pts</span>
+                                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">10 pts</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-1 group-hover:translate-x-0 transition-all">
                                                                     <button

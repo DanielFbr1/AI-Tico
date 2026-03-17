@@ -156,9 +156,9 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Hub de Misión</h2>
-                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200/50">V5.4.2</span>
+                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200/50">V5.4.3</span>
                             </div>
-                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{tarea.titulo}</p>
+                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{tarea.titulo} (Máx: 10 pts)</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -296,15 +296,32 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
                                         <div className="flex items-center gap-10">
                                             {!isEditing ? (
                                                 <div className="flex items-center gap-8">
+                                                    <div className="flex items-center gap-2">
+                                                        <button 
+                                                            onClick={() => handleEvaluar(g.id, 10)}
+                                                            className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 group/btn"
+                                                            title="Aprobar (10 pts)"
+                                                        >
+                                                            <CheckCircle2 className="w-5 h-5" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleEvaluar(g.id, 0)}
+                                                            className="p-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all border border-rose-100"
+                                                            title="Rechazar (0 pts)"
+                                                        >
+                                                            <X className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+
                                                     <div className="flex flex-col items-end">
                                                         <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">Puntuación Final</span>
                                                         <div className="flex items-baseline gap-1">
                                                             <span className={`text-4xl font-black ${g.notaActual > 0 ? 'text-indigo-600' : 'text-slate-200'}`}>{g.notaActual}</span>
-                                                            <span className="text-xs font-bold text-slate-300">/{tarea.puntos_maximos}</span>
+                                                            <span className="text-xs font-bold text-slate-300">/10</span>
                                                         </div>
                                                     </div>
                                                     <button 
-                                                        onClick={() => { setEditandoId(g.id); setNotaTemp(g.notaActual); }}
+                                                        onClick={() => { setEditandoId(g.id); setNotaTemp(Math.min(10, g.notaActual)); }}
                                                         className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-slate-100 active:scale-95"
                                                     >
                                                         <Edit3 className="w-6 h-6" />
@@ -337,7 +354,7 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
                                                     </div>
                                                     <div className="text-6xl font-black text-slate-800 tracking-tighter tabular-nums">
                                                         {notaTemp}
-                                                        <span className="text-xl font-bold text-slate-300 ml-2">/{tarea.puntos_maximos}</span>
+                                                        <span className="text-xl font-bold text-slate-300 ml-2">/10</span>
                                                     </div>
                                                 </div>
 
@@ -345,12 +362,12 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
                                                     <button onClick={() => setNotaTemp(Math.max(0, parseFloat((notaTemp - 0.5).toFixed(1))))} className="w-16 h-16 flex items-center justify-center bg-white border-2 border-slate-100 rounded-[1.2rem] text-slate-400 hover:text-indigo-600 hover:border-indigo-200 shadow-sm active:scale-90 transition-all"><Minus className="w-8 h-8" /></button>
                                                     <div className="flex-1 relative h-20 flex items-center">
                                                         <div className="w-full h-6 bg-slate-200 rounded-full overflow-hidden shadow-inner border-4 border-white">
-                                                            <div className={`h-full transition-all duration-700 ease-out shadow-lg ${getBarColor(notaTemp, tarea.puntos_maximos || 10)}`} style={{ width: `${(notaTemp / (tarea.puntos_maximos || 10)) * 100}%` }} />
+                                                            <div className={`h-full transition-all duration-700 ease-out shadow-lg ${getBarColor(notaTemp, 10)}`} style={{ width: `${(notaTemp / 10) * 100}%` }} />
                                                         </div>
-                                                        <input type="range" min="0" max={tarea.puntos_maximos || 10} step="0.5" value={notaTemp} onChange={(e) => setNotaTemp(Number(e.target.value))} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
-                                                        <div className="absolute h-10 w-10 bg-white border-[8px] border-indigo-600 rounded-full shadow-2xl pointer-events-none transition-all duration-150 ease-out z-10" style={{ left: `calc(${(notaTemp / (tarea.puntos_maximos || 10)) * 100}% - 20px)` }} />
+                                                        <input type="range" min="0" max="10" step="0.5" value={notaTemp} onChange={(e) => setNotaTemp(Number(e.target.value))} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
+                                                        <div className="absolute h-10 w-10 bg-white border-[8px] border-indigo-600 rounded-full shadow-2xl pointer-events-none transition-all duration-150 ease-out z-10" style={{ left: `calc(${(notaTemp / 10) * 100}% - 20px)` }} />
                                                     </div>
-                                                    <button onClick={() => setNotaTemp(Math.min(tarea.puntos_maximos || 10, parseFloat((notaTemp + 0.5).toFixed(1))))} className="w-16 h-16 flex items-center justify-center bg-white border-2 border-slate-100 rounded-[1.2rem] text-slate-400 hover:text-indigo-600 hover:border-indigo-200 shadow-sm active:scale-90 transition-all"><Plus className="w-8 h-8" /></button>
+                                                    <button onClick={() => setNotaTemp(Math.min(10, parseFloat((notaTemp + 0.5).toFixed(1))))} className="w-16 h-16 flex items-center justify-center bg-white border-2 border-slate-100 rounded-[1.2rem] text-slate-400 hover:text-indigo-600 hover:border-indigo-200 shadow-sm active:scale-90 transition-all"><Plus className="w-8 h-8" /></button>
                                                 </div>
                                             </div>
                                         </div>
