@@ -1,5 +1,154 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.4.2] - 2026-03-17
+- **FIX**: Corregido error PGRST204 al guardar evaluaciones (añadida columna `grupo_id` a `entregas_tareas`).
+- **FEAT**: Nueva **Escala de Evaluación**: Cambiada la puntuación máxima de 100 a **10 puntos** (ajustado en base de datos y UI).
+- **MAINTENANCE**: Versión visual actualizada a V5.4.2.
+
+## [V5.4.1] - 2026-03-17
+- **FIX**: Reforzada la persistencia de evaluación en el Hub de Misión.
+- **FIX**: Asegurado el guardado de `updated_at` y estado `revisado` para detección instantánea.
+- **MAINTENANCE**: Versión visual actualizada a V5.4.1.
+
+## [V5.4.0] - 2026-03-17
+- **FEAT**: Implementado **Hub Unificado de Misión**: Integración total de Detalles, Estadísticas y Evaluación en un solo panel.
+- **FEAT**: Lógica de **Priorización de Evaluación**: Los equipos con entregas pendientes de nota aparecen automáticamente al principio de la lista.
+- **FEAT**: Visor de Perfil de Tarea integrado dentro del Hub (instrucciones y archivos del docente).
+- **UX**: Unificado el acceso desde el dashboard: tanto la tarjeta como el botón "Entregas" abren el mismo Hub.
+- **UX**: Estados visuales mejorados para diferenciar "Evaluado", "Pendiente de Nota" y "Sin Entrega".
+- **MAINTENANCE**: Versión visual actualizada a V5.4.0.
+
+## [V5.3.3] - 2026-03-17
+- **FEAT**: Implementadas estadísticas dinámicas en el panel de evaluación (Realizadas, Sin Realizar, Por Evaluar).
+- **FEAT**: Restaurado el acceso dual: Clic en tarjeta de misión abre Detalles / Clic en botón abre Evaluación.
+- **UX**: Botón "Entregas" restaurado como motor central de calificación y seguimiento.
+- **UX**: Visualización destacada de descripción de misión en el panel de evaluación.
+- **MAINTENANCE**: Versión visual actualizada a V5.3.3.
+
+## [V5.3.2] - 2026-03-17
+- **FEAT**: Implementado sistema de evaluación por deslizamiento (Slider) en el seguimiento de misiones.
+- **FEAT**: Unificado el acceso a la evaluación mediante clic directo en la tarjeta de misión.
+- **FEAT**: Añadido visor de entregas (texto y archivos) dentro del panel de seguimiento por equipo.
+- **UX**: Eliminado botón redundante de Entregas para una interfaz más limpia.
+- **MAINTENANCE**: Versión visual actualizada a V5.3.2.
+
+## [V5.3.1] - 2026-03-17
+- **FEAT**: Implementado sistema de evaluación activa en `ModalSeguimientoGrupos`.
+- **FIX**: Restaurada interactividad de las tarjetas de misión (acceso a detalle unificado).
+- **FIX**: Corregidos errores de tipos en la consola de calificación.
+- **MAINTENANCE**: Versión visual actualizada a V5.3.1.
+
+## [V5.3.0] - 2026-03-17
+### Añadido
+- **Filtros Inteligentes**: Nuevo sistema de filtrado en el Control Maestro de Misiones por Estado (Pendiente, Revisión, Completado) y por Equipo.
+- **Panel de Seguimiento de Entregas**: Botón "Entregas" en cada misión que abre una matriz de seguimiento para ver qué grupos han entregado y su calificación.
+### Mejorado
+- **Optimización de Interfaz**: Rediseño compacto de las tarjetas de misiones para mejorar la visibilidad y reducir el scroll necesario.
+- **Micro-interacciones**: Animaciones y estados visuales mejorados en el tablero de control.
+
+### [v5.2.0] - 2026-03-17
+- **UI: REDISEÑO DEL TABLERO DE MISIONES**: Sustituido el tablero de 3 columnas (Kanban) por la **Lista Maestra de Seguimiento** integrada directamente en el resumen principal. Esta vista permite un control más granular de fechas, puntos y estados desde una sola pantalla.
+- **UX: INTEGRACIÓN DE CALENDARIO EN HOME**: La lógica de visualización de tareas del calendario ahora es el centro del dashboard docente, facilitando la gestión masiva de misiones.
+- **UI: MANTENIMIENTO DEL PANEL BIOMÉTRICO**: Se ha conservado intacto el panel lateral de progreso global y estadísticas del proyecto (LivingTree).
+- **MAINTENANCE**: Versión actualizada a V5.2.0 para Docente y Alumno.
+
+## [v5.1.0] - 2026-03-17
+- **UNI: MODAL DE REVISIÓN UNIFICADO**: El panel de revisiones del profesor ahora detecta y muestra tanto los "Hitos de Equipo" manuales como las "Misiones Globales" (tareas).
+- **FIX: LÓGICA DE RECHAZO**: Implementado el flujo de retorno a "Pendiente". Cuando el profesor rechaza una tarea o hito, el estado vuelve automáticamente a "pendiente" para que el alumno pueda corregirlo y volver a enviarlo, en lugar de quedar bloqueado como "rechazado".
+- **UX: FEEDBACK DE RECHAZO**: Añadido campo de comentario opcional al rechazar tareas globales para proporcionar guías de mejora al estudiante.
+- **SYNC: PERSISTENCIA TOTAL**: Se ha vinculado la base de datos `tareas` con el modal de revisiones, asegurando que las acciones del profesor se reflejen instantáneamente en la sesión del alumno vía Realtime.
+
+## [v5.0.0] - 2026-03-17
+- **FIX: PERSISTENCIA DE TAREAS (RLS)**: Corregida la política de seguridad RLS en Supabase que impedía a los alumnos actualizar sus propias tareas. Ahora los cambios de estado (ej. de "Pendiente" a "En Revisión") se persisten correctamente tras refrescar la página.
+
+## [v4.9.0] - 2026-03-17
+- **FIX: NOTIFICACIONES INTELIGENTES (PROFESOR)**: Implementado un sistema de detección de cambios unificado que alerta al profesor cuando aumenta el número de tareas pendientes de revisión, ya sean misiones globales o propuestas de hitos de los equipos.
+- **UI: BOTÓN PARPADEANTE UNIFICADO**: El botón de "Pendientes" en el panel docente ahora cuenta correctamente la suma de todas las revisiones necesarias (Tareas + Hitos), asegurando que el indicador visual y el parpadeo reflejen la carga de trabajo real.
+- **SYNC OPTIMIZATION**: Mejorada la consistencia de los estados de Realtime para evitar que las notificaciones se pierdan en transiciones rápidas.
+
+## [v4.8.0] - 2026-03-17
+- **UI: RESTAURACIÓN DE BATERÍA (EQUIPO)**: Se ha vuelto a incluir el componente de energía del equipo en la pestaña "Mi Equipo", manteniendo su visibilidad para el progreso grupal mientras se deja oculta en la gestión de tareas.
+- **FIX: SINCRONIZACIÓN GLOBAL (ALUMNO)**: Implementada una nueva suscripción Real-time en `DashboardAlumno.tsx` que escucha cambios en todas las tareas del proyecto. Esto asegura que la vista "Comunidad" (Global) se actualice al instante cuando se añaden, completan o modifican tareas de cualquier equipo.
+- **MAINTENANCE**: Actualizada la cabecera del alumno a V4.8.0 (Global Sync & UI).
+
+## [v4.7.0] - 2026-03-17
+- **UI: LIMPIEZA DE "ENERGÍA DE EQUIPO" (ALUMNO)**: Eliminadas todas las referencias a la energía y porcentajes del 67% en el Dashboard del Alumno (tanto en Equipo como en Centro de Misiones) a petición del docente.
+- **FIX: NOTIFICACIONES DOCENTE (REALTIME)**: 
+  - Ampliado el filtro de suscripción en `DetalleGrupo.tsx` para capturar tareas globales (de todo el proyecto) además de las específicas del grupo.
+  - Reforzada la lógica de notificaciones (`toast.info`) en `DashboardDocente.tsx` para asegurar que el profesor reciba alertas instantáneas de nuevas revisiones de forma robusta.
+  - Añadidos logs de depuración para monitorizar eventos de sincronización en la sesión del profesor.
+- **MAINTENANCE**: Actualizada la cabecera del alumno a V4.7.0 (Core Fixes).
+
+## [v4.6.0] - 2026-03-17
+- **UI: REINTEGRACIÓN DE BATERÍA (ALUMNO)**: El componente `LivingTree` vuelve a estar visible en la sección "Mi Equipo", permitiendo a los alumnos visualizar su energía y progreso de forma dinámica.
+- **FIX: SINCRONIZACIÓN Y ESTABILIDAD**: 
+  - Eliminado el polling de seguridad que causaba reversiones de estado. Ahora el sistema confía 100% en las suscripciones de Realtime de Supabase, garantizando que el estado "En Revisión" persista correctamente.
+- **MEJORA: VISTA GLOBAL**: Optimizada la actualización de tareas de otros equipos en la pestaña global para una experiencia de comunidad más fluida.
+- **MAINTENANCE**: Actualizada la cabecera del alumno a V4.6.0 (Sync & UI Fix).
+
+## [v4.5.0] - 2026-03-17
+- **FIX: BASE DE DATOS (MIGRACIÓN)**: 
+  - Añadidas las columnas `contenido_alumno` y `archivos_alumno` a la tabla `tareas`, eliminando el Error 400 al intentar entregar trabajos.
+  - Actualizados los Check Constraints para permitir el estado `expirado`.
+- **FIX: TIEMPO REAL (SUPABASE)**:
+  - Habilitada la replicación (REPLICA IDENTITY FULL) para la tabla `tareas`.
+  - Añadida oficialmente la tabla `tareas` a la publicación de Realtime, permitiendo que las misiones aparezcan al instante sin refrescar.
+- **MEJORA DE SINCRONIZACIÓN**:
+  - Simplificadas las suscripciones en los dashboards para una respuesta más rápida ante cambios.
+
+## [v4.4.0] - 2026-03-17
+- **UNIFICACIÓN DE PANELES (DOCENTE)**:
+  - El apartado de "Misiones del Equipo" en el detalle del grupo ahora utiliza el sistema de **4 paneles** (Pendientes, En Revisión, Completado y Expirado) para una gestión visual idéntica a la del alumno.
+  - Botones de acción rápida: **Aprobar** y **Rechazar** disponibles directamente en las tarjetas de la columna "En Revisión".
+- **SISTEMA DE NOTIFICACIONES REALTIME**:
+  - El docente ahora recibe notificaciones instantáneas (`toast.info`) cuando un alumno envía una misión para revisión, independientemente de la sección en la que se encuentre.
+- **ESTABILIDAD Y SINCRONIZACIÓN**:
+  - Corregido bug que provocaba que las tareas volvieran a estado "Pendiente" tras ser enviadas por el alumno. Se han optimizado las suscripciones de Supabase para evitar colisiones de estado.
+  - Actualización de tipos globales para soportar el estado `expirado` en todas las interfaces de tareas e hitos.
+- **MAINTENANCE**: Actualizada la cabecera del alumno a V4.4.0 (Sync & Notify).
+
+## [v4.3.0] - 2026-03-16
+- **PANEL DE TAREAS 4 COLUMNAS (ALUMNO)**: 
+  - Las tareas ahora se organizan en 4 paneles estratégicos: **Pendientes**, **En Revisión**, **Completado** y **Expirado**.
+  - Acciones directas: Botón "Enviar" directamente desde la tarjeta de tarea para agilizar el flujo de trabajo.
+- **ENTREGA DE TAREAS (ALUMNO)**:
+  - Los alumnos ahora pueden escribir una respuesta de texto y adjuntar múltiples archivos directamente en la ficha de la tarea.
+  - Los archivos se suben de forma segura a Supabase Storage y se vinculan automáticamente a la misión.
+- **FLUJO DOCENTE SIMPLIFICADO**:
+  - Eliminado el selector manual de estados para el profesor.
+  - Implementados botones de acción directa: **Aprobar** y **Rechazar** cuando una tarea entra en estado de revisión.
+- **VERSIONADO**: Actualizada la cabecera del alumno a V4.3.0 (Interactive).
+
+## [v4.2.0] - 2026-03-16
+- **SISTEMA DE TAREAS DEL ALUMNO**: 
+  - Las tareas del alumno ahora son clickables y abren el detalle completo (estilo Classroom).
+  - Lógica de estados: los alumnos solo pueden enviar a "revisión". Solo el docente puede "aprobar" o "rechazar" (completar).
+  - Eliminación de tareas: restringida solo a docentes.
+- **VISTA DE COMUNIDAD**: Cada equipo muestra sus misiones asignadas; las misiones completadas aparecen tachadas para una visualización clara del progreso global.
+- **PROGRESO UNIFICADO**: El progreso de los grupos en los dashboards de docente y alumno ahora se calcula basándose en la tabla de `tareas` unificada.
+- **REACONDICIONAMIENTO UI**: Centro de misiones del alumno restaurado al estilo familiar "Mapa de Ruta" pero con la nueva funcionalidad de misiones interactivas.
+- **CORRECCIONES**: Eliminado el banner de ayuda innecesario, corrección de errores de sintaxis y duplicados de iconos en `DashboardAlumno.tsx`.
+
+## [v2.0.0] - 2026-03-16
+- **UNIFICACIÓN DE TAREAS**: Las tareas del calendario Classroom reemplazan al sistema antiguo de hitos.
+- **Kanban Global**: Ahora lee de la tabla `tareas` en vez de `grupos.hitos`. Cada tarjeta es clickable y navega al calendario.
+- **Progreso**: Calculado desde la tabla `tareas` (aprobadas/total). Antes usaba hitos JSONB.
+- **ModalCrearTareaClassroom**: Acepta `preselectedGrupoId` para pre-seleccionar grupo. Guarda con `estado: 'pendiente'`.
+- **VistaCalendario**: Badges de estado por colores (pendiente, en curso, revisión, aprobada, rechazada). Selector de estado en detalle.
+- **GroupDetail.tsx**: Usa `ModalCrearTareaClassroom` en vez de `ModalAsignarTareas`.
+- **Notificaciones**: Realtime en `ProjectDetail.tsx` detecta cambios de estado de tareas a `'revision'` y notifica al docente.
+- **BBDD**: Columna `estado` añadida a tabla `tareas` con constraint de valores válidos e índices.
+- **Reversibilidad**: `grupos.hitos` se mantiene intacto. `ModalAsignarTareas`, `ModalRevisionHitos`, `RoadmapView` y `MentorIA` no fueron modificados.
+
+## [v1.9.0] - 2026-03-16
+- **Nuevo**: Apartado de **Calendario de Tareas** en el Dashboard Docente con vista mensual y vista de lista.
+- **Nuevo**: **Crear Tarea estilo Google Classroom**: modal completo con título, instrucciones, subida de archivos adjuntos, selector de grupo/clase, puntos configurables y fecha de entrega.
+- **Nuevo**: **Vista Detalle de Tarea**: al hacer clic en una tarea se abre su ficha completa con instrucciones, adjuntos descargables, metadatos y opción de eliminar.
+- **Base de datos**: Creadas las tablas `tareas` y `entregas_tareas` en Supabase con políticas RLS para seguridad.
+- **Realtime**: Las tareas se sincronizan en tiempo real mediante Supabase Realtime.
+- **Tipos TS**: Añadidos `TareaDetallada`, `EntregaTarea` y `ArchivoAdjunto` en los tipos globales.
+- **Navegación**: Nuevo botón "Calendario" en el sidebar y en la barra inferior móvil del Dashboard.
+
 ## [v1.8.8] - 2026-03-16
 - **Error corregido**: Solucionado el problema visual del texto `=20` en los correos electrónicos mediante la optimización del encoding y minificado de la plantilla HTML.
 - **Despliegue**: Subida de todas las mejoras de la rama (v1.8.4 - v1.8.8) a producción en Vercel.

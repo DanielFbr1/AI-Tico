@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DetalleGrupo } from '../components/DetalleGrupo';
 import { Grupo, ProyectoFase, Criterio } from '../types';
 import { ModalCrearGrupo } from '../components/ModalCrearGrupo';
-import { ModalAsignarTareas } from '../components/ModalAsignarTareas';
+import { ModalCrearTareaClassroom } from '../components/ModalCrearTareaClassroom';
 import { PerfilAlumno } from '../components/PerfilAlumno';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -11,11 +11,12 @@ interface GroupDetailProps {
     grupo: Grupo;
     fases: ProyectoFase[];
     rubrica: Criterio[];
+    proyectoId?: string;
     onBack: () => void;
     onViewFeedback?: () => void;
 }
 
-export function GroupDetail({ grupo: initialGrupo, fases, rubrica, onBack, onViewFeedback }: GroupDetailProps) {
+export function GroupDetail({ grupo: initialGrupo, fases, rubrica, proyectoId, onBack, onViewFeedback }: GroupDetailProps) {
     const [grupo, setGrupo] = useState<Grupo>(initialGrupo);
 
     useEffect(() => {
@@ -27,6 +28,7 @@ export function GroupDetail({ grupo: initialGrupo, fases, rubrica, onBack, onVie
     }, [initialGrupo]);
     const [showModalGrupo, setShowModalGrupo] = useState(false);
     const [showModalAsignar, setShowModalAsignar] = useState(false);
+    const [gruposParaModal, setGruposParaModal] = useState<Grupo[]>([]);
     const [alumnoParaEvaluar, setAlumnoParaEvaluar] = useState<{ nombre: string, grupo: Grupo } | null>(null);
 
     const handleCrearOEditarGrupo = async (grupoData: Omit<Grupo, 'id'>) => {
@@ -52,34 +54,21 @@ export function GroupDetail({ grupo: initialGrupo, fases, rubrica, onBack, onVie
         }
     };
 
-    const handleAsignarTareas = async (nuevosHitos: any[]) => {
-        try {
-            const updatedHitos = [...(grupo.hitos || []), ...nuevosHitos];
-            // Recalculate progress logic here if needed, usually backend handles or we estimate
-            // Simple logic:
-            const total = updatedHitos.length;
-            const aprobados = updatedHitos.filter((h: any) => h.estado === 'aprobado').length;
-            const nuevoProgreso = total > 0 ? Math.round((aprobados / total) * 100) : 0;
-            const nuevoEstado = nuevoProgreso === 100 && total > 0 ? 'Completado' : 'En progreso';
-
-            const { error } = await supabase
-                .from('grupos')
-                .update({
-                    hitos: updatedHitos,
-                    progreso: nuevoProgreso,
-                    estado: nuevoEstado
-                })
-                .eq('id', grupo.id);
-
-            if (error) throw error;
-
-            setGrupo({ ...grupo, hitos: updatedHitos, progreso: nuevoProgreso, estado: nuevoEstado });
-            toast.success("Tareas asignadas correctamente");
-            setShowModalAsignar(false);
-        } catch (error) {
-            console.error('Error assigning tasks:', error);
-            toast.error("Error al asignar tareas");
-        }
+    const handleAsignarTareas = () => {
+        // Fetch all groups for the modal selector
+        const fetchGrupos = async () => {
+            try {
+                const { data } = await supabase
+                    .from('grupos')
+                    .select('*')
+                    .eq('proyecto_id', grupo.proyecto_id);
+                setGruposParaModal(data || [grupo]);
+            } catch {
+                setGruposParaModal([grupo]);
+            }
+        };
+        fetchGrupos();
+        setShowModalAsignar(true);
     };
 
     const handleDeleteHito = async (faseId: string, hitoTitulo: string) => {
@@ -122,7 +111,7 @@ export function GroupDetail({ grupo: initialGrupo, fases, rubrica, onBack, onVie
                 onBack={onBack}
                 onViewFeedback={onViewFeedback}
                 onEditGroup={() => setShowModalGrupo(true)}
-                onAssignTask={() => setShowModalAsignar(true)}
+                onAssignTask={handleAsignarTareas}
                 onViewStudent={(alumno) => setAlumnoParaEvaluar({ nombre: alumno, grupo })}
                 onDeleteHito={handleDeleteHito}
             />
@@ -137,11 +126,15 @@ export function GroupDetail({ grupo: initialGrupo, fases, rubrica, onBack, onVie
             )}
 
             {showModalAsignar && (
-                <ModalAsignarTareas
-                    grupoNombre={grupo.nombre}
-                    faseId={fases?.find(f => f.estado === 'actual')?.id || fases?.[0]?.id || '1'}
+                <ModalCrearTareaClassroom
+                    proyectoId={proyectoId || String(grupo.proyecto_id || '')}
+                    grupos={gruposParaModal.length > 0 ? gruposParaModal : [grupo]}
+                    preselectedGrupoId={String(grupo.id)}
                     onClose={() => setShowModalAsignar(false)}
-                    onSave={handleAsignarTareas}
+                    onTareaCreada={() => {
+                        toast.success("Tarea creada correctamente");
+                        setShowModalAsignar(false);
+                    }}
                 />
             )}
 

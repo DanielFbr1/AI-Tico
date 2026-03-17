@@ -82,7 +82,7 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
     useEffect(() => {
         fetchGrupos();
 
-        // Realtime Subscription (Generic Trigger)
+        // Realtime Subscription - Grupos
         const channel = supabase.channel(`project_groups_${proyecto.id}`)
             .on(
                 'postgres_changes',
@@ -94,12 +94,36 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
                 },
                 (payload) => {
                     console.log('Cambio detectado en grupos:', payload);
-                    fetchGrupos(true); // Silent re-fetch, logic inside fetchGrupos handles checks
+                    fetchGrupos(true);
                 }
             )
             .subscribe((status) => {
                 console.log(`Realtime Teacher Status for ${proyecto.id}:`, status);
             });
+
+        // Realtime Subscription - Tareas (notificaciones al docente)
+        const tareasChannel = supabase.channel(`project_tareas_${proyecto.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'tareas',
+                    filter: `proyecto_id=eq.${proyecto.id}`
+                },
+                (payload) => {
+                    const newRecord = payload.new as any;
+                    const oldRecord = payload.old as any;
+                    if (newRecord.estado === 'revision' && oldRecord.estado !== 'revision') {
+                        toast.info(`📨 ¡Tarea "${newRecord.titulo}" enviada para revisión!`, {
+                            duration: 6000,
+                            icon: '📨',
+                            className: '!rounded-[2rem] !border-blue-200 !bg-blue-50'
+                        });
+                    }
+                }
+            )
+            .subscribe();
 
         // Polling Fallback
         const intervalId = setInterval(() => {
@@ -108,6 +132,7 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
 
         return () => {
             supabase.removeChannel(channel);
+            supabase.removeChannel(tareasChannel);
             clearInterval(intervalId);
         };
     }, [proyecto.id]);

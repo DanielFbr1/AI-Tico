@@ -1,5 +1,5 @@
-import { LayoutList, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices, Gamepad2, LayoutDashboard, Calendar } from 'lucide-react';
-import { useState } from 'react';
+import { LayoutList, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices, Gamepad2, LayoutDashboard, Calendar, CalendarDays, Eye, FileText, Clock } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Card_Grupo } from './Card_Grupo';
 import { EvaluacionRubricas } from './EvaluacionRubricas';
 import { ModalCrearGrupo } from './ModalCrearGrupo';
@@ -12,20 +12,23 @@ import { TicoGameWidget } from './TicoGame/TicoGameWidget';
 import { PerfilAlumno } from './PerfilAlumno';
 import { RepositorioColaborativo } from './RepositorioColaborativo';
 import { LivingTree } from './LivingTree';
-import { Grupo, DashboardSection, ProyectoActivo } from '../types';
+import { Grupo, DashboardSection, ProyectoActivo, TareaDetallada } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { ModalConfiguracionIA } from './ModalConfiguracionIA';
 import { ModalRevisionHitos } from './ModalRevisionHitos';
 import { ModalAsignarTareas } from './ModalAsignarTareas';
 import { ModalAsistencia } from './ModalAsistencia';
+import { ModalCrearTareaClassroom } from './ModalCrearTareaClassroom';
 import { HitoGrupo } from '../types';
 import { supabase } from '../lib/supabase';
-import { useEffect } from 'react';
 import { getAsignaturaStyles } from '../data/asignaturas';
 import { ModalChatAlumnosDocente } from './ModalChatAlumnosDocente';
 import { ModalHorario } from './ModalHorario';
 import { SolicitudesColaboracion } from './ModalSolicitudesColaboracion';
+import { VistaCalendario } from './VistaCalendario';
+import { ModalDetalleTarea } from './ModalDetalleTarea';
+import { ModalSeguimientoGrupos } from './ModalSeguimientoGrupos';
 
 interface DashboardDocenteProps {
     onSelectGrupo: (grupo: Grupo) => void;
@@ -93,6 +96,14 @@ export function DashboardDocente({
     const [isEditingProjectName, setIsEditingProjectName] = useState(false);
     const [editingProjectName, setEditingProjectName] = useState('');
     const [refreshRecursos, setRefreshRecursos] = useState(0);
+    const [tareasProyecto, setTareasProyecto] = useState<TareaDetallada[]>([]);
+    const [modalCrearTareaAbierto, setModalCrearTareaAbierto] = useState(false);
+    const [tareaSeleccionadaDetalle, setTareaSeleccionadaDetalle] = useState<TareaDetallada | null>(null);
+    const [modalSeguimientoAbierto, setModalSeguimientoAbierto] = useState<TareaDetallada | null>(null);
+
+    // Filter states
+    const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+    const [filtroGrupo, setFiltroGrupo] = useState<string>('todos');
 
     const { signOut, perfil, user } = useAuth();
 
@@ -237,9 +248,77 @@ export function DashboardDocente({
         }
     }, [user]);
 
-    const numPendientes = grupos.reduce((acc, g) =>
-        acc + (g.hitos || []).filter(h => h.estado === 'revision').length, 0
-    );
+    // === FETCH TAREAS DEL PROYECTO (tabla `tareas`) ===
+    const fetchTareasProyecto = async () => {
+        if (!proyectoActual?.id) return;
+        try {
+            const { data, error } = await supabase
+                .from('tareas')
+                .select('*')
+                .eq('proyecto_id', proyectoActual.id)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            setTareasProyecto(data || []);
+        } catch (err) {
+            console.error('Error fetching tareas:', err);
+        }
+    };
+
+    useEffect(() => {
+        fetchTareasProyecto();
+
+        if (!proyectoActual?.id) return;
+        
+        const ch = supabase.channel(`tareas_dashboard_${proyectoActual.id}`)
+            .on('postgres_changes', 
+                { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'tareas', 
+                    filter: `proyecto_id=eq.${proyectoActual.id}` 
+                },
+                (payload: any) => {
+                    console.log("🔍 DEBUG: Task Realtime Event:", payload.eventType, payload.new?.titulo, payload.new?.estado);
+                    
+                    // Notificación si una tarea pasa a revisión
+                    const isNewRevision = payload.eventType === 'UPDATE' && 
+                                        payload.new?.estado === 'revision' && 
+                                        payload.old?.estado !== 'revision';
+                    
+                    const isInsertedAsRevision = payload.eventType === 'INSERT' && payload.new?.estado === 'revision';
+
+                    if (isNewRevision || isInsertedAsRevision) {
+                        toast.info(`¡Nueva misión para revisar: "${payload.new?.titulo}"!`, {
+                            duration: 8000,
+                            icon: '🔔'
+                        });
+                    }
+                    fetchTareasProyecto();
+                }
+            ).subscribe();
+        return () => { supabase.removeChannel(ch); };
+    }, [proyectoActual?.id]);
+
+    // numPendientes unificado: Lee de tareasProyecto (globales/asignadas) Y de los hitos de cada grupo
+    const numPendientesTareas = tareasProyecto.filter(t => t.estado === 'revision').length;
+    const numPendientesHitos = grupos.reduce((acc, g) => acc + (g.hitos || []).filter((h: any) => h.estado === 'revision').length, 0);
+    const numPendientes = numPendientesTareas + numPendientesHitos;
+
+    // Alerta sonora/visual cuando numPendientes aumenta
+    const prevNumPendientes = useRef(numPendientes);
+    useEffect(() => {
+        if (numPendientes > prevNumPendientes.current) {
+            toast.info(`📨 ¡Tienes ${numPendientes - prevNumPendientes.current} nueva(s) misión(es) para revisar!`, {
+                duration: 8000,
+                icon: '🔔',
+                className: '!rounded-[2rem] !border-amber-200 !bg-amber-50'
+            });
+            
+            // Si estuviésemos en una app nativa podríamos usar un sonido aquí.
+            // Para web, el toast visual y el parpadeo del botón son la clave.
+        }
+        prevNumPendientes.current = numPendientes;
+    }, [numPendientes]);
 
     const handleUpdateMilestone = async (grupoId: string | number, hitoId: string, nuevoEstado: 'aprobado' | 'rechazado') => {
         // Reutilizamos la lógica batch para una sola actualización
@@ -292,29 +371,14 @@ export function DashboardDocente({
         }
     };
 
-    const handleEliminarTareaGlobal = async (grupoId: string | number, hitoId: string) => {
-        const grupo = grupos.find(g => g.id === grupoId);
-        if (!grupo) return;
-
-        const hito = grupo.hitos?.find(h => h.id === hitoId);
-        if (!hito) return;
-
-        if (!confirm(`¿Estás seguro de eliminar la tarea "${hito.titulo}" del grupo ${grupo.nombre}?`)) return;
+    // handleEliminarTareaGlobal ahora elimina de la tabla `tareas`
+    const handleEliminarTareaGlobal = async (tareaId: string, titulo: string) => {
+        if (!confirm(`¿Estás seguro de eliminar la tarea "${titulo}"?`)) return;
 
         try {
-            const nuevosHitos = (grupo.hitos || []).filter(h => h.id !== hitoId);
-
-            // Recalcular progreso
-            const total = nuevosHitos.length;
-            const aprobados = nuevosHitos.filter(h => h.estado === 'aprobado').length;
-            const nuevoProgreso = total > 0 ? Math.round((aprobados / total) * 100) : 0;
-
-            await onEditarGrupo(grupoId, {
-                ...grupo, // Important to keep other fields
-                hitos: nuevosHitos,
-                progreso: nuevoProgreso
-            });
-
+            const { error } = await supabase.from('tareas').delete().eq('id', tareaId);
+            if (error) throw error;
+            setTareasProyecto(prev => prev.filter(t => t.id !== tareaId));
             toast.success('Tarea eliminada correctamente');
         } catch (error) {
             console.error('Error deleting task:', error);
@@ -323,7 +387,20 @@ export function DashboardDocente({
     };
 
     const totalInteracciones = grupos.reduce((sum, g) => sum + g.interacciones_ia, 0);
-    const hitosCompletados = grupos.reduce((sum, g) => sum + Math.floor(g.progreso / 20), 0);
+    
+    // Cálculo de progreso basado en TAREAS (Issue 5)
+    const getProgresoGrupo = (grupoId: string | number) => {
+        const tareasGrupo = tareasProyecto.filter(t => t.grupo_id === Number(grupoId));
+        if (tareasGrupo.length === 0) return 0;
+        const completadas = tareasGrupo.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length;
+        return Math.round((completadas / tareasGrupo.length) * 100);
+    };
+
+    const progresoGlobal = tareasProyecto.length > 0 
+        ? Math.round((tareasProyecto.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length / tareasProyecto.length) * 100)
+        : 0;
+
+    const hitosCompletados = tareasProyecto.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length;
     // Bloqueados cuenta status 'Bloqueado' O que estén pidiendo ayuda
     const gruposBloqueados = grupos.filter(g => g.estado === 'Bloqueado' || g.pedir_ayuda).length;
 
@@ -399,8 +476,26 @@ export function DashboardDocente({
             {modalRevisionAbierto && (
                 <ModalRevisionHitos
                     grupos={grupos}
+                    tareasGlobales={tareasProyecto}
                     onClose={() => setModalRevisionAbierto(false)}
                     onUpdateBatch={handleUpdateBatchMilestones}
+                    onUpdateTarea={async (tareaId, nuevoEstado) => {
+                        try {
+                            const { error } = await supabase
+                                .from('tareas')
+                                .update({ estado: nuevoEstado })
+                                .eq('id', tareaId);
+                            if (error) throw error;
+                            
+                            // Actualización local para feedback instantáneo
+                            setTareasProyecto(prev => prev.map(t => 
+                                t.id === tareaId ? { ...t, estado: nuevoEstado as any } : t
+                            ));
+                        } catch (err) {
+                            console.error('Error actualizando estado de tarea:', err);
+                            toast.error('Error al actualizar la tarea');
+                        }
+                    }}
                 />
             )}
 
@@ -413,27 +508,51 @@ export function DashboardDocente({
                 />
             )}
 
-            {modalAsignarAbierto && grupoParaTareas && (
-                <ModalAsignarTareas
-                    grupoNombre={grupoParaTareas.nombre}
-                    faseId={proyectoActual?.fases?.find(f => f.estado === 'actual')?.id || proyectoActual?.fases?.[0]?.id || '1'}
-                    proyectoContexto={proyectoActual?.descripcion}
-                    onClose={() => setModalAsignarAbierto(false)}
-                    onSave={async (nuevosHitos) => {
-                        const updatedHitos = [...(grupoParaTareas.hitos || []), ...nuevosHitos] as HitoGrupo[];
-                        // Recalculate progress on new task assignment
-                        const total = updatedHitos.length;
-                        const aprobados = updatedHitos.filter(h => h.estado === 'aprobado').length;
-                        const nuevoProgreso = total > 0 ? Math.round((aprobados / total) * 100) : 0;
-                        const nuevoEstado = nuevoProgreso === 100 && total > 0 ? 'Completado' : 'En progreso';
+            {/* Modal Detalle Tarea (Issue 3) */}
+            {tareaSeleccionadaDetalle && (
+                <ModalDetalleTarea
+                    tarea={tareaSeleccionadaDetalle}
+                    grupos={grupos}
+                    onClose={() => setTareaSeleccionadaDetalle(null)}
+                    onDelete={async (id) => {
+                        await handleEliminarTareaGlobal(id, tareaSeleccionadaDetalle.titulo);
+                        setTareaSeleccionadaDetalle(null);
+                    }}
+                    onEstadoChange={async (id, nuevoEstado) => {
+                        try {
+                            const { error } = await supabase.from('tareas').update({ estado: nuevoEstado }).eq('id', id);
+                            if (error) throw error;
+                            setTareasProyecto(prev => prev.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t));
+                            setTareaSeleccionadaDetalle(prev => prev ? { ...prev, estado: nuevoEstado as any } : null);
+                            toast.success(`Estado actualizado`);
+                        } catch (err) {
+                            toast.error('Error al cambiar el estado');
+                        }
+                    }}
+                />
+            )}
 
-                        await onEditarGrupo(grupoParaTareas.id, {
-                            ...grupoParaTareas,
-                            hitos: updatedHitos,
-                            progreso: nuevoProgreso,
-                            estado: nuevoEstado
-                        });
-                        toast.success("Tareas asignadas correctamente");
+            {/* Modal unificado: Crear Tarea Classroom (reemplaza ModalAsignarTareas) */}
+            {modalAsignarAbierto && proyectoActual && (
+                <ModalCrearTareaClassroom
+                    proyectoId={proyectoActual.id}
+                    grupos={grupos}
+                    preselectedGrupoId={grupoParaTareas ? String(grupoParaTareas.id) : undefined}
+                    onClose={() => { setModalAsignarAbierto(false); setGrupoParaTareas(null); }}
+                    onTareaCreada={(t) => {
+                        setTareasProyecto(prev => [t, ...prev]);
+                    }}
+                />
+            )}
+
+            {/* Modal para crear tarea desde el botón global */}
+            {modalCrearTareaAbierto && proyectoActual && (
+                <ModalCrearTareaClassroom
+                    proyectoId={proyectoActual.id}
+                    grupos={grupos}
+                    onClose={() => setModalCrearTareaAbierto(false)}
+                    onTareaCreada={(t) => {
+                        setTareasProyecto(prev => [t, ...prev]);
                     }}
                 />
             )}
@@ -488,8 +607,9 @@ export function DashboardDocente({
             fixed md:relative z-50 h-full w-72 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300
             ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           `}>
-                    <div className="p-6 border-b border-gray-200 flex justify-center items-center relative">
+                    <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
+                        <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">V5.4.0</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -531,6 +651,17 @@ export function DashboardDocente({
                             </button>
 
                             <button
+                                onClick={() => { onSectionChange('calendario'); setMobileMenuOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'calendario'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
+                                    : 'text-gray-600 hover:bg-gray-100 font-medium'
+                                    }`}
+                            >
+                                <CalendarDays className="w-5 h-5" />
+                                <span>Calendario</span>
+                            </button>
+
+                            <button
                                 onClick={() => { onSectionChange('evaluacion'); setMobileMenuOpen(false); }}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'evaluacion'
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
@@ -558,7 +689,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            v3.6.4 (UX Chat)
+                            v4.9.0 (Smart Notifications)
                         </div>
                     </div>
                 </aside>
@@ -774,6 +905,37 @@ export function DashboardDocente({
 
                 {/* Main scroll area */}
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50/50 pb-24 md:pb-8">
+                    {/* Helper Functions internal to the component (or could be moved to utils) */}
+                    {(() => {
+                        const formatRelativeDate = (dateStr: string) => {
+                            const d = new Date(dateStr);
+                            const now = new Date();
+                            const diff = d.getTime() - now.getTime();
+                            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                            if (days < 0) return { text: `Venció hace ${Math.abs(days)} día${Math.abs(days) !== 1 ? 's' : ''}`, color: 'text-red-500' };
+                            if (days === 0) return { text: 'Vence hoy', color: 'text-amber-600' };
+                            if (days === 1) return { text: 'Vence mañana', color: 'text-amber-500' };
+                            if (days <= 7) return { text: `Vence en ${days} días`, color: 'text-blue-500' };
+                            return { text: d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }), color: 'text-slate-500' };
+                        };
+
+                        const getEstadoBadge = (estado: string) => {
+                            const map: Record<string, { bg: string; text: string; label: string }> = {
+                                pendiente: { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Pendiente' },
+                                en_progreso: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'En curso' },
+                                revision: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'En revisión' },
+                                aprobado: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Aprobada' },
+                                completado: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Completada' },
+                                rechazado: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rechazada' },
+                                propuesto: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Propuesta' },
+                            };
+                            const s = map[estado] || map.pendiente;
+                            return <span className={`${s.bg} ${s.text} text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider`}>{s.label}</span>;
+                        };
+
+                        return null; // Just to define them once inside the scope if needed
+                    })()}
+
                     <div className="max-w-7xl mx-auto space-y-8">
                         {currentSection === 'resumen' && (
                             <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 items-start">
@@ -781,109 +943,145 @@ export function DashboardDocente({
                                 {/* COLUMNA IZQUIERDA: TABLERO DE MISIONES (MAIN) */}
                                 <div className="xl:col-span-3 space-y-8 order-2 xl:order-1">
 
-                                    {/* TABLERO GLOBAL DE TAREAS */}
-                                    <div className="bg-slate-100 rounded-[2.5rem] p-4 md:p-8 border border-slate-200 shadow-sm">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-slate-200 shadow-sm text-indigo-600">
-                                                <ClipboardCheck className="w-6 h-6" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-3">
-                                                    Tablero Global de Misiones
-                                                    <span className="bg-indigo-100 text-indigo-700 text-sm px-3 py-1 rounded-full border border-indigo-200">
-                                                        {grupos.reduce((acc, g) => acc + (g.hitos?.length || 0), 0)} Tareas Totales
-                                                    </span>
-                                                </h2>
-                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Seguimiento de todas las tareas activas</p>
+                                    {/* TABLERO GLOBAL DE TAREAS (Sustituido por Lista Estilo Calendario) */}
+                                    <div className="bg-white rounded-[2.5rem] p-4 md:p-8 border border-slate-200 shadow-sm min-h-[600px]">
+                                        <div className="flex flex-wrap items-center justify-end gap-4 mb-8">
+                                            <div className="flex flex-wrap items-center gap-3 ml-auto">
+                                                {/* Toolbar de filtros */}
+                                                <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                                                    <select 
+                                                        value={filtroGrupo}
+                                                        onChange={(e) => setFiltroGrupo(e.target.value)}
+                                                        className="text-[10px] font-black uppercase tracking-wider bg-white border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                                    >
+                                                        <option value="todos">Todos los Grupos</option>
+                                                        {grupos.map(g => <option key={g.id} value={String(g.id)}>{g.nombre}</option>)}
+                                                    </select>
+                                                    <div className="flex bg-white rounded-xl border border-slate-200 p-1 overflow-x-auto">
+                                                        {['todos', 'pendiente', 'revision', 'completado'].map(f => (
+                                                            <button
+                                                                key={f}
+                                                                onClick={() => setFiltroEstado(f)}
+                                                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filtroEstado === f ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                                                            >
+                                                                {f === 'todos' ? 'Todo' : f === 'revision' ? 'Para revisar' : f}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => setModalCrearTareaAbierto(true)}
+                                                    className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-2xl font-bold text-[11px] uppercase tracking-wider hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95 shrink-0"
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                    Nueva Misión
+                                                </button>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            {/* COLUMNA PENDIENTES */}
-                                            <div className="flex flex-col gap-4">
-                                                <div className="flex items-center justify-between px-2">
-                                                    <h3 className="text-xs font-black text-amber-600 uppercase tracking-widest">En Revisión / Pendientes</h3>
-                                                    <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-0.5 rounded-full">
-                                                        {grupos.reduce((acc, g) => acc + (g.hitos || []).filter(h => h.estado === 'revision' || h.estado === 'propuesto').length, 0)}
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-3 bg-slate-200/50 p-4 rounded-2xl min-h-[300px] max-h-[600px] overflow-y-auto custom-scrollbar">
-                                                    {grupos.flatMap(g => (g.hitos || []).filter(h => h.estado === 'revision' || h.estado === 'propuesto').map(h => ({ ...h, grupoNombre: g.nombre, grupoId: g.id }))).map((task, idx) => (
-                                                        <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all group relative">
-                                                            <div className="flex justify-between items-start mb-2">
-                                                                <span className="bg-indigo-50 text-indigo-700 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider truncate max-w-[120px]">{task.grupoNombre}</span>
-                                                                <div className="flex items-center gap-1">
-                                                                    {task.estado === 'revision' && <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" title="Pendiente de revisión"></span>}
-                                                                    <button onClick={() => handleEliminarTareaGlobal(task.grupoId, task.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Eliminar tarea">
-                                                                        <Trash2 className="w-3 h-3" />
+                                        <div className="space-y-3">
+                                            {(() => {
+                                                const filtered = tareasProyecto.filter(t => {
+                                                    const matchEstado = filtroEstado === 'todos' || t.estado === filtroEstado;
+                                                    const matchGrupo = filtroGrupo === 'todos' || String(t.grupo_id) === filtroGrupo;
+                                                    return matchEstado && matchGrupo;
+                                                });
+
+                                                if (filtered.length === 0) {
+                                                    return (
+                                                        <div className="text-center py-24 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200">
+                                                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100 shadow-sm text-slate-300">
+                                                                <ClipboardCheck className="w-10 h-10" />
+                                                            </div>
+                                                            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Sin resultados para estos filtros</p>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return filtered.map(t => {
+                                                    // Replicating helper logic here locally for simplicity in this replacement
+                                                    const formatRelativeDate = (dateStr: string) => {
+                                                        const d = new Date(dateStr);
+                                                        const now = new Date();
+                                                        const diff = d.getTime() - now.getTime();
+                                                        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                                                        if (days < 0) return { text: `Venció hace ${Math.abs(days)} d`, color: 'text-red-500' };
+                                                        if (days === 0) return { text: 'Hoy', color: 'text-amber-600' };
+                                                        if (days === 1) return { text: 'Mañana', color: 'text-amber-500' };
+                                                        if (days <= 7) return { text: `${days} d`, color: 'text-blue-500' };
+                                                        return { text: d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }), color: 'text-slate-500' };
+                                                    };
+
+                                                    const getEstadoBadgeInternal = (estado: string) => {
+                                                        const map: Record<string, { bg: string; text: string; label: string }> = {
+                                                            pendiente: { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Pendiente' },
+                                                            en_progreso: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'En curso' },
+                                                            revision: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'En revisión' },
+                                                            aprobado: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Aprobada' },
+                                                            completado: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Completada' },
+                                                            rechazado: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rechazada' },
+                                                            propuesto: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Propuesta' },
+                                                        };
+                                                        const s = map[estado] || map.pendiente;
+                                                        return <span className={`${s.bg} ${s.text} text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider`}>{s.label}</span>;
+                                                    };
+
+                                                    const fechaInfo = t.fecha_entrega ? formatRelativeDate(t.fecha_entrega) : null;
+                                                    const grupoNombre = t.grupo_id ? grupos.find(g => Number(g.id) === t.grupo_id)?.nombre : 'Todos';
+
+                                                    return (
+                                                        <div
+                                                            key={t.id}
+                                                            className="w-full flex items-center gap-4 p-3 bg-white rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all group"
+                                                        >
+                                                            <div 
+                                                                onClick={() => setModalSeguimientoAbierto(t)}
+                                                                className="flex-1 min-w-0 flex items-center gap-4 cursor-pointer"
+                                                            >
+                                                                <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors border border-slate-100">
+                                                                    <FileText className="w-5 h-5" />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                                        <span className="bg-indigo-50 text-indigo-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">{grupoNombre}</span>
+                                                                        {t.estado === 'revision' && <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>}
+                                                                    </div>
+                                                                    <p className="font-bold text-slate-800 truncate text-[13px] leading-none">{t.titulo}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-wrap items-center gap-3 shrink-0 ml-auto">
+                                                                {fechaInfo && (
+                                                                    <div className={`hidden sm:flex flex-col items-end ${fechaInfo.color}`}>
+                                                                        <span className="text-[9px] font-black uppercase tracking-tighter opacity-50">Plazo</span>
+                                                                        <span className="text-[11px] font-bold flex items-center gap-1 whitespace-nowrap"><Clock className="w-2.5 h-2.5" /> {fechaInfo.text}</span>
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex flex-col items-center gap-1 min-w-[65px]">
+                                                                    {getEstadoBadgeInternal(t.estado)}
+                                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.puntos_maximos} pts</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1 group-hover:translate-x-0 transition-all">
+                                                                    <button
+                                                                        onClick={() => setModalSeguimientoAbierto(t)}
+                                                                        className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-indigo-100 transition-all whitespace-nowrap"
+                                                                    >
+                                                                        <Users className="w-3.5 h-3.5" />
+                                                                        <span className="hidden xs:inline">Entregas</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); handleEliminarTareaGlobal(t.id, t.titulo); }}
+                                                                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
                                                                     </button>
                                                                 </div>
                                                             </div>
-                                                            <p className="text-sm font-bold text-slate-700 leading-tight">{task.titulo}</p>
                                                         </div>
-                                                    ))}
-                                                    {grupos.every(g => (g.hitos || []).filter(h => h.estado === 'revision' || h.estado === 'propuesto').length === 0) && (
-                                                        <div className="text-center py-8 text-slate-400 text-xs italic font-medium">No hay tareas pendientes</div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* COLUMNA EN CURSO */}
-                                            <div className="flex flex-col gap-4">
-                                                <div className="flex items-center justify-between px-2">
-                                                    <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest">En Curso</h3>
-                                                    <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full">
-                                                        {grupos.reduce((acc, g) => acc + (g.hitos || []).filter(h => h.estado === 'en_progreso' || h.estado === 'pendiente').length, 0)}
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-3 bg-slate-200/50 p-4 rounded-2xl min-h-[300px] max-h-[600px] overflow-y-auto custom-scrollbar">
-                                                    {grupos.flatMap(g => (g.hitos || []).filter(h => h.estado === 'en_progreso' || h.estado === 'pendiente').map(h => ({ ...h, grupoNombre: g.nombre, grupoId: g.id }))).map((task, idx) => (
-                                                        <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all group relative overflow-hidden">
-                                                            <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-                                                            <div className="flex justify-between items-start mb-2 pl-2">
-                                                                <span className="bg-slate-50 text-slate-600 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider truncate max-w-[120px]">{task.grupoNombre}</span>
-                                                                <button onClick={() => handleEliminarTareaGlobal(task.grupoId, task.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Eliminar tarea">
-                                                                    <Trash2 className="w-3 h-3" />
-                                                                </button>
-                                                            </div>
-                                                            <p className="text-sm font-bold text-slate-700 leading-tight pl-2">{task.titulo}</p>
-                                                        </div>
-                                                    ))}
-                                                    {grupos.every(g => (g.hitos || []).filter(h => h.estado === 'en_progreso' || h.estado === 'pendiente').length === 0) && (
-                                                        <div className="text-center py-8 text-slate-400 text-xs italic font-medium">Todo tranquilo por aquí</div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* COLUMNA COMPLETADAS */}
-                                            <div className="flex flex-col gap-4">
-                                                <div className="flex items-center justify-between px-2">
-                                                    <h3 className="text-xs font-black text-emerald-600 uppercase tracking-widest">Completadas</h3>
-                                                    <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full">
-                                                        {grupos.reduce((acc, g) => acc + (g.hitos || []).filter(h => h.estado === 'aprobado').length, 0)}
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-3 bg-slate-200/50 p-4 rounded-2xl min-h-[300px] max-h-[600px] overflow-y-auto custom-scrollbar">
-                                                    {grupos.flatMap(g => (g.hitos || []).filter(h => h.estado === 'aprobado').map(h => ({ ...h, grupoNombre: g.nombre, grupoId: g.id }))).map((task, idx) => (
-                                                        <div key={idx} className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 opacity-80 hover:opacity-100 transition-all group relative">
-                                                            <div className="flex justify-between items-start mb-2">
-                                                                <span className="bg-white text-emerald-700 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider truncate max-w-[120px] border border-emerald-100">{task.grupoNombre}</span>
-                                                                <button onClick={() => handleEliminarTareaGlobal(task.grupoId, task.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Eliminar tarea">
-                                                                    <Trash2 className="w-3 h-3" />
-                                                                </button>
-                                                            </div>
-                                                            <p className="text-sm font-bold text-emerald-800 leading-tight line-through decoration-emerald-500/50">{task.titulo}</p>
-                                                        </div>
-                                                    ))}
-                                                    {grupos.every(g => (g.hitos || []).filter(h => h.estado === 'aprobado').length === 0) && (
-                                                        <div className="text-center py-8 text-slate-400 text-xs italic font-medium">Aún no hay logros desbloqueados</div>
-                                                    )}
-                                                </div>
-                                            </div>
-
+                                                    );
+                                                })
+                                            })()}
                                         </div>
                                     </div>
-
                                 </div>
 
                                 {/* COLUMNA DERECHA: BIO-ESTADO (STICKY SIDEBAR) */}
@@ -896,7 +1094,7 @@ export function DashboardDocente({
 
                                         <div className="relative w-full flex justify-center -my-4 z-10 transform hover:-translate-y-2 transition-transform duration-500">
                                             <LivingTree
-                                                progress={grupos.reduce((acc, g) => acc + g.progreso, 0) / (grupos.length || 1)}
+                                                progress={progresoGlobal}
                                                 health={100}
                                                 size={300}
                                                 showLabels={false}
@@ -905,7 +1103,7 @@ export function DashboardDocente({
                                         </div>
 
                                         <div className="mt-12 text-center relative z-10 w-full">
-                                            <div className="text-4xl font-black text-indigo-600 mb-1">{(grupos.reduce((acc, g) => acc + g.progreso, 0) / (grupos.length || 1)).toFixed(0)}%</div>
+                                            <div className="text-4xl font-black text-indigo-600 mb-1">{progresoGlobal}%</div>
                                             <div className="text-[10px] font-bold text-indigo-800 uppercase tracking-widest bg-indigo-50 py-1.5 px-3 rounded-full box-border border border-indigo-100 inline-block">Misión Espacial</div>
                                         </div>
                                     </div>
@@ -945,7 +1143,10 @@ export function DashboardDocente({
                                     {[...grupos].sort((a, b) => Number(b.id) - Number(a.id)).map(grupo => (
                                         <Card_Grupo
                                             key={grupo.id}
-                                            grupo={grupo}
+                                            grupo={{
+                                                ...grupo,
+                                                progreso: getProgresoGrupo(grupo.id)
+                                            }}
                                             onClick={() => onSelectGrupo(grupo)}
                                             onEdit={() => {
                                                 setGrupoEditando(grupo);
@@ -1009,6 +1210,13 @@ export function DashboardDocente({
                             </div>
                         )}
 
+                        {currentSection === 'calendario' && proyectoActual && (
+                            <VistaCalendario
+                                proyectoId={proyectoActual.id}
+                                grupos={grupos}
+                            />
+                        )}
+
                         {currentSection === 'evaluacion' && <EvaluacionRubricas grupos={grupos} rubrica={proyectoActual?.rubrica} proyectoId={proyectoActual?.id} />}
                     </div>
                 </div>
@@ -1044,6 +1252,38 @@ export function DashboardDocente({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {tareaSeleccionadaDetalle && (
+                <ModalDetalleTarea
+                    tarea={tareaSeleccionadaDetalle}
+                    grupos={grupos}
+                    onClose={() => setTareaSeleccionadaDetalle(null)}
+                    onEstadoChange={async (id, nuevoEstado) => {
+                        try {
+                            const { error } = await supabase
+                                .from('tareas')
+                                .update({ estado: nuevoEstado })
+                                .eq('id', id);
+                            if (error) throw error;
+                            fetchTareasProyecto();
+                            setTareaSeleccionadaDetalle(null);
+                            toast.success(`Estado actualizado a ${nuevoEstado}`);
+                        } catch (err) {
+                            toast.error('Error al actualizar el estado');
+                        }
+                    }}
+                    onDelete={(id) => handleEliminarTareaGlobal(id, tareaSeleccionadaDetalle.titulo)}
+                />
+            )}
+
+            {modalSeguimientoAbierto && (
+                <ModalSeguimientoGrupos
+                    tarea={modalSeguimientoAbierto}
+                    grupos={grupos}
+                    onClose={() => setModalSeguimientoAbierto(null)}
+                    onUpdate={fetchTareasProyecto}
+                />
             )}
 
             {alumnoParaEvaluar && (
@@ -1083,13 +1323,13 @@ export function DashboardDocente({
                     </button>
 
                     <button
-                        onClick={() => onSectionChange('trabajo-compartido')}
-                        className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'trabajo-compartido' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                        onClick={() => onSectionChange('calendario')}
+                        className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'calendario' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
                     >
-                        <div className={`p-2 rounded-2xl transition-all ${currentSection === 'trabajo-compartido' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
-                            <Share2 className={`w-5 h-5 ${currentSection === 'trabajo-compartido' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                        <div className={`p-2 rounded-2xl transition-all ${currentSection === 'calendario' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                            <CalendarDays className={`w-5 h-5 ${currentSection === 'calendario' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
                         </div>
-                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'trabajo-compartido' ? 'opacity-100' : 'opacity-80'}`}>Trabajo</span>
+                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'calendario' ? 'opacity-100' : 'opacity-80'}`}>Tareas</span>
                     </button>
 
                     <button

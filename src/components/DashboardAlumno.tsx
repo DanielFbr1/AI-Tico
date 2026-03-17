@@ -22,7 +22,13 @@ import {
   Star,
   AlertCircle,
   TrendingUp,
-  Target
+  Target,
+  Calendar,
+  Eye,
+  Trash2,
+  Check,
+  Send,
+  Clock
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Grupo, HitoGrupo, ProyectoFase, Rubrica } from '../types';
@@ -36,7 +42,7 @@ import { useAuth } from '../context/AuthContext';
 import { ModalUnirseClase } from './ModalUnirseClase';
 import { RoadmapView } from './RoadmapView';
 import { LivingTree } from './LivingTree';
-import { PROYECTOS_MOCK, getMockEvaluacion, PASOS_TUTORIAL_ALUMNO } from '../data/mockData'; // Keep this for now, as getMockEvaluacion is not in the original
+import { PROYECTOS_MOCK, getMockEvaluacion, PASOS_TUTORIAL_ALUMNO } from '../data/mockData';
 import { toast } from 'sonner';
 import { fetchPuntosProyecto } from '../lib/puntos';
 import { ModalProponerHitos } from './ModalProponerHitos';
@@ -55,7 +61,8 @@ import { useGroupTracking } from '../hooks/useGroupTracking';
 import { ModalExploradorProyectosAlumno } from './ModalExploradorProyectosAlumno';
 import { ModalHorario } from './ModalHorario';
 import { ModalChatProfesoresAlumno } from './ModalChatProfesoresAlumno';
-import { Calendar } from 'lucide-react';
+import { ModalDetalleTarea } from './ModalDetalleTarea';
+import { TareaDetallada } from '../types';
 
 interface DashboardAlumnoProps {
   alumno: {
@@ -98,6 +105,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [dropdownMisClasesOpen, setDropdownMisClasesOpen] = useState(false); // Control del dropdown
   const [faseParaProponer, setFaseParaProponer] = useState<any>(null);
   const [refreshRecursos, setRefreshRecursos] = useState(0);
+  const [tareasAlumno, setTareasAlumno] = useState<TareaDetallada[]>([]);
+  const [tareaSeleccionadaDetalle, setTareaSeleccionadaDetalle] = useState<TareaDetallada | null>(null);
 
   // Estado del tutorial para Alumnos
   const [tutorialActivo, setTutorialActivo] = useState(() => {
@@ -297,7 +306,10 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         .eq('proyecto_id', targetProjectId);
 
       if (errorGrupos) throw errorGrupos;
-      setTodosLosGrupos(grupos || []);
+      const { data: tareasGlobales, error: errorTareas } = await supabase
+        .from('tareas')
+        .select('*')
+        .eq('proyecto_id', targetProjectId);
 
       const normalizar = (t: string) => (t || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
       const nombreAlumnoNorm = normalizar(alumno.nombre);
@@ -306,8 +318,16 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         g.miembros?.some((m: string) => normalizar(m).includes(nombreAlumnoNorm))
       );
 
+      // Mapear tareas a grupos para la vista de comunidad
+      const gruposConTareas = (grupos || []).map(g => ({
+        ...g,
+        tareas: (tareasGlobales || []).filter(t => t.grupo_id === g.id || t.grupo_id === null)
+      }));
+      setTodosLosGrupos(gruposConTareas);
+
       if (miGrupo) {
         setGrupoReal(miGrupo);
+        setTareasAlumno((tareasGlobales || []).filter(t => t.grupo_id === miGrupo.id || t.grupo_id === null));
       } else {
         const placeholderGrupo: Grupo = {
           id: 0,
@@ -401,6 +421,81 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       setLoading(false);
     }
   };
+
+  const fetchTareasAlumno = async () => {
+    if (!grupoReal?.id || !alumno.proyecto_id) return;
+    try {
+      const { data, error } = await supabase
+        .from('tareas')
+        .select('*')
+        .eq('proyecto_id', alumno.proyecto_id)
+        .or(`grupo_id.eq.${grupoReal.id},grupo_id.is.null`)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setTareasAlumno(data || []);
+    } catch (err) {
+      console.error('Error fetching student tasks:', err);
+    }
+  };
+
+  const handleUpdateTareaEstado = async (id: string, nuevoEstado: string) => {
+    try {
+      const { error } = await supabase
+        .from('tareas')
+        .update({ estado: nuevoEstado })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update local state for immediate feedback
+      setTareasAlumno(prev => prev.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t));
+      toast.success(nuevoEstado === 'revision' ? 'Misión enviada a revisión' : 'Estado actualizado');
+    } catch (err) {
+      console.error('Error updating task status:', err);
+      toast.error('No se pudo actualizar el estado');
+    }
+  };
+
+  const handleSaveAlumnoContent = async (id: string, contenido: string, archivos: any[]) => {
+    try {
+      const { error } = await supabase
+        .from('tareas')
+        .update({
+          contenido_alumno: contenido,
+          archivos_alumno: archivos
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setTareasAlumno(prev => prev.map(t => t.id === id ? { ...t, contenido_alumno: contenido, archivos_alumno: archivos } : t));
+      toast.success('Trabajo guardado');
+    } catch (err) {
+      console.error('Error saving task content:', err);
+      toast.error('Error al guardar el trabajo');
+    }
+  };
+
+  useEffect(() => {
+    if (grupoReal?.id && alumno.proyecto_id) {
+      fetchTareasAlumno();
+      
+      const ch = supabase.channel(`student_tareas_${grupoReal.id}`)
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'tareas',
+            filter: `proyecto_id=eq.${alumno.proyecto_id}` 
+          }, 
+          (payload) => {
+            console.log("Realtime event received (Student):", payload.eventType);
+            fetchTareasAlumno();
+          }
+        ).subscribe();
+      return () => { supabase.removeChannel(ch); };
+    }
+  }, [grupoReal?.id, alumno.proyecto_id]);
 
   useEffect(() => {
     // Fetching and subscription for unread messages from professors
@@ -674,13 +769,23 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         .subscribe();
     }
 
-    // POLLING FALLBACK: Ensure updates happen even if sockets fail locally
-    const intervalId = setInterval(() => {
-      // Only poll if we have a valid group/project
-      if (grupoReal?.id) {
-        fetchDatosAlumno(true).catch(e => console.error("Polling error", e));
-      }
-    }, 4000); // Check every 4 seconds
+    // SUSCRIPCIÓN PARA TAREAS DEL PROYECTO (Real-time Global)
+    const channelTareasGlobal = supabase.channel(`tareas_global_${grupoReal.proyecto_id}_${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tareas',
+          filter: `proyecto_id=eq.${grupoReal.proyecto_id}`
+        },
+        async (payload) => {
+          console.log("🔔 Realtime task global change received:", payload);
+          // Refetch data so both tasks and group progress (calculated from tasks) update
+          await fetchDatosAlumno(true);
+        }
+      )
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channelpresence);
@@ -688,7 +793,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       supabase.removeChannel(channelAsistencia);
       supabase.removeChannel(channelEvaluaciones);
       supabase.removeChannel(channelEvaluacionesGrupales);
-      clearInterval(intervalId);
+      supabase.removeChannel(channelTareasGlobal);
     };
   }, [grupoReal?.proyecto_id, alumno.id, grupoReal?.id]);
 
@@ -712,11 +817,34 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     window.location.reload();
   };
 
-  useEffect(() => {
-    if (!alumno.proyecto_id && !alumno.codigo_sala && !loading && !showExample) {
-      setModalUnirseOpen(true);
-    }
-  }, [alumno.proyecto_id, alumno.codigo_sala, loading, showExample]);
+  const tareasCategorizadas = React.useMemo(() => {
+    const panels = {
+      pendientes: [] as TareaDetallada[],
+      revision: [] as TareaDetallada[],
+      completado: [] as TareaDetallada[],
+      expirado: [] as TareaDetallada[]
+    };
+
+    const now = new Date();
+
+    tareasAlumno.forEach(t => {
+      const isCompletada = t.estado === 'aprobado' || t.estado === 'completado';
+      const isRevision = t.estado === 'revision';
+      const isExpirada = t.fecha_entrega && new Date(t.fecha_entrega) < now;
+
+      if (isCompletada) {
+        panels.completado.push(t);
+      } else if (isRevision) {
+        panels.revision.push(t);
+      } else if (isExpirada) {
+        panels.expirado.push(t);
+      } else {
+        panels.pendientes.push(t);
+      }
+    });
+
+    return panels;
+  }, [tareasAlumno]);
 
   if (loading) {
     return (
@@ -753,7 +881,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[9px] text-slate-300 font-bold uppercase tracking-wider bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">v4.1.0 (Explorador)</span>
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.1.0 (Unified Review Flow)</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -1035,274 +1163,389 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               </div>
             ) : (
               <>
-                {/* COLUMNA 1: Tarjeta de Grupo - Full Width */}
-                {(() => {
-                  const asigStyles = getAsignaturaStyles(asignaturaProyecto);
-                  return (
-                    <div className={`bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border-2 ${asigStyles.borderClass} relative overflow-hidden`}>
-                      {/* ... (Contenido Tarjeta Grupo Existente) ... */}
-                      <div className={`absolute top-0 right-0 w-64 h-64 ${asigStyles.lightBgClass} rounded-full -translate-y-1/2 translate-x-1/2 -z-0 opacity-50`}></div>
-                      <div className="relative z-10 flex flex-col h-full justify-between">
-                        <div>
-                          <div className="flex items-start justify-between mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* COLUMNAS IZQUIERDAS: INFO & RECURSOS */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {(() => {
+                      const asigStyles = getAsignaturaStyles(asignaturaProyecto);
+                      return (
+                        <div className={`bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border-2 ${asigStyles.borderClass} relative overflow-hidden`}>
+                          <div className={`absolute top-0 right-0 w-64 h-64 ${asigStyles.lightBgClass} rounded-full -translate-y-1/2 translate-x-1/2 -z-0 opacity-50`}></div>
+                          <div className="relative z-10 flex flex-col h-full justify-between">
                             <div>
-                              <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase leading-none mb-2">{grupoDisplay.nombre}</h2>
-                              {asignaturaProyecto && (
-                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${asigStyles.textClass} px-3 py-1 ${asigStyles.lightBgClass} rounded-full border ${asigStyles.borderClass} opacity-80 inline-block mt-1`}>
-                                  {asignaturaProyecto}
-                                </span>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => setModalSubirRecursoOpen(true)}
-                              className="bg-slate-900 text-white w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all group"
-                              title="Subir aportación"
-                            >
-                              <Upload className="w-6 h-6 group-hover:text-purple-400 transition-colors" />
-                            </button>
-                          </div>
-
-                          {/* Members */}
-                          <div className="mb-6">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Compañeros</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-                              {(grupoDisplay.miembros || []).map((miembro: string, index: number) => (
-                                <div key={index} className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                  <div className={`w-8 h-8 bg-white border ${asigStyles.borderClass} rounded-lg flex items-center justify-center ${asigStyles.textClass} font-bold text-xs`}>
-                                    {miembro.charAt(0).toUpperCase()}
-                                  </div>
-                                  <span className="font-bold text-slate-700 text-xs tracking-tight truncate">{miembro}</span>
+                              <div className="flex items-start justify-between mb-6">
+                                <div>
+                                  <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase leading-none mb-2">{grupoDisplay.nombre}</h2>
+                                  {asignaturaProyecto && (
+                                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${asigStyles.textClass} px-3 py-1 ${asigStyles.lightBgClass} rounded-full border ${asigStyles.borderClass} opacity-80 inline-block mt-1`}>
+                                      {asignaturaProyecto}
+                                    </span>
+                                  )}
                                 </div>
-                              ))}
+                                <button
+                                  onClick={() => setModalSubirRecursoOpen(true)}
+                                  className="bg-slate-900 text-white w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all group"
+                                  title="Subir aportación"
+                                >
+                                  <Upload className="w-6 h-6 group-hover:text-purple-400 transition-colors" />
+                                </button>
+                              </div>
+
+                              {/* Members */}
+                              <div className="mb-6">
+                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Compañeros</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                  {(grupoDisplay.miembros || []).map((miembro: string, index: number) => (
+                                    <div key={index} className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                      <div className={`w-8 h-8 bg-white border ${asigStyles.borderClass} rounded-lg flex items-center justify-center ${asigStyles.textClass} font-bold text-xs`}>
+                                        {miembro.charAt(0).toUpperCase()}
+                                      </div>
+                                      <span className="font-bold text-slate-700 text-xs tracking-tight truncate">{miembro}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
+                      );
+                    })()}
+
+                    {/* Sección de Recursos del Grupo */}
+                    <div className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                            <FolderOpen className="w-6 h-6" />
+                          </div>
+                          <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos del Equipo</h3>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })()}
-
-
-
-                {/* Sección de Recursos del Grupo */}
-                <div className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                        <FolderOpen className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos del Equipo</h3>
+                      <RepositorioColaborativo
+                        grupo={grupoDisplay}
+                        todosLosGrupos={todosLosGrupos}
+                        proyectoId={alumno.proyecto_id}
+                        filterByGroupId={grupoDisplay.id}
+                        className="!gap-4"
+                        hideTitle={true}
+                      />
                     </div>
                   </div>
-                  <RepositorioColaborativo
-                    grupo={grupoDisplay}
-                    todosLosGrupos={todosLosGrupos}
-                    proyectoId={alumno.proyecto_id}
-                    filterByGroupId={grupoDisplay.id}
-                    className="!gap-4"
-                    hideTitle={true}
-                  />
+
+                  {/* COLUMNA DERECHA: BATERÍA (RESTAURADA) */}
+                  <div className="lg:col-span-1">
+                    <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm sticky top-24 flex flex-col items-center justify-center min-h-[450px] overflow-hidden relative">
+                      <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-indigo-50/50 to-transparent pointer-events-none"></div>
+                      <h3 className="absolute top-6 left-6 text-[10px] font-black text-slate-400 uppercase tracking-widest z-10">Energía del Equipo</h3>
+
+                      <div className="relative z-10 transform hover:scale-105 transition-transform duration-500">
+                        <LivingTree
+                          progress={grupoDisplay.progreso}
+                          health={100}
+                          size={260}
+                          showLabels={false}
+                          variant="satellite"
+                        />
+                      </div>
+
+                      <div className="mt-8 text-center relative z-10 w-full">
+                        <div className="text-4xl font-black text-indigo-600 mb-1">{grupoDisplay.progreso.toFixed(0)}%</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-indigo-50 py-1.5 px-4 rounded-full inline-flex border border-indigo-100">Batería recolectada</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
           </div>
         )}
 
-        {/* VISTA TAREAS (Movida aquí) */}
-        {
-          vistaActiva === 'tareas' && grupoDisplay && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Árbol (Ocupa 1/3) */}
-                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[280px] md:min-h-[400px]">
-                  <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-green-500"></div>
-                  <h2 className="text-sm md:text-xl font-black text-slate-800 tracking-tight uppercase mb-2 md:mb-4 z-10 w-full text-center">Batería del Equipo</h2>
-                  <div className="relative z-10 transform hover:scale-105 transition-transform duration-500 -my-4 md:my-0">
-                    <LivingTree progress={grupoDisplay.progreso || 0} health={100} size={240} variant="satellite" />
+        {/* VISTA TAREAS (Issue 4) */}
+        {vistaActiva === 'tareas' && grupoDisplay && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-full mx-auto w-full pb-20 px-4 md:px-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+              <div>
+                <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter italic">Centro de Misiones</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Gestiona tus objetivos y progresa con tu equipo</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              {/* PANEL PENDIENTES */}
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between px-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Pendientes</h4>
                   </div>
-                  <div className="mt-6 md:mt-8 flex gap-8 text-center relative z-10">
-                    <div>
-                      <div className="text-3xl font-black text-emerald-600 mb-1">{grupoDisplay.progreso}%</div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-emerald-50 py-1.5 px-3 rounded-full border border-emerald-100">Energía Lista</div>
-                    </div>
-                  </div>
+                  <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-indigo-100">
+                    {tareasCategorizadas.pendientes.length}
+                  </span>
                 </div>
-
-                {/* Roadmap (Ocupa 2/3) */}
-                <div className="lg:col-span-2 bg-slate-50 rounded-[2.5rem] p-6 border border-slate-200 h-full">
-                  <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-6 px-2">Mapa de Ruta</h3>
-                  {(!grupoReal?.hitos || grupoReal.hitos.length === 0) ? (
-                    <div className="text-center py-12 px-6 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                      <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-500">
-                        <Sparkles className="w-8 h-8" />
+                <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
+                  {tareasCategorizadas.pendientes.map(t => (
+                    <div
+                      key={t.id}
+                      onClick={() => setTareaSeleccionadaDetalle(t)}
+                      className="group bg-white p-5 rounded-3xl border border-slate-200 hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-50/50 transition-all cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        {t.fecha_entrega && (
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                             {new Date(t.fecha_entrega).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                          </span>
+                        )}
                       </div>
-                      <h3 className="text-xl font-black text-slate-800 mb-2">¡Comienza tu Aventura!</h3>
-                      <p className="text-slate-500 mb-6 max-w-md mx-auto">Tu mapa está vacío. Utiliza la IA para definir los logros y tareas clave de tu proyecto.</p>
+                      <h5 className="font-black text-slate-800 text-sm leading-tight mb-4 group-hover:text-indigo-600 transition-colors">{t.titulo}</h5>
+                      
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                           <Award className="w-3.5 h-3.5 text-amber-500" />
+                           <span className="text-[10px] font-black text-slate-400 uppercase">{t.puntos_maximos} XP</span>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleUpdateTareaEstado(t.id, 'revision'); }}
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-100 flex items-center gap-2"
+                        >
+                          <Send className="w-3 h-3" />
+                          Enviar
+                        </button>
+                      </div>
                     </div>
-                  ) : (
-                    <RoadmapView
-                      fases={fasesProyecto.length > 0 ? fasesProyecto : (todosLosGrupos.length > 0 && alumno.proyecto_id) ? (PROYECTOS_MOCK.find(p => p.id === alumno.proyecto_id)?.fases || PROYECTOS_MOCK[0]?.fases || []) : []}
-                      hitosGrupo={grupoReal?.hitos || []}
-                      onToggleHito={async (faseId, hitoTitulo, currentStatus, hitoId) => {
-                        if (!grupoReal) return;
+                  ))}
+                  {tareasCategorizadas.pendientes.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
+                      <Sparkles className="w-8 h-8 text-slate-400 mb-2" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Todo al día</p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-                        let nextStatus: HitoGrupo['estado'] | null = null;
-                        if (currentStatus === 'pendiente' || currentStatus === 'propuesto' || currentStatus === 'rechazado') nextStatus = 'en_progreso';
-                        else if (currentStatus === 'en_progreso') nextStatus = 'revision';
+              {/* PANEL EN REVISIÓN */}
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between px-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">En Revisión</h4>
+                  </div>
+                  <span className="bg-amber-50 text-amber-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-100">
+                    {tareasCategorizadas.revision.length}
+                  </span>
+                </div>
+                <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
+                  {tareasCategorizadas.revision.map(t => (
+                    <div
+                      key={t.id}
+                      onClick={() => setTareaSeleccionadaDetalle(t)}
+                      className="group bg-white p-5 rounded-3xl border-2 border-amber-100 hover:border-amber-300 hover:shadow-xl hover:shadow-amber-50/50 transition-all cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 p-2">
+                        <Clock className="w-4 h-4 text-amber-400 animate-spin-slow" />
+                      </div>
+                      <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 mb-3">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <h5 className="font-black text-slate-800 text-sm leading-tight mb-4">{t.titulo}</h5>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 w-full text-center">Esperando respuesta...</span>
+                      </div>
+                    </div>
+                  ))}
+                  {tareasCategorizadas.revision.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
+                      <Clock className="w-8 h-8 text-slate-400 mb-2" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Nada pendiente</p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-                        if (!nextStatus) return;
+              {/* PANEL COMPLETADO */}
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between px-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Completado</h4>
+                  </div>
+                  <span className="bg-emerald-50 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-100">
+                    {tareasCategorizadas.completado.length}
+                  </span>
+                </div>
+                <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
+                  {tareasCategorizadas.completado.map(t => (
+                    <div
+                      key={t.id}
+                      onClick={() => setTareaSeleccionadaDetalle(t)}
+                      className="group bg-emerald-50/30 p-5 rounded-3xl border border-emerald-100 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-50/50 transition-all cursor-pointer relative overflow-hidden opacity-80 hover:opacity-100"
+                    >
+                      <div className="absolute top-2 right-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      </div>
+                      <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 mb-3">
+                        <Trophy className="w-5 h-5" />
+                      </div>
+                      <h5 className="font-black text-slate-800 text-sm leading-tight mb-2 line-through decoration-emerald-500/30">{t.titulo}</h5>
+                      <div className="flex items-center gap-1.5">
+                         <div className="px-3 py-1 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-tighter shadow-sm">¡Excelente!</div>
+                         <span className="text-[10px] font-black text-emerald-600">+{t.puntos_maximos} XP</span>
+                      </div>
+                    </div>
+                  ))}
+                  {tareasCategorizadas.completado.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
+                      <Trophy className="w-8 h-8 text-slate-400 mb-2" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">¿Primer objetivo?</p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-                        try {
-                          const updatedHitos = (grupoReal.hitos || []).map(h => {
-                            const isMatch = hitoId ? h.id === hitoId : (h.fase_id === faseId && h.titulo === hitoTitulo);
-                            return isMatch ? { ...h, estado: nextStatus } : h;
-                          }) as HitoGrupo[];
-
-                          setGrupoReal({ ...grupoReal, hitos: updatedHitos });
-
-                          const { error } = await supabase
-                            .from('grupos')
-                            .update({ hitos: updatedHitos })
-                            .eq('id', grupoReal.id);
-
-                          if (error) throw error;
-
-                          const msg = nextStatus === 'en_progreso' ? "¡Tarea iniciada! 🚀" : "¡Enviada a revisión! 📨";
-                          toast.success(msg);
-                        } catch (err) {
-                          console.error("Error updating milestone:", err);
-                          toast.error("Error al actualizar la tarea");
-                        }
-                      }}
-                      onProposeMilestones={(faseId) => {
-                        const fases = fasesProyecto.length > 0 ? fasesProyecto : (todosLosGrupos.length > 0 && alumno.proyecto_id) ? (PROYECTOS_MOCK.find(p => p.id === alumno.proyecto_id)?.fases || PROYECTOS_MOCK[0]?.fases || []) : [];
-                        const fase = fases.find(f => f.id === faseId);
-                        if (fase) {
-                          setFaseParaProponer(fase);
-                          setModalProponerOpen(true);
-                        }
-                      }}
-                      layout="compact-grid"
-                    />
+              {/* PANEL EXPIRADO */}
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between px-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Expirado</h4>
+                  </div>
+                  <span className="bg-rose-50 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-rose-100">
+                    {tareasCategorizadas.expirado.length}
+                  </span>
+                </div>
+                <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
+                  {tareasCategorizadas.expirado.map(t => (
+                    <div
+                      key={t.id}
+                      onClick={() => setTareaSeleccionadaDetalle(t)}
+                      className="group bg-rose-50/30 p-5 rounded-3xl border border-rose-100 hover:border-rose-300 hover:shadow-xl hover:shadow-rose-50/50 transition-all cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="absolute top-2 right-2">
+                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                      </div>
+                      <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-400 mb-3">
+                        <History className="w-5 h-5" />
+                      </div>
+                      <h5 className="font-black text-slate-700 text-sm leading-tight mb-2 opacity-60">{t.titulo}</h5>
+                      <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Plazo vencido</p>
+                    </div>
+                  ))}
+                  {tareasCategorizadas.expirado.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
+                      <CheckCircle2 className="w-8 h-8 text-slate-400 mb-2" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">¡Ningún retraso!</p>
+                    </div>
                   )}
                 </div>
               </div>
             </div>
-          )
-        }
-
+          </div>
+        )}
 
         {/* VISTA TODOS LOS GRUPOS (NUEVA: Comunidad con detalles) */}
-        {
-          vistaActiva === 'comunidad' && (
-            <div className="space-y-6 animate-in fade-in duration-500">
-              {/* Grid Unificado: Árbol + Equipos + Recursos */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {vistaActiva === 'comunidad' && (
+          <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Grid Unificado: Árbol + Equipos + Recursos */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* 1. Árbol Global (Simple) */}
-                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[400px]">
-                  <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-400 to-purple-500"></div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100 mb-6 relative z-10">
-                    <Globe className="w-3 h-3 text-indigo-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Progreso Global</span>
-                  </div>
-
-                  <div className="relative z-10 transform hover:-translate-y-2 transition-transform duration-500 w-full flex justify-center">
-                    <LivingTree
-                      progress={todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)}
-                      health={100}
-                      size={280}
-                      variant="nexus"
-                    />
-                  </div>
-
-                  <div className="mt-8 text-center relative z-10">
-                    <div className="text-4xl font-black text-indigo-600 mb-2">
-                      {(todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)).toFixed(0)}%
-                    </div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full inline-block">Misión Espacial</div>
-                    <p className="text-xs text-slate-500 mt-3 max-w-[200px] leading-relaxed font-medium">
-                      El esfuerzo de todos para hacer despegar el cohete.
-                    </p>
-                  </div>
+              {/* 1. Árbol Global (Simple) */}
+              <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[400px]">
+                <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-400 to-purple-500"></div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100 mb-6 relative z-10">
+                  <Globe className="w-3 h-3 text-indigo-500" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Progreso Global</span>
                 </div>
 
-                {/* 2. Equipos en Misión */}
-                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 h-full max-h-[600px] overflow-y-auto custom-scrollbar">
-                  <h3 className="text-xl font-black text-slate-800 mb-6 uppercase tracking-tight">Equipos</h3>
-                  <div className="space-y-4">
-                    {todosLosGrupos.map((g, idx) => {
-                      const proyecto = PROYECTOS_MOCK.find(p => p.id === g.proyecto_id) || PROYECTOS_MOCK[0];
-                      const asigStyles = getAsignaturaStyles(asignaturaProyecto);
-                      const hitosDelGrupo = g.hitos || [];
-                      const hitosParaMostrar = hitosDelGrupo.slice(0, 3); // Mostrar hasta 3 hitos
+                <div className="relative z-10 transform hover:-translate-y-2 transition-transform duration-500 w-full flex justify-center">
+                  <LivingTree
+                    progress={todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)}
+                    health={100}
+                    size={280}
+                    variant="nexus"
+                  />
+                </div>
 
-                      return (
-                        <div key={idx} className={`p-4 bg-slate-50 rounded-2xl border-2 ${asigStyles.borderClass} group hover:border-indigo-400 transition-all shadow-sm`}>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className={`font-bold ${asigStyles.textClass} text-sm truncate max-w-[120px]`} title={g.nombre}>{g.nombre}</div>
-                            <div className={`w-7 h-7 rounded-full bg-white border ${asigStyles.borderClass} flex items-center justify-center text-[9px] font-black ${asigStyles.textClass} shadow-sm`}>
-                              {g.progreso}%
-                            </div>
-                          </div>
+                <div className="mt-8 text-center relative z-10">
+                  <div className="text-4xl font-black text-indigo-600 mb-2">
+                    {(todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)).toFixed(0)}%
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-indigo-50 py-1.5 px-4 rounded-full border border-indigo-100 inline-block shadow-sm">Energía Planetaria</div>
+                </div>
+              </div>
 
-                          <div className="flex -space-x-2 mb-3 overflow-hidden py-1 pl-1">
-                            {g.miembros?.slice(0, 4).map((m, i) => (
-                              <div key={i} title={m} className={`w-5 h-5 rounded-full ${asigStyles.lightBgClass} border-2 border-white flex items-center justify-center text-[7px] font-bold ${asigStyles.textClass} uppercase ring-1 ring-slate-100`}>
-                                {m.charAt(0)}
-                              </div>
-                            ))}
-                            {(g.miembros?.length || 0) > 4 && (
-                              <div className="w-5 h-5 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[7px] font-bold text-slate-500 ring-1 ring-slate-100">
-                                +{g.miembros!.length - 4}
-                              </div>
-                            )}
-                          </div>
+              {/* 2. Lista de Equipos Compacta */}
+              <div className="lg:col-span-1 space-y-4 overflow-y-auto max-h-[500px] lg:max-h-full pr-2 custom-scrollbar">
+                <div className="grid grid-cols-1 gap-4">
+                  {todosLosGrupos.map((g, idx) => {
+                    const asigStyles = getAsignaturaStyles(asignaturaProyecto);
 
-                          <div className="space-y-1">
-                            {hitosParaMostrar.length > 0 ? (
-                              hitosParaMostrar.map((h, i) => {
-                                const completado = h.estado === 'aprobado' || h.estado === 'completado';
-                                return (
-                                  <div key={i} className={`flex items-center gap-1.5 ${completado ? 'opacity-50' : 'opacity-80'}`}>
-                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${completado ? 'bg-slate-300' : asigStyles.bgClass}`}></div>
-                                    <span className={`text-[10px] font-medium truncate max-w-full block ${completado ? 'text-slate-400 line-through' : 'text-slate-600'}`} title={h.titulo}>
-                                      {h.titulo}
-                                    </span>
-                                  </div>
-                                );
-                              })
-                            ) : (
-                              <span className="text-[9px] text-slate-400 italic">Sin tareas documentadas</span>
-                            )}
+                    return (
+                      <div key={idx} className={`p-4 bg-slate-50 rounded-2xl border-2 ${asigStyles.borderClass} group hover:border-indigo-400 transition-all shadow-sm`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className={`font-bold ${asigStyles.textClass} text-sm truncate max-w-[120px]`} title={g.nombre}>{g.nombre}</div>
+                          <div className={`w-7 h-7 rounded-full bg-white border ${asigStyles.borderClass} flex items-center justify-center text-[9px] font-black ${asigStyles.textClass} shadow-sm`}>
+                            {g.progreso}%
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                {/* 3. Repositorio Compartido */}
-                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-0 shadow-sm border border-slate-200 h-full overflow-hidden flex flex-col">
-                  <div className="p-8 pb-4">
-                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos</h3>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
-                    <RepositorioColaborativo
-                      grupo={grupoReal || grupoEjemplo}
-                      todosLosGrupos={todosLosGrupos}
-                      proyectoId={alumno.proyecto_id}
-                      mostrarEjemplo={showExample}
-                      className="!gap-4 !grid-cols-1"
-                      hideTitle={true}
-                      refreshTrigger={refreshRecursos}
-                    />
-                  </div>
+                        <div className="flex -space-x-2 mb-3 overflow-hidden py-1 pl-1">
+                          {g.miembros?.slice(0, 4).map((m, i) => (
+                            <div key={i} title={m} className={`w-5 h-5 rounded-full ${asigStyles.lightBgClass} border-2 border-white flex items-center justify-center text-[7px] font-bold ${asigStyles.textClass} uppercase ring-1 ring-slate-100`}>
+                              {m.charAt(0)}
+                            </div>
+                          ))}
+                          {(g.miembros?.length || 0) > 4 && (
+                            <div className="w-5 h-5 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[7px] font-bold text-slate-500 ring-1 ring-slate-100">
+                              +{g.miembros!.length - 4}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-1">
+                          {g.tareas && g.tareas.length > 0 ? (
+                            g.tareas.slice(0, 3).map((t, i) => {
+                              const completado = t.estado === 'aprobado' || t.estado === 'completado';
+                              return (
+                                <div key={i} className={`flex items-center gap-1.5 ${completado ? 'opacity-50' : 'opacity-80'}`}>
+                                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${completado ? 'bg-slate-300' : asigStyles.bgClass}`}></div>
+                                  <span className={`text-[10px] font-medium truncate max-w-full block ${completado ? 'text-slate-400 line-through' : 'text-slate-600'}`} title={t.titulo}>
+                                    {t.titulo}
+                                  </span>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <span className="text-[9px] text-slate-400 italic">Sin tareas documentadas</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Repositorio Compartido */}
+              <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-0 shadow-sm border border-slate-200 h-full overflow-hidden flex flex-col">
+                <div className="p-8 pb-4">
+                  <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos</h3>
+                </div>
+                <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
+                  <RepositorioColaborativo
+                    grupo={grupoReal || grupoEjemplo}
+                    todosLosGrupos={todosLosGrupos}
+                    proyectoId={alumno.proyecto_id}
+                    mostrarEjemplo={showExample}
+                    className="!gap-4 !grid-cols-1"
+                    hideTitle={true}
+                    refreshTrigger={refreshRecursos}
+                  />
                 </div>
               </div>
             </div>
-          )
-        }
+          </div>
+        )}
 
         {/* VISTA MENTOR IA / EQUIPO */}
         {
@@ -1673,6 +1916,17 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           alumnoId={alumno.id}
           alumnoNombre={alumno.nombre}
           historialClases={historialClases}
+        />
+      )}
+
+      {tareaSeleccionadaDetalle && (
+        <ModalDetalleTarea
+          tarea={tareaSeleccionadaDetalle}
+          grupos={todosLosGrupos}
+          isStudent={true}
+          onClose={() => setTareaSeleccionadaDetalle(null)}
+          onEstadoChange={handleUpdateTareaEstado}
+          onSaveAlumnoContent={handleSaveAlumnoContent}
         />
       )}
     </div >

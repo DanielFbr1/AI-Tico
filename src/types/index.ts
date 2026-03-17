@@ -19,7 +19,7 @@ export interface HitoGrupo {
     id: string;
     fase_id: string;
     titulo: string;
-    estado: 'propuesto' | 'pendiente' | 'en_progreso' | 'revision' | 'aprobado' | 'rechazado' | 'completado';
+    estado: 'propuesto' | 'pendiente' | 'en_progreso' | 'revision' | 'aprobado' | 'rechazado' | 'completado' | 'expirado';
     comentario_docente?: string;
     descripcion?: string;
 }
@@ -49,6 +49,7 @@ export interface Grupo {
     proyecto_id?: string;
     conversacionesIA?: Conversacion[];
     hitos?: HitoGrupo[];
+    tareas?: TareaDetallada[];
     ultima_actividad?: string; // Fecha ISO
     pedir_ayuda?: boolean;
     pedir_ayuda_timestamp?: string;
@@ -109,7 +110,46 @@ export interface AlumnoConectado {
     last_active: string;
 }
 
-export type DashboardSection = 'resumen' | 'grupos' | 'interacciones' | 'evaluacion' | 'trabajo-compartido' | 'solicitudes';
+export type DashboardSection = 'resumen' | 'grupos' | 'interacciones' | 'evaluacion' | 'trabajo-compartido' | 'solicitudes' | 'calendario';
+
+// --- TAREAS ESTILO CLASSROOM ---
+
+export interface ArchivoAdjunto {
+    nombre: string;
+    url: string;
+    tipo: string; // 'pdf', 'image', 'doc', etc.
+    tamano?: number; // bytes
+}
+
+export interface TareaDetallada {
+    id: string;
+    proyecto_id: string;
+    grupo_id?: number;
+    titulo: string;
+    descripcion?: string;
+    fecha_entrega?: string; // ISO date
+    archivos_adjuntos: ArchivoAdjunto[];
+    puntos_maximos: number;
+    creador_id: string;
+    created_at: string;
+    estado: 'propuesto' | 'pendiente' | 'en_progreso' | 'revision' | 'aprobado' | 'rechazado' | 'completado' | 'expirado';
+    contenido_alumno?: string;
+    archivos_alumno?: ArchivoAdjunto[];
+}
+
+export interface EntregaTarea {
+    id: string;
+    tarea_id: string;
+    alumno_id?: string;
+    grupo_id?: number;
+    respuesta_texto?: string;
+    archivos_entregados: ArchivoAdjunto[];
+    calificacion?: number;
+    comentario_docente?: string;
+    estado: 'borrador' | 'entregada' | 'evaluada' | 'revisado';
+    fecha_entrega: string;
+    updated_at: string;
+}
 
 
 export interface Recurso {

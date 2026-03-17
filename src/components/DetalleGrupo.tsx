@@ -1,13 +1,13 @@
-import { ArrowLeft, CheckCircle2, Circle, Brain, Share2, MessageSquare, Users, Bot, Pencil, ClipboardList, ExternalLink, User } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { Grupo, ProyectoFase, Criterio } from '../types';
+import { ArrowLeft, CheckCircle2, Circle, Brain, Share2, MessageSquare, Users, Bot, Pencil, ClipboardList, ExternalLink, User, Star, Calendar, FileText, Eye, Clock, Trash2, Plus, AlertCircle, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Grupo, ProyectoFase, Criterio, TareaDetallada } from '../types';
 import { EvaluacionGrupalContent } from './EvaluacionGrupalContent';
 import { RepositorioColaborativo } from './RepositorioColaborativo';
 import { MentorChat } from './MentorChat';
 import { ChatGrupo } from './ChatGrupo';
-import { RoadmapView } from './RoadmapView';
 import { ModalConfiguracionIA } from './ModalConfiguracionIA';
 import { LivingTree } from './LivingTree';
+import { ModalDetalleTarea } from './ModalDetalleTarea';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
@@ -27,11 +27,72 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
   const [vistaActiva, setVistaActiva] = useState<'detalle' | 'compartir' | 'chat' | 'tareas' | 'evaluacion'>('detalle');
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [chatMode, setChatMode] = useState<'menu' | 'mentor' | 'group'>('menu');
+  const [tareasGrupo, setTareasGrupo] = useState<TareaDetallada[]>([]);
+  const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaDetallada | null>(null);
 
   // Asegurar que empezamos arriba al entrar al detalle
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  const fetchTareas = async () => {
+    try {
+      // Obtenemos tareas que son del grupo específico O que son globales (grupo_id null o 'Todos')
+      const { data, error } = await supabase
+        .from('tareas')
+        .select('*')
+        .or(`grupo_id.eq.${grupo.id},grupo_id.is.null`)
+        .eq('proyecto_id', grupo.proyecto_id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setTareasGrupo(data || []);
+    } catch (err) {
+      console.error('Error fetching group tasks:', err);
+    }
+  };
+
+  const tareasCategorizadas = useMemo(() => {
+    return {
+      pendientes: tareasGrupo.filter(t => t.estado === 'pendiente' || t.estado === 'en_progreso'),
+      revision: tareasGrupo.filter(t => t.estado === 'revision'),
+      completadas: tareasGrupo.filter(t => t.estado === 'aprobado' || t.estado === 'completado'),
+      expiradas: tareasGrupo.filter(t => t.estado === 'expirado')
+    };
+  }, [tareasGrupo]);
+
+  const handleUpdateTareaEstado = async (id: string, nuevoEstado: string) => {
+    try {
+      const { error } = await supabase
+        .from('tareas')
+        .update({ estado: nuevoEstado })
+        .eq('id', id);
+
+      if (error) throw error;
+      setTareasGrupo(prev => prev.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t));
+      toast.success(nuevoEstado === 'aprobado' ? 'Misión aprobada' : 'Misión rechazada');
+    } catch (err) {
+      console.error('Error updating task status:', err);
+      toast.error('No se pudo actualizar la misión');
+    }
+  };
+
+  useEffect(() => {
+    fetchTareas();
+    // Suscribirse a cambios en tareas de este proyecto para capturar globales y específicas
+    const ch = supabase.channel(`group_tareas_rt_${grupo.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'tareas', 
+        filter: `proyecto_id=eq.${grupo.proyecto_id}` 
+      }, 
+        (payload) => {
+          console.log("Task change detected in group view:", payload.eventType);
+          fetchTareas();
+        }
+      ).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [grupo.id, grupo.proyecto_id]);
 
   const getEstadoColor = (estado: Grupo['estado']) => {
     switch (estado) {
@@ -185,23 +246,97 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
         ) : (
           // Otros tabs
           vistaActiva === 'tareas' ? (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {onAssignTask && (
-                <div className="flex justify-end mb-6">
-                  <button onClick={onAssignTask} className="flex items-center gap-2 p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-bold text-sm shadow-md hover:shadow-lg active:scale-95">
-                    <ClipboardList className="w-5 h-5" />
-                    Asignar Nueva Tarea
-                  </button>
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Misiones del Equipo</h2>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Hitos y objetivos a completar</p>
                 </div>
-              )}
-              <RoadmapView
-                fases={fases}
-                hitosGrupo={grupo.hitos || []}
-                onToggleHito={() => { }}
-                readOnly={true}
-                layout="compact-grid"
-                onDeleteHito={onDeleteHito}
-              />
+                {onAssignTask && (
+                  <button onClick={onAssignTask} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-black text-xs shadow-lg shadow-indigo-100 active:scale-95 uppercase tracking-wider">
+                    <Plus className="w-4 h-4" />
+                    Asignar Tarea
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* PANEL: Pendientes */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-6 bg-slate-300 rounded-full"></div>
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Pendientes ({tareasCategorizadas.pendientes.length})</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {tareasCategorizadas.pendientes.map((tarea) => (
+                      <TaskCardTeacher key={tarea.id} tarea={tarea} onClick={() => setTareaSeleccionada(tarea)} />
+                    ))}
+                    {tareasCategorizadas.pendientes.length === 0 && <EmptyTaskState />}
+                  </div>
+                </div>
+
+                {/* PANEL: En Revisión */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-6 bg-amber-400 rounded-full"></div>
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">En Revisión ({tareasCategorizadas.revision.length})</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {tareasCategorizadas.revision.map((tarea) => (
+                      <TaskCardTeacher 
+                        key={tarea.id} 
+                        tarea={tarea} 
+                        onClick={() => setTareaSeleccionada(tarea)}
+                        actions={
+                          <div className="flex gap-2 mt-3 pt-3 border-t border-amber-100">
+                             <button 
+                                onClick={(e) => { e.stopPropagation(); handleUpdateTareaEstado(tarea.id, 'aprobado'); }}
+                                className="flex-1 py-2 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-emerald-600 active:scale-95 transition-all"
+                             >
+                                Aprobar
+                             </button>
+                             <button 
+                                onClick={(e) => { e.stopPropagation(); handleUpdateTareaEstado(tarea.id, 'rechazado'); }}
+                                className="flex-1 py-2 bg-rose-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-rose-600 active:scale-95 transition-all"
+                             >
+                                Rechazar
+                             </button>
+                          </div>
+                        }
+                      />
+                    ))}
+                    {tareasCategorizadas.revision.length === 0 && <EmptyTaskState />}
+                  </div>
+                </div>
+
+                {/* PANEL: Completado */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-6 bg-emerald-400 rounded-full"></div>
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Completado ({tareasCategorizadas.completadas.length})</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {tareasCategorizadas.completadas.map((tarea) => (
+                      <TaskCardTeacher key={tarea.id} tarea={tarea} onClick={() => setTareaSeleccionada(tarea)} />
+                    ))}
+                    {tareasCategorizadas.completadas.length === 0 && <EmptyTaskState />}
+                  </div>
+                </div>
+
+                {/* PANEL: Expirado */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-6 bg-rose-400 rounded-full"></div>
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Expirado ({tareasCategorizadas.expiradas.length})</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {tareasCategorizadas.expiradas.map((tarea) => (
+                      <TaskCardTeacher key={tarea.id} tarea={tarea} onClick={() => setTareaSeleccionada(tarea)} />
+                    ))}
+                    {tareasCategorizadas.expiradas.length === 0 && <EmptyTaskState />}
+                  </div>
+                </div>
+              </div>
             </div>
           ) : vistaActiva === 'evaluacion' ? (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
@@ -376,6 +511,84 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
           </button>
         ))}
       </nav>
+
+      {/* Modal Detalle Tarea */}
+      {tareaSeleccionada && (
+        <ModalDetalleTarea
+          tarea={tareaSeleccionada}
+          grupos={[grupo]}
+          onClose={() => setTareaSeleccionada(null)}
+          onDelete={async (id) => {
+            try {
+              const { error } = await supabase.from('tareas').delete().eq('id', id);
+              if (error) throw error;
+              setTareasGrupo(prev => prev.filter(t => t.id !== id));
+              setTareaSeleccionada(null);
+              toast.success('Tarea eliminada');
+            } catch {
+              toast.error('Error al eliminar');
+            }
+          }}
+          onEstadoChange={async (id, nuevoEstado) => {
+            try {
+              const { error } = await supabase.from('tareas').update({ estado: nuevoEstado }).eq('id', id);
+              if (error) throw error;
+              setTareasGrupo(prev => prev.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t));
+              setTareaSeleccionada(prev => prev ? { ...prev, estado: nuevoEstado as any } : null);
+              toast.success(`Estado actualizado`);
+            } catch {
+              toast.error('Error al cambiar el estado');
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function TaskCardTeacher({ tarea, onClick, actions }: { tarea: TareaDetallada, onClick: () => void, actions?: React.ReactNode }) {
+  const isCompleted = tarea.estado === 'aprobado' || tarea.estado === 'completado';
+  const isRevision = tarea.estado === 'revision';
+
+  return (
+    <div 
+        onClick={onClick}
+        className={`group bg-white border ${isRevision ? 'border-amber-200 shadow-md shadow-amber-50' : 'border-slate-100'} p-4 rounded-2xl hover:border-indigo-300 hover:shadow-lg transition-all cursor-pointer relative overflow-hidden`}
+    >
+        <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                isCompleted ? 'bg-emerald-50 text-emerald-500' : 
+                isRevision ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-400'
+            }`}>
+                <FileText className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+                <h4 className={`text-xs font-black text-slate-800 leading-tight mb-1 truncate ${isCompleted ? 'line-through opacity-50' : ''}`}>
+                    {tarea.titulo}
+                </h4>
+                <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <Star className="w-3 h-3" /> {tarea.puntos_maximos}
+                    </span>
+                    {tarea.fecha_entrega && (
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> 
+                            {new Date(tarea.fecha_entrega).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                        </span>
+                    )}
+                </div>
+            </div>
+            <Eye className="w-4 h-4 text-slate-200 group-hover:text-indigo-400 transition-colors" />
+        </div>
+        {actions}
+    </div>
+  );
+}
+
+function EmptyTaskState() {
+  return (
+    <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl py-8 px-4 text-center">
+      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Sin misiones en este sector</p>
     </div>
   );
 }
