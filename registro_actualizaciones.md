@@ -1,5 +1,11 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.6.5] - 2026-03-17
+### Visibilidad Total de Misiones en Equipos
+- **Fin del Límite de 3**: Se ha eliminado la restricción que solo mostraba las primeras 3 tareas de cada equipo en el panel global (pestaña Comunidad) del alumno.
+- **Transparencia de Progreso**: Ahora los alumnos pueden ver la lista completa de misiones de todos los equipos del proyecto, permitiendo una visión clara de la Roadmap global.
+- **Versión**: Actualización global a V5.6.5.
+
 ## [V5.6.4] - 2026-03-17
 ### Hub de Misión Compacto (Sin Scroll)
 - **Optimización de Layout**: Se ha migrado a un diseño de dos columnas (Principal y Barra Lateral) que maximiza el uso del espacio horizontal y elimina la necesidad de scroll en pantallas estándar.

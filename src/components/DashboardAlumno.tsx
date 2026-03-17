@@ -1522,7 +1522,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
                         <div className="space-y-1">
                           {g.tareas && g.tareas.length > 0 ? (
-                            g.tareas.slice(0, 3).map((t, i) => {
+                            g.tareas.map((t, i) => {
                               const completado = t.estado === 'aprobado' || t.estado === 'completado';
                               return (
                                 <div key={i} className={`flex items-center gap-1.5 ${completado ? 'opacity-50' : 'opacity-80'}`}>
