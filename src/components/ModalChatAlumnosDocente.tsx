@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, User, MessageSquare, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 import { Grupo } from '../types';
 
 interface Mensaje {
@@ -114,12 +115,42 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
 
         const subscription = supabase.channel(`chat_doc_${docenteId}`)
             .on('postgres_changes', {
-                event: '*',
+                event: 'INSERT',
                 schema: 'public',
                 table: 'mensajes_profesor_alumno',
                 filter: `profesor_user_id=eq.${docenteId}`
             }, payload => {
-                cargarMensajes();
+                const newMessage = payload.new as Mensaje;
+                
+                // Solo añadir si es del otro usuario o si no existe en nuestro estado local
+                setMensajes(prev => {
+                    const aluId = newMessage.alumno_user_id;
+                    const thread = prev[aluId] || [];
+                    
+                    // Verificar si ya existe (para evitar duplicados de actualizaciones optimistas)
+                    if (thread.some(m => m.id === newMessage.id)) return prev;
+                    
+                    return {
+                        ...prev,
+                        [aluId]: [...thread, newMessage]
+                    };
+                });
+            })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'mensajes_profesor_alumno',
+                filter: `profesor_user_id=eq.${docenteId}`
+            }, payload => {
+                const updatedMessage = payload.new as Mensaje;
+                setMensajes(prev => {
+                    const aluId = updatedMessage.alumno_user_id;
+                    const thread = prev[aluId] || [];
+                    return {
+                        ...prev,
+                        [aluId]: thread.map(m => m.id === updatedMessage.id ? updatedMessage : m)
+                    };
+                });
             })
             .subscribe();
 
@@ -141,10 +172,28 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
         if (!alumAct) return;
 
         const newMessageTexto = nuevoMensaje.trim();
+        const tempId = `temp-${Date.now()}`;
         setNuevoMensaje('');
 
+        // Optimistic Update
+        const optimisticMsg: Mensaje = {
+            id: tempId,
+            sender_id: docenteId,
+            profesor_user_id: docenteId,
+            alumno_user_id: alumnoSeleccionado,
+            alumno_nombre: alumAct.nombre,
+            mensaje: newMessageTexto,
+            created_at: new Date().toISOString(),
+            leido: false
+        };
+
+        setMensajes(prev => ({
+            ...prev,
+            [alumnoSeleccionado]: [...(prev[alumnoSeleccionado] || []), optimisticMsg]
+        }));
+
         // Insert to DB
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('mensajes_profesor_alumno')
             .insert([{
                 alumno_user_id: alumnoSeleccionado,
@@ -153,10 +202,24 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
                 mensaje: newMessageTexto,
                 sender_id: docenteId,
                 leido: false
-            }]);
+            }])
+            .select()
+            .single();
 
         if (error) {
             console.error("Error al enviar mensaje:", error);
+            // Remove optimistic message on error
+            setMensajes(prev => ({
+                ...prev,
+                [alumnoSeleccionado]: (prev[alumnoSeleccionado] || []).filter(m => m.id !== tempId)
+            }));
+            toast.error('No se pudo enviar el mensaje');
+        } else if (data) {
+            // Replace optimistic message with actual data from server
+            setMensajes(prev => ({
+                ...prev,
+                [alumnoSeleccionado]: (prev[alumnoSeleccionado] || []).map(m => m.id === tempId ? data : m)
+            }));
         }
     };
 

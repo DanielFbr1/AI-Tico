@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, User, MessageSquare, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 import { getAsignaturaStyles } from '../data/asignaturas';
 
 interface HistorialItem {
@@ -140,12 +141,42 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
         // Suscripción a nuevos mensajes
         const subscription = supabase.channel(`chat_alu_${alumnoId}`)
             .on('postgres_changes', {
-                event: '*',
+                event: 'INSERT',
                 schema: 'public',
                 table: 'mensajes_profesor_alumno',
                 filter: `alumno_user_id=eq.${alumnoId}`
             }, payload => {
-                cargarMensajes(); // Recargar todos para asegurar consistencia
+                const newMessage = payload.new as Mensaje;
+                
+                // Solo añadir si es del otro usuario o si no existe en nuestro estado local
+                setMensajes(prev => {
+                    const profId = newMessage.profesor_user_id;
+                    const thread = prev[profId] || [];
+                    
+                    // Verificar si ya existe (para evitar duplicados de actualizaciones optimistas)
+                    if (thread.some(m => m.id === newMessage.id)) return prev;
+                    
+                    return {
+                        ...prev,
+                        [profId]: [...thread, newMessage]
+                    };
+                });
+            })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'mensajes_profesor_alumno',
+                filter: `alumno_user_id=eq.${alumnoId}`
+            }, payload => {
+                const updatedMessage = payload.new as Mensaje;
+                setMensajes(prev => {
+                    const profId = updatedMessage.profesor_user_id;
+                    const thread = prev[profId] || [];
+                    return {
+                        ...prev,
+                        [profId]: thread.map(m => m.id === updatedMessage.id ? updatedMessage : m)
+                    };
+                });
             })
             .subscribe();
 
@@ -164,10 +195,28 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
         if (!nuevoMensaje.trim() || !profesorSeleccionado) return;
 
         const newMessageTexto = nuevoMensaje.trim();
-        setNuevoMensaje(''); // Optimistic clear
+        const tempId = `temp-${Date.now()}`;
+        setNuevoMensaje('');
+
+        // Optimistic Update
+        const optimisticMsg: Mensaje = {
+            id: tempId,
+            sender_id: alumnoId,
+            profesor_user_id: profesorSeleccionado,
+            alumno_user_id: alumnoId,
+            alumno_nombre: alumnoNombre,
+            mensaje: newMessageTexto,
+            created_at: new Date().toISOString(),
+            leido: false
+        };
+
+        setMensajes(prev => ({
+            ...prev,
+            [profesorSeleccionado]: [...(prev[profesorSeleccionado] || []), optimisticMsg]
+        }));
 
         // Insert to DB
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('mensajes_profesor_alumno')
             .insert([{
                 alumno_user_id: alumnoId,
@@ -176,11 +225,24 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
                 mensaje: newMessageTexto,
                 sender_id: alumnoId,
                 leido: false
-            }]);
+            }])
+            .select()
+            .single();
 
         if (error) {
             console.error("Error al enviar mensaje:", error);
-            // Revert on error could be implemented here
+            // Remove optimistic message on error
+            setMensajes(prev => ({
+                ...prev,
+                [profesorSeleccionado]: (prev[profesorSeleccionado] || []).filter(m => m.id !== tempId)
+            }));
+            toast.error('No se pudo enviar el mensaje');
+        } else if (data) {
+            // Replace optimistic message with actual data from server
+            setMensajes(prev => ({
+                ...prev,
+                [profesorSeleccionado]: (prev[profesorSeleccionado] || []).map(m => m.id === tempId ? data : m)
+            }));
         }
     };
 

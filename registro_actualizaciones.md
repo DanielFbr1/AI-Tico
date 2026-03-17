@@ -1,5 +1,12 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.6.8] - 2026-03-17
+### Chat Instantáneo (Optimistic Updates)
+- **Eliminación de Retraso**: Los mensajes enviados ahora aparecen instantáneamente en la interfaz tanto para alumnos como para profesores.
+- **Sincronización Inteligente**: Se ha mejorado la suscripción Realtime para procesar solo los cambios individuales en lugar de recargar todo el historial.
+- **Corrección de Dependencias**: Cambiada la librería de notificaciones a `sonner` para mayor consistencia visual.
+- **Versión**: Actualización global a V5.6.8.
+
 ## [V5.6.7] - 2026-03-17
 ### Control Total y Refinamiento del Hub
 - **Gestión de Evidencias**: Ahora los alumnos pueden eliminar archivos subidos incorrectamente antes de entregar la misión.
