@@ -882,7 +882,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.5.0</span>
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.5.1</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -937,8 +937,19 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 onClick={() => setModalHorarioOpen(true)}
                 className="flex items-center justify-center md:justify-start gap-2 px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all font-bold text-xs border border-emerald-100/50 shadow-sm"
               >
-                <Calendar className="w-4 h-4" />
+                <Clock className="w-4 h-4" />
                 <span className="uppercase tracking-tight">Horario</span>
+              </button>
+
+              <button
+                onClick={() => { setVistaActiva('calendario'); window.scrollTo(0, 0); }}
+                className={`flex items-center justify-center md:justify-start gap-2 px-3 py-2 rounded-xl transition-all font-bold text-xs border-2 ${vistaActiva === 'calendario'
+                  ? 'bg-blue-600 text-white border-blue-700 shadow-md shadow-blue-200 animate-in fade-in zoom-in duration-300'
+                  : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100 shadow-sm'
+                  }`}
+              >
+                <Calendar className="w-4 h-4" />
+                <span className="uppercase tracking-tight">Calendario</span>
               </button>
 
               <button
@@ -1100,18 +1111,6 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
                 <MessageSquare className="w-4 h-4" />
                 <span className="truncate">Chat</span>
-              </div>
-            </button>
-            <button
-              onClick={() => { setVistaActiva('calendario'); window.scrollTo(0, 0); }}
-              className={`px-2 md:px-8 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'calendario'
-                ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
-                : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
-                }`}
-            >
-              <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
-                <Calendar className="w-4 h-4" />
-                <span className="truncate">Calendario</span>
               </div>
             </button>
             <button
@@ -1892,16 +1891,6 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 <MessageSquare className={`w-5 h-5 ${vistaActiva === 'chat' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
               </div>
               <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'chat' ? 'opacity-100' : 'opacity-80'}`}>Chat</span>
-            </button>
-
-            <button
-              onClick={() => { setVistaActiva('calendario'); window.scrollTo(0, 0); }}
-              className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${vistaActiva === 'calendario' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
-            >
-              <div className={`p-2 rounded-2xl transition-all ${vistaActiva === 'calendario' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-transparent'}`}>
-                <Calendar className={`w-5 h-5 ${vistaActiva === 'calendario' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
-              </div>
-              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'calendario' ? 'opacity-100' : 'opacity-80'}`}>Calendario</span>
             </button>
 
             <button

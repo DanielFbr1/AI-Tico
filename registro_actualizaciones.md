@@ -1,5 +1,10 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.5.1] - 2026-03-17
+### Ajustado
+- **Reubicación de Calendario (Alumno)**: Se ha movido el acceso al calendario junto al botón de horario en el header para un acceso más contextual y rápido.
+- **Simplificación de Navegación**: Se han eliminado las pestañas de calendario de la navegación principal y el menú móvil para evitar duplicidad y mejorar el diseño.
+
 ## [V5.5.0] - 2026-03-17
 ### Añadido
 - **Calendario para Alumnos**: Nueva sección en el Dashboard del Alumno que permite visualizar sus tareas y fechas límite de forma organizada.
