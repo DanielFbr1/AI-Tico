@@ -9,9 +9,11 @@ import { toast } from 'sonner';
 interface VistaCalendarioProps {
     proyectoId: string;
     grupos: Grupo[];
+    grupoId?: number | string; // Opcional: si existe, es vista de alumno
 }
 
-export function VistaCalendario({ proyectoId, grupos }: VistaCalendarioProps) {
+export function VistaCalendario({ proyectoId, grupos, grupoId }: VistaCalendarioProps) {
+    const isAlumno = !!grupoId;
     const [currentDate, setCurrentDate] = useState(new Date());
     const [tareas, setTareas] = useState<TareaDetallada[]>([]);
     const [modalCrear, setModalCrear] = useState(false);
@@ -21,11 +23,17 @@ export function VistaCalendario({ proyectoId, grupos }: VistaCalendarioProps) {
     const fetchTareas = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('tareas')
                 .select('*')
-                .eq('proyecto_id', proyectoId)
-                .order('created_at', { ascending: false });
+                .eq('proyecto_id', proyectoId);
+
+            // Si es vista de alumno, filtrar solo sus tareas o las globales
+            if (isAlumno) {
+                query = query.or(`grupo_id.eq.${grupoId},grupo_id.is.null`);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
 
             if (error) throw error;
             setTareas(data || []);
@@ -172,13 +180,15 @@ export function VistaCalendario({ proyectoId, grupos }: VistaCalendarioProps) {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setModalCrear(true)}
-                        className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95"
-                    >
-                        <Plus className="w-5 h-5" />
-                        <span>Crear tarea</span>
-                    </button>
+                    {!isAlumno && (
+                        <button
+                            onClick={() => setModalCrear(true)}
+                            className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95"
+                        >
+                            <Plus className="w-5 h-5" />
+                            <span>Crear tarea</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -268,7 +278,8 @@ export function VistaCalendario({ proyectoId, grupos }: VistaCalendarioProps) {
                     tarea={tareaSeleccionada}
                     grupos={grupos}
                     onClose={() => setTareaSeleccionada(null)}
-                    onDelete={async (id) => {
+                    isStudent={isAlumno}
+                    onDelete={isAlumno ? undefined : async (id) => {
                         try {
                             await supabase.from('tareas').delete().eq('id', id);
                             setTareas(prev => prev.filter(t => t.id !== id));
@@ -278,7 +289,7 @@ export function VistaCalendario({ proyectoId, grupos }: VistaCalendarioProps) {
                             toast.error('Error al eliminar');
                         }
                     }}
-                    onEstadoChange={handleEstadoChange}
+                    onEstadoChange={isAlumno ? () => {} : handleEstadoChange}
                 />
             )}
         </div>

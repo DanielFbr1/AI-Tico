@@ -1,5 +1,11 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.5.0] - 2026-03-17
+### Añadido
+- **Calendario para Alumnos**: Nueva sección en el Dashboard del Alumno que permite visualizar sus tareas y fechas límite de forma organizada.
+- **Filtrado Inteligente**: El calendario del alumno solo muestra las tareas globales del proyecto y las específicas de su equipo.
+- **Modo Lectura de Tarea**: Adaptado el componente `VistaCalendario` y `ModalDetalleTarea` para que los alumnos puedan ver los detalles de la misión sin opciones administrativas.
+
 ## [V5.4.4] - 2026-03-17
 - **FIX**: Corregido error 400 (Bad Request) al guardar evaluaciones con decimales (como 7.5). Se ha cambiado el tipo de dato de la columna `calificacion` a `numeric`.
 - **FIX**: Sincronizados los nombres de columna en el Hub de Misión: ahora se leen correctamente `respuesta_texto` y `archivos_entregados` desde la base de datos para mostrar el trabajo del alumno.

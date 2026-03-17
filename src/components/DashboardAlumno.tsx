@@ -62,6 +62,7 @@ import { ModalExploradorProyectosAlumno } from './ModalExploradorProyectosAlumno
 import { ModalHorario } from './ModalHorario';
 import { ModalChatProfesoresAlumno } from './ModalChatProfesoresAlumno';
 import { ModalDetalleTarea } from './ModalDetalleTarea';
+import { VistaCalendario } from './VistaCalendario';
 import { TareaDetallada } from '../types';
 
 interface DashboardAlumnoProps {
@@ -79,7 +80,7 @@ interface DashboardAlumnoProps {
 
 export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   // Estados de Vista
-  const [vistaActiva, setVistaActiva] = useState<'grupo' | 'tareas' | 'comunidad' | 'chat' | 'perfil'>('grupo');
+  const [vistaActiva, setVistaActiva] = useState<'grupo' | 'tareas' | 'comunidad' | 'chat' | 'perfil' | 'calendario'>('grupo');
   const [chatTab, setChatTab] = useState<'ia' | 'equipo'>('ia');
   const [mobileChatTab, setMobileChatTab] = useState<'menu' | 'ia' | 'equipo'>('menu');
   const [puntosTotales, setPuntosTotales] = useState<number>(0);
@@ -881,7 +882,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.1.0 (Unified Review Flow)</span>
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.5.0</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -1102,6 +1103,18 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               </div>
             </button>
             <button
+              onClick={() => { setVistaActiva('calendario'); window.scrollTo(0, 0); }}
+              className={`px-2 md:px-8 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'calendario'
+                ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
+                : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
+                }`}
+            >
+              <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
+                <Calendar className="w-4 h-4" />
+                <span className="truncate">Calendario</span>
+              </div>
+            </button>
+            <button
               onClick={() => {
                 setVistaActiva('perfil');
                 setHasNewEvaluation(false); // Limpiar aviso al entrar
@@ -1131,6 +1144,15 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
       {/* Content */}
       <main className={`max-w-7xl mx-auto px-6 w-full pb-24 md:pb-8 ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden py-4' : 'py-8 flex-none'}`}>
+        {vistaActiva === 'calendario' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <VistaCalendario 
+              proyectoId={alumno.proyecto_id || ''} 
+              grupos={todosLosGrupos} 
+              grupoId={grupoReal?.id}
+            />
+          </div>
+        )}
         {showExample && (
           <div className="bg-indigo-600 rounded-3xl p-6 mb-8 text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
             {/* ... Demo Banner styles ... */}
@@ -1870,6 +1892,16 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 <MessageSquare className={`w-5 h-5 ${vistaActiva === 'chat' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
               </div>
               <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'chat' ? 'opacity-100' : 'opacity-80'}`}>Chat</span>
+            </button>
+
+            <button
+              onClick={() => { setVistaActiva('calendario'); window.scrollTo(0, 0); }}
+              className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${vistaActiva === 'calendario' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
+            >
+              <div className={`p-2 rounded-2xl transition-all ${vistaActiva === 'calendario' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-transparent'}`}>
+                <Calendar className={`w-5 h-5 ${vistaActiva === 'calendario' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+              </div>
+              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'calendario' ? 'opacity-100' : 'opacity-80'}`}>Calendario</span>
             </button>
 
             <button
