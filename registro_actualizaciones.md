@@ -1,5 +1,12 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.6.9] - 2026-03-17
+### Estadísticas de Misiones y Rendimiento
+- **Conteo de Misiones**: Se ha implementado el visualizador de progreso de tareas (ej: "7/7") tanto en el perfil del alumno como en la sección "Mis Notas".
+- **Nota Media de Misiones**: Nueva métrica que calcula automáticamente la calificación media basada en las entregas de tareas y misiones aprobadas.
+- **Sincronización de Perfil**: El docente ahora puede ver estas mismas estadísticas actualizadas en tiempo real al abrir el perfil detallado de cualquier alumno.
+- **Versión**: Actualización global a V5.6.9.
+
 ## [V5.6.8] - 2026-03-17
 ### Chat Instantáneo (Optimistic Updates)
 - **Eliminación de Retraso**: Los mensajes enviados ahora aparecen instantáneamente en la interfaz tanto para alumnos como para profesores.

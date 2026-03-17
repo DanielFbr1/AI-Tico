@@ -123,6 +123,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [historialClases, setHistorialClases] = useState<any[]>([]);
   const [notaGrupal, setNotaGrupal] = useState<number | null>(null);
   const [comentarios, setComentarios] = useState<{ id: string, contenido: string, created_at: string }[]>([]);
+  const [entregasTareas, setEntregasTareas] = useState<any[]>([]);
 
   useEffect(() => {
     if (alumno?.nombre) {
@@ -415,6 +416,14 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         });
       }
 
+      // Fetch Entregas Tareas
+      if (miGrupo && miGrupo.id) {
+        const { data: entData } = await supabase
+          .from('entregas_tareas')
+          .select('*')
+          .eq('grupo_id', miGrupo.id);
+        setEntregasTareas(entData || []);
+      }
     } catch (err) {
       console.error('Error fetching student data:', err);
       setErrorStatus('ERROR_TECNICO');
@@ -434,6 +443,15 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         .order('created_at', { ascending: false });
       if (error) throw error;
       setTareasAlumno(data || []);
+
+      // Refresh entregas too
+      if (grupoReal?.id) {
+        const { data: entData } = await supabase
+          .from('entregas_tareas')
+          .select('*')
+          .eq('grupo_id', grupoReal.id);
+        setEntregasTareas(entData || []);
+      }
     } catch (err) {
       console.error('Error fetching student tasks:', err);
     }
@@ -802,6 +820,22 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     ? evaluacionAlumno.reduce((sum, e) => sum + Number(e.puntos), 0) / evaluacionAlumno.length
     : 0;
 
+  const tareasCompletadasMisiones = showExample ? 7 : tareasAlumno.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length;
+  const totalTareasMisiones = showExample ? 7 : tareasAlumno.length;
+
+  const notasMisiones = showExample ? [10, 8, 9, 10, 7, 8, 9] : tareasAlumno.map(t => {
+    if (t.grupo_id !== null) {
+      return (t.estado === 'aprobado' || t.estado === 'completado') ? t.puntos_maximos : 0;
+    } else {
+      const entrega = entregasTareas.find(e => e.tarea_id === t.id);
+      return entrega?.calificacion || 0;
+    }
+  });
+
+  const notaMediaMisiones = notasMisiones.length > 0 
+    ? notasMisiones.reduce((sum, n) => sum + n, 0) / notasMisiones.length 
+    : 0;
+
   const getNivelColor = (nivel: string) => {
     switch (nivel) {
       case 'Sobresaliente': return 'bg-emerald-500 text-white';
@@ -882,7 +916,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.6.3</span>
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.6.9</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -1676,6 +1710,26 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                   <div className="min-w-0 flex-1">
                     <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{asistenciaStats.percentage}%</div>
                     <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Asistencia</div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-200 group hover:border-amber-200 transition-all flex items-center gap-3 md:gap-4 min-w-0">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform shrink-0">
+                    <Award className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{tareasCompletadasMisiones}/{totalTareasMisiones}</div>
+                    <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Misiones</div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-200 group hover:border-fuchsia-200 transition-all flex items-center gap-3 md:gap-4 min-w-0">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-fuchsia-50 rounded-xl flex items-center justify-center text-fuchsia-600 group-hover:scale-110 transition-transform shrink-0">
+                    <TrendingUp className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{notaMediaMisiones.toFixed(1)}</div>
+                    <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Media Misiones</div>
                   </div>
                 </div>
 

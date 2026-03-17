@@ -34,6 +34,8 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [isSavingComentario, setIsSavingComentario] = useState(false);
   const [puntosTotales, setPuntosTotales] = useState<number>(0);
+  const [tareasAlumno, setTareasAlumno] = useState<any[]>([]);
+  const [entregasTareas, setEntregasTareas] = useState<any[]>([]);
 
   useEffect(() => {
     fetchEvaluacion();
@@ -41,6 +43,7 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
     fetchNotaGrupal();
     fetchComentarios();
     fetchMisPuntos();
+    fetchTareasData();
   }, [alumno, grupo.id]);
 
   const fetchMisPuntos = async () => {
@@ -154,6 +157,27 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
     }
   };
 
+  const fetchTareasData = async () => {
+    try {
+      const { data: tareas } = await supabase
+        .from('tareas')
+        .select('*')
+        .eq('proyecto_id', grupo.proyecto_id)
+        .or(`grupo_id.eq.${grupo.id},grupo_id.is.null`);
+      
+      setTareasAlumno(tareas || []);
+
+      const { data: entregas } = await supabase
+        .from('entregas_tareas')
+        .select('*')
+        .eq('grupo_id', grupo.id);
+      
+      setEntregasTareas(entregas || []);
+    } catch (e) {
+      console.error("Error fetching tasks data:", e);
+    }
+  };
+
   const fetchEvaluacion = async () => {
     try {
       setLoading(true);
@@ -200,6 +224,22 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
 
   const notaMedia = evaluacion.length > 0
     ? evaluacion.reduce((sum, e) => sum + Number(e.puntos || 0), 0) / evaluacion.length
+    : 0;
+
+  const tareasCompletadasMisiones = tareasAlumno.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length;
+  const totalTareasMisiones = tareasAlumno.length;
+
+  const notasMisiones = tareasAlumno.map(t => {
+    if (t.grupo_id !== null) {
+      return (t.estado === 'aprobado' || t.estado === 'completado') ? t.puntos_maximos : 0;
+    } else {
+      const entrega = entregasTareas.find(e => e.tarea_id === t.id);
+      return entrega?.calificacion || 0;
+    }
+  });
+
+  const notaMediaMisiones = notasMisiones.length > 0 
+    ? notasMisiones.reduce((sum, n) => sum + n, 0) / notasMisiones.length 
     : 0;
 
   const getNivelColor = (puntos: number | string) => {
@@ -321,13 +361,33 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                   </div>
                 </div>
 
-                <div className="bg-amber-50 rounded-2xl p-3 md:p-6 shadow-sm border border-amber-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
-                  <div className="w-10 h-10 md:w-16 md:h-16 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-amber-500 shrink-0 shadow-sm">
+                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                  <div className="w-10 h-10 md:w-16 md:h-16 bg-amber-50 rounded-xl md:rounded-2xl flex items-center justify-center text-amber-500 shrink-0 shadow-sm">
+                    <Award className="w-5 h-5 md:w-8 md:h-8" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-amber-600 leading-none mb-1">{tareasCompletadasMisiones}/{totalTareasMisiones}</div>
+                    <div className="text-[8px] md:text-xs font-bold text-amber-500 uppercase tracking-wider leading-none">Misiones</div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                  <div className="w-10 h-10 md:w-16 md:h-16 bg-fuchsia-50 rounded-xl md:rounded-2xl flex items-center justify-center text-fuchsia-600 shrink-0 shadow-sm">
+                    <TrendingUp className="w-5 h-5 md:w-8 md:h-8" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-fuchsia-600 leading-none mb-1">{notaMediaMisiones.toFixed(1)}</div>
+                    <div className="text-[8px] md:text-xs font-bold text-fuchsia-500 uppercase tracking-wider leading-none">Media Mis.</div>
+                  </div>
+                </div>
+
+                <div className="bg-indigo-50 rounded-2xl p-3 md:p-6 shadow-sm border border-indigo-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                  <div className="w-10 h-10 md:w-16 md:h-16 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-indigo-500 shrink-0 shadow-sm">
                     <Star className="w-5 h-5 md:w-8 md:h-8" fill="currentColor" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-amber-600 leading-none mb-1">{puntosTotales}</div>
-                    <div className="text-[8px] md:text-xs font-bold text-amber-500 uppercase tracking-wider leading-none">Puntos</div>
+                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-indigo-600 leading-none mb-1">{puntosTotales}</div>
+                    <div className="text-[8px] md:text-xs font-bold text-indigo-500 uppercase tracking-wider leading-none">Puntos</div>
                   </div>
                 </div>
               </div>
