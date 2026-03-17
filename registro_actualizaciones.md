@@ -1,5 +1,11 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.6.6] - 2026-03-17
+### Botón de Evidencias Mejorado
+- **Claridad Visual**: El botón "Adjuntar Evidencias" se ha transformado en un botón de acción principal ("Subir Archivos de Evidencia") con fondo sólido `indigo-600` y mayor tamaño para que sea inconfundible.
+- **Iconografía Directa**: Sustitución del icono de clip por el de subida (`Upload`) para una comunicación visual más clara.
+- **Versión**: Actualización global a V5.6.6.
+
 ## [V5.6.5] - 2026-03-17
 ### Visibilidad Total de Misiones en Equipos
 - **Fin del Límite de 3**: Se ha eliminado la restricción que solo mostraba las primeras 3 tareas de cada equipo en el panel global (pestaña Comunidad) del alumno.

@@ -1,4 +1,4 @@
-import { FileText, Award, Users, Paperclip, Clock, X, Trash2, CheckCircle2, Send, ChevronRight, AlertCircle, Bookmark } from 'lucide-react';
+import { FileText, Award, Users, Paperclip, Clock, X, Trash2, CheckCircle2, Send, ChevronRight, AlertCircle, Bookmark, Upload } from 'lucide-react';
 import { TareaDetallada, Grupo } from '../types';
 import { useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
@@ -241,12 +241,12 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                 <button
                                                     onClick={() => fileInputRef.current?.click()}
                                                     disabled={subiendoArchivo}
-                                                    className="flex items-center gap-2 px-4 py-2 text-indigo-600 bg-indigo-50/50 hover:bg-white rounded-xl border border-indigo-100 border-dashed transition-all text-[10px] font-black uppercase tracking-widest"
+                                                    className="flex items-center gap-2 px-5 py-3 text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-lg shadow-indigo-100 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest group"
                                                 >
                                                     {subiendoArchivo ? (
-                                                        <div className="w-3 h-3 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-                                                    ) : <Paperclip className="w-3.5 h-3.5" />}
-                                                    Adjuntar Evidencias
+                                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    ) : <Upload className="w-4 h-4 group-hover:scale-110 transition-transform" />}
+                                                    {subiendoArchivo ? 'Subiendo...' : 'Subir Archivos de Evidencia'}
                                                 </button>
                                             )}
                                         </div>
