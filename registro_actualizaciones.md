@@ -1,5 +1,10 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.4.4] - 2026-03-17
+- **FIX**: Corregido error 400 (Bad Request) al guardar evaluaciones con decimales (como 7.5). Se ha cambiado el tipo de dato de la columna `calificacion` a `numeric`.
+- **FIX**: Sincronizados los nombres de columna en el Hub de Misión: ahora se leen correctamente `respuesta_texto` y `archivos_entregados` desde la base de datos para mostrar el trabajo del alumno.
+- **MAINTENANCE**: Versión visual actualizada a V5.4.4.
+
 ## [V5.4.3] - 2026-03-17
 - **FIX**: Corregido error de permisos (RLS) que impedía guardar evaluaciones nuevas por parte del profesor.
 - **FIX**: **Escala Forzada a 10**: Eliminada cualquier referencia a 100 puntos en el Hub de Misión y Dashboard. Ahora todo es 0-10 de forma estricta.

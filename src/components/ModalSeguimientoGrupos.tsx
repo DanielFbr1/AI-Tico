@@ -49,7 +49,7 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
             const isSpecificTask = tarea.grupo_id === Number(grupo.id);
             
             // Determinar estados precisos
-            const haEntregado = !!entrega?.contenido_alumno || (entrega?.archivos_alumno && entrega.archivos_alumno.length > 0);
+            const haEntregado = !!entrega?.respuesta_texto || (entrega?.archivos_entregados && entrega.archivos_entregados.length > 0);
             const notaActual = isSpecificTask ? (tarea.estado === 'completado' ? tarea.puntos_maximos : 0) : (entrega?.calificacion || 0);
             const estaEvaluado = isSpecificTask ? tarea.estado === 'completado' : (!!entrega && entrega.calificacion !== null && entrega.calificacion !== undefined);
             
@@ -156,7 +156,7 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Hub de Misión</h2>
-                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200/50">V5.4.3</span>
+                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200/50">V5.4.4</span>
                             </div>
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{tarea.titulo} (Máx: 10 pts)</p>
                         </div>
@@ -381,17 +381,17 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
                                                     <FileText className="w-6 h-6 text-indigo-600" />
                                                     <h4 className="font-black text-slate-800 text-base uppercase tracking-tight">Expediente de Entrega</h4>
                                                 </div>
-                                                {g.entrega.contenido_alumno ? (
+                                                {g.entrega.respuesta_texto ? (
                                                     <div className="text-base text-slate-600 leading-relaxed whitespace-pre-wrap mb-8 bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm italic relative">
                                                         <span className="absolute -top-3 left-8 px-3 bg-white text-[9px] font-black text-slate-300 uppercase tracking-widest">Resumen de Texto</span>
-                                                        "{g.entrega.contenido_alumno}"
+                                                        "{g.entrega.respuesta_texto}"
                                                     </div>
                                                 ) : (
                                                     <div className="p-8 text-center text-slate-400 font-black uppercase tracking-widest bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] mb-8 text-[11px]">No se ha adjuntado texto explicativo</div>
                                                 )}
-                                                {g.entrega.archivos_alumno && g.entrega.archivos_alumno.length > 0 && (
+                                                {g.entrega.archivos_entregados && g.entrega.archivos_entregados.length > 0 && (
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                        {g.entrega.archivos_alumno.map((archivo: any, i: number) => (
+                                                        {g.entrega.archivos_entregados.map((archivo: any, i: number) => (
                                                             <a key={i} href={archivo.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-5 bg-white hover:bg-indigo-600 hover:text-white rounded-2xl border border-indigo-100 group/file transition-all shadow-sm">
                                                                 <div className="flex items-center gap-4 overflow-hidden">
                                                                     <Paperclip className="w-5 h-5 text-indigo-500 group-hover/file:text-white" />
