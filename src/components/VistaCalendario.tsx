@@ -151,15 +151,18 @@ export function VistaCalendario({ proyectoId, grupos, grupoId }: VistaCalendario
         return m[estado] || m.pendiente;
     };
 
-    const handleEstadoChange = async (tareaId: string, nuevoEstado: string) => {
+    const handleEstadoChange = async (tareaId: string, nuevoEstado: string, nota?: number) => {
         try {
-            const { error } = await supabase.from('tareas').update({ estado: nuevoEstado }).eq('id', tareaId);
+            const updateData: any = { estado: nuevoEstado };
+            if (nota !== undefined) updateData.calificacion = nota;
+
+            const { error } = await supabase.from('tareas').update(updateData).eq('id', tareaId);
             if (error) throw error;
-            setTareas(prev => prev.map(t => t.id === tareaId ? { ...t, estado: nuevoEstado as any } : t));
+            setTareas(prev => prev.map(t => t.id === tareaId ? { ...t, estado: nuevoEstado as any, calificacion: nota ?? t.calificacion } : t));
             if (tareaSeleccionada?.id === tareaId) {
-                setTareaSeleccionada(prev => prev ? { ...prev, estado: nuevoEstado as any } : null);
+                setTareaSeleccionada(prev => prev ? { ...prev, estado: nuevoEstado as any, calificacion: nota ?? prev.calificacion } : null);
             }
-            toast.success(`Estado actualizado a: ${nuevoEstado.replace('_', ' ')}`);
+            toast.success(`Estado actualizado`);
         } catch (err) {
             console.error('Error updating estado:', err);
             toast.error('Error al cambiar el estado');

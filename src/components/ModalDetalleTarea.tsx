@@ -9,7 +9,7 @@ interface ModalDetalleTareaProps {
     grupos: Grupo[];
     onClose: () => void;
     onDelete?: (id: string) => void;
-    onEstadoChange: (id: string, estado: string) => void;
+    onEstadoChange: (id: string, estado: string, calificacion?: number) => void;
     onSaveAlumnoContent?: (id: string, contenido: string, archivos: any[]) => Promise<void>;
     isStudent?: boolean;
 }
@@ -17,6 +17,7 @@ interface ModalDetalleTareaProps {
 export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoChange, onSaveAlumnoContent, isStudent }: ModalDetalleTareaProps) {
     const [contenidoAlumno, setContenidoAlumno] = useState(tarea.contenido_alumno || '');
     const [archivosAlumno, setArchivosAlumno] = useState<any[]>(tarea.archivos_alumno || []);
+    const [calificacion, setCalificacion] = useState<number>(tarea.calificacion || 10);
     const [guardando, setGuardando] = useState(false);
     const [subiendoArchivo, setSubiendoArchivo] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +33,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
 
     const handleAnularEntrega = async () => {
         if (confirm('¿Quieres anular el envío y volver a editar la tarea?')) {
-            onEstadoChange(tarea.id, 'en_progreso');
+            onEstadoChange(tarea.id, 'en_progreso', undefined);
             toast.info('Envío anulado. Ya puedes editar de nuevo.');
         }
     };
@@ -313,6 +314,12 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                      tarea.estado === 'rechazado' ? 'Reintentar' :
                                      tarea.estado === 'en_progreso' ? 'En Curso' : 'Pendiente'}
                                 </span>
+                                {(tarea.estado === 'aprobado' || tarea.estado === 'completado') && tarea.calificacion !== undefined && (
+                                    <div className="mt-3 pt-3 border-t border-emerald-100">
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Calificación</p>
+                                        <p className="text-3xl font-black text-emerald-600">{tarea.calificacion}<span className="text-sm opacity-50 ml-1">/10</span></p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Widgets List */}
@@ -353,19 +360,40 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                             {/* Professor Actions Hub (SOLO SI ESTÁ EN REVISIÓN) */}
                             {!isStudent && tarea.estado === 'revision' && (
                                 <div className="pt-4 space-y-3">
+                                    <div className="bg-slate-50 border border-slate-100 p-6 rounded-2xl flex flex-col gap-4">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calificación (1-10)</p>
+                                            <span className="text-2xl font-black text-indigo-600">{calificacion}</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max="10"
+                                            step="1"
+                                            value={calificacion}
+                                            onChange={(e) => setCalificacion(parseInt(e.target.value))}
+                                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                        />
+                                        <div className="flex justify-between text-[10px] font-bold text-slate-400">
+                                            <span>1</span>
+                                            <span>5</span>
+                                            <span>10</span>
+                                        </div>
+                                    </div>
+
                                     <button
                                         onClick={() => {
-                                            onEstadoChange(tarea.id, 'aprobado');
+                                            onEstadoChange(tarea.id, 'aprobado', calificacion);
                                             toast.success('Misión aprobada con éxito');
                                         }}
                                         className="w-full flex items-center justify-center gap-3 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl transition-all shadow-lg shadow-emerald-200 active:scale-95 border-b-4 border-emerald-800"
                                     >
                                         <CheckCircle2 className="w-5 h-5" />
-                                        <span className="text-sm font-black uppercase tracking-tight">Aprobar</span>
+                                        <span className="text-sm font-black uppercase tracking-tight">Aprobar con {calificacion}</span>
                                     </button>
                                     <button
                                         onClick={() => {
-                                            onEstadoChange(tarea.id, 'rechazado');
+                                            onEstadoChange(tarea.id, 'rechazado', undefined);
                                             toast.error('Misión devuelta para corrección');
                                         }}
                                         className="w-full flex items-center justify-center gap-3 py-4 bg-white border-2 border-rose-100 hover:border-rose-400 text-rose-500 rounded-2xl transition-all active:scale-95 hover:bg-rose-50"

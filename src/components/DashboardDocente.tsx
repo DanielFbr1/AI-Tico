@@ -387,9 +387,14 @@ export function DashboardDocente({
         }
     };
 
-    const handleEstadoChangeWithPoints = async (id: string, nuevoEstado: string, tareaRef?: TareaDetallada) => {
+    const handleEstadoChangeWithPoints = async (id: string, nuevoEstado: string, tareaRef?: TareaDetallada, calificacion?: number) => {
         try {
-            const { error } = await supabase.from('tareas').update({ estado: nuevoEstado }).eq('id', id);
+            const updateData: any = { estado: nuevoEstado };
+            if (calificacion !== undefined) {
+                updateData.calificacion = calificacion;
+            }
+
+            const { error } = await supabase.from('tareas').update(updateData).eq('id', id);
             if (error) throw error;
             
             // SUMAR PUNTOS SI SE APRUEBA
@@ -553,8 +558,8 @@ export function DashboardDocente({
                         await handleEliminarTareaGlobal(id, tareaSeleccionadaDetalle.titulo);
                         setTareaSeleccionadaDetalle(null);
                     }}
-                    onEstadoChange={async (id, nuevoEstado) => {
-                        await handleEstadoChangeWithPoints(id, nuevoEstado, tareaSeleccionadaDetalle);
+                    onEstadoChange={async (id, nuevoEstado, nota) => {
+                        await handleEstadoChangeWithPoints(id, nuevoEstado, tareaSeleccionadaDetalle, nota);
                         setTareaSeleccionadaDetalle(null);
                     }}
                 />
@@ -637,7 +642,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">V5.6.9</span>
+                        <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">V5.6.10</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>

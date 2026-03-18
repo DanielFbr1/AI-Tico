@@ -563,12 +563,15 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
               toast.error('Error al eliminar');
             }
           }}
-          onEstadoChange={async (id, nuevoEstado) => {
+          onEstadoChange={async (id, nuevoEstado, nota) => {
             try {
-              const { error } = await supabase.from('tareas').update({ estado: nuevoEstado }).eq('id', id);
+              const updateData: any = { estado: nuevoEstado };
+              if (nota !== undefined) updateData.calificacion = nota;
+
+              const { error } = await supabase.from('tareas').update(updateData).eq('id', id);
               if (error) throw error;
-              setTareasGrupo(prev => prev.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t));
-              setTareaSeleccionada(prev => prev ? { ...prev, estado: nuevoEstado as any } : null);
+              setTareasGrupo(prev => prev.map(t => t.id === id ? { ...t, estado: nuevoEstado as any, calificacion: nota ?? t.calificacion } : t));
+              setTareaSeleccionada(prev => prev ? { ...prev, estado: nuevoEstado as any, calificacion: nota ?? prev.calificacion } : null);
               toast.success(`Estado actualizado`);
             } catch {
               toast.error('Error al cambiar el estado');

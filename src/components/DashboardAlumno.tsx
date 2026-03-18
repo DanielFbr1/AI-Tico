@@ -824,12 +824,12 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const totalTareasMisiones = showExample ? 7 : tareasAlumno.length;
 
   const notasMisiones = showExample ? [10, 8, 9, 10, 7, 8, 9] : tareasAlumno.map(t => {
-    if (t.grupo_id !== null) {
-      return (t.estado === 'aprobado' || t.estado === 'completado') ? t.puntos_maximos : 0;
-    } else {
-      const entrega = entregasTareas.find(e => e.tarea_id === t.id);
-      return entrega?.calificacion || 0;
+    // Priorizamos t.calificacion (misiones individuales) sobre entregas (tareas globales)
+    if (t.calificacion !== undefined && t.calificacion !== null) {
+      return t.calificacion;
     }
+    const entrega = entregasTareas.find(e => e.tarea_id === t.id);
+    return entrega?.calificacion || 0;
   });
 
   const notaMediaMisiones = notasMisiones.length > 0 
@@ -916,7 +916,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.6.9</span>
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.6.10</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}

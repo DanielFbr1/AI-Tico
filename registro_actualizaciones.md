@@ -1,5 +1,14 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.6.10] - 2026-03-18
+### Evaluación Numérica (Hub de Misión)
+- **Calificación 1-10**: Se ha implementado un nuevo sistema de evaluación en el Hub de Misión que permite a los docentes asignar una nota numérica del 1 al 10.
+- **Selector para Docentes**: Añadido un slider intuitivo en el panel de revisión de misiones para facilitar la calificación rápida.
+- **Visualización para Alumnos**: Los alumnos ahora pueden ver su nota final directamente en el detalle de la misión una vez aprobada.
+- **Sincronización de Promedios**: La nota numérica ahora se utiliza para calcular la "Nota Media de Misiones" en el perfil y dashboard del alumno.
+- **Versión**: Actualización global a V5.6.10.
+
+
 ## [V5.6.9] - 2026-03-17
 ### Estadísticas de Misiones y Rendimiento
 - **Conteo de Misiones**: Se ha implementado el visualizador de progreso de tareas (ej: "7/7") tanto en el perfil del alumno como en la sección "Mis Notas".

@@ -135,6 +135,7 @@ export interface TareaDetallada {
     estado: 'propuesto' | 'pendiente' | 'en_progreso' | 'revision' | 'aprobado' | 'rechazado' | 'completado' | 'expirado';
     contenido_alumno?: string;
     archivos_alumno?: ArchivoAdjunto[];
+    calificacion?: number;
 }
 
 export interface EntregaTarea {
