@@ -9,9 +9,10 @@ interface ModalSeguimientoGruposProps {
     grupos: Grupo[];
     onClose: () => void;
     onUpdate?: () => void;
+    onSelectGrupo?: (grupoId: string | number) => void;
 }
 
-export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: ModalSeguimientoGruposProps) {
+export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSelectGrupo }: ModalSeguimientoGruposProps) {
     const [entregas, setEntregas] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [editandoId, setEditandoId] = useState<string | number | null>(null);
@@ -156,19 +157,12 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Hub de Misión</h2>
-                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200/50">V5.5.2</span>
+                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200/50">V5.8.5</span>
                             </div>
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{tarea.titulo} (Máx: 10 pts)</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button 
-                            onClick={() => setMostrarDetalles(!mostrarDetalles)}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${mostrarDetalles ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-                        >
-                            <Info className="w-4 h-4" />
-                            {mostrarDetalles ? 'Ocultar Perfil' : 'Perfil de Tarea'}
-                        </button>
                         <button onClick={onClose} className="p-4 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-2xl transition-all shadow-sm border border-slate-100 group">
                             <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
                         </button>
@@ -259,7 +253,11 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
                             const isViewingContent = verEntregasId === g.id;
 
                             return (
-                                <div key={g.id} className={`rounded-[2.5rem] border-2 transition-all flex flex-col ${isEditing ? 'border-indigo-400 bg-white shadow-2xl scale-[1.01]' : g.estadoVisual === 'pendiente_nota' ? 'border-amber-200 bg-amber-50/30' : 'border-white bg-white shadow-sm'}`}>
+                                <div 
+                                    key={g.id} 
+                                    onClick={() => onSelectGrupo && onSelectGrupo(g.id)}
+                                    className={`rounded-[2.5rem] border-2 transition-all flex flex-col cursor-pointer hover:shadow-xl hover:scale-[1.01] ${isEditing ? 'border-indigo-400 bg-white shadow-2xl' : g.estadoVisual === 'pendiente_nota' ? 'border-amber-200 bg-amber-50/30' : 'border-white bg-white shadow-sm'}`}
+                                >
                                     <div className="p-6 flex flex-wrap items-center justify-between gap-6">
                                         <div className="flex items-center gap-5 flex-1">
                                             <div className={`w-16 h-16 rounded-[1.2rem] flex items-center justify-center font-black text-xl border-4 border-white shadow-sm uppercase ${g.estadoVisual === 'evaluado' ? 'bg-emerald-100 text-emerald-600' : g.estadoVisual === 'pendiente_nota' ? 'bg-amber-100 text-amber-600 animate-bounce-subtle' : 'bg-slate-100 text-slate-400'}`}>
@@ -294,50 +292,13 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate }: Mod
                                         </div>
 
                                         <div className="flex items-center gap-10">
-                                            {!isEditing ? (
-                                                <div className="flex items-center gap-8">
-                                                    <div className="flex items-center gap-2">
-                                                        <button 
-                                                            onClick={() => handleEvaluar(g.id, 10)}
-                                                            className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 group/btn"
-                                                            title="Aprobar (10 pts)"
-                                                        >
-                                                            <CheckCircle2 className="w-5 h-5" />
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleEvaluar(g.id, 0)}
-                                                            className="p-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all border border-rose-100"
-                                                            title="Rechazar (0 pts)"
-                                                        >
-                                                            <X className="w-5 h-5" />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="flex flex-col items-end">
-                                                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">Puntuación Final</span>
-                                                        <div className="flex items-baseline gap-1">
-                                                            <span className={`text-4xl font-black ${g.notaActual > 0 ? 'text-indigo-600' : 'text-slate-200'}`}>{g.notaActual}</span>
-                                                            <span className="text-xs font-bold text-slate-300">/10</span>
-                                                        </div>
-                                                    </div>
-                                                    <button 
-                                                        onClick={() => { setEditandoId(g.id); setNotaTemp(Math.min(10, g.notaActual)); }}
-                                                        className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-slate-100 active:scale-95"
-                                                    >
-                                                        <Edit3 className="w-6 h-6" />
-                                                    </button>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">Puntuación Final</span>
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className={`text-4xl font-black ${g.notaActual > 0 ? 'text-indigo-600' : 'text-slate-200'}`}>{g.notaActual}</span>
+                                                    <span className="text-xs font-bold text-slate-300">/10</span>
                                                 </div>
-                                            ) : (
-                                                <div className="flex items-center gap-4 animate-in slide-in-from-right-10 duration-500">
-                                                    <button onClick={() => setEditandoId(null)} className="p-4 text-slate-400 hover:text-rose-500 transition-colors uppercase font-black text-xs tracking-widest">Cancelar</button>
-                                                    <button 
-                                                        onClick={() => handleEvaluar(g.id, notaTemp)}
-                                                        className="px-8 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 flex items-center gap-3 active:scale-95"
-                                                    >
-                                                        <Save className="w-5 h-5" /> Guardar Evaluación
-                                                    </button>
-                                                </div>
-                                            )}
+                                            </div>
                                         </div>
                                     </div>
 

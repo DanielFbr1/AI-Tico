@@ -136,6 +136,7 @@ export interface TareaDetallada {
     contenido_alumno?: string;
     archivos_alumno?: ArchivoAdjunto[];
     calificacion?: number;
+    chat_comentarios?: any[];
 }
 
 export interface EntregaTarea {

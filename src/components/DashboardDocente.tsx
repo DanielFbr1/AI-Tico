@@ -101,6 +101,7 @@ export function DashboardDocente({
     const [modalCrearTareaAbierto, setModalCrearTareaAbierto] = useState(false);
     const [tareaSeleccionadaDetalle, setTareaSeleccionadaDetalle] = useState<TareaDetallada | null>(null);
     const [modalSeguimientoAbierto, setModalSeguimientoAbierto] = useState<TareaDetallada | null>(null);
+    const [targetGrupoId, setTargetGrupoId] = useState<string | number | undefined>(undefined);
 
     // Filter states
     const [filtroEstado, setFiltroEstado] = useState<string>('todos');
@@ -426,6 +427,19 @@ export function DashboardDocente({
         }
     };
 
+    const handleUpdateTarea = async (id: string, data: any) => {
+        try {
+            const { error } = await supabase.from('tareas').update(data).eq('id', id);
+            if (error) throw error;
+            fetchTareasProyecto();
+            // Si la tarea editada es la que está abierta, actualizamos el estado local del modal (opcional si se cierra)
+            setTareaSeleccionadaDetalle(prev => prev && prev.id === id ? { ...prev, ...data } : prev);
+        } catch (err) {
+            console.error('Error updating task:', err);
+            throw err;
+        }
+    };
+
     const totalInteracciones = grupos.reduce((sum, g) => sum + g.interacciones_ia, 0);
     
     // Cálculo de progreso basado en TAREAS (Issue 5)
@@ -553,15 +567,20 @@ export function DashboardDocente({
                 <ModalDetalleTarea
                     tarea={tareaSeleccionadaDetalle}
                     grupos={grupos}
-                    onClose={() => setTareaSeleccionadaDetalle(null)}
+                    onClose={() => { setTareaSeleccionadaDetalle(null); setTargetGrupoId(undefined); }}
                     onDelete={async (id) => {
                         await handleEliminarTareaGlobal(id, tareaSeleccionadaDetalle.titulo);
                         setTareaSeleccionadaDetalle(null);
+                        setTargetGrupoId(undefined);
                     }}
                     onEstadoChange={async (id, nuevoEstado, nota) => {
                         await handleEstadoChangeWithPoints(id, nuevoEstado, tareaSeleccionadaDetalle, nota);
                         setTareaSeleccionadaDetalle(null);
+                        setTargetGrupoId(undefined);
                     }}
+                    onUpdateTarea={handleUpdateTarea}
+                    isStudent={false}
+                    targetGrupoId={targetGrupoId}
                 />
             )}
 
@@ -642,7 +661,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">V5.7.1</span>
+                        <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">V5.8.5</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -1076,7 +1095,12 @@ export function DashboardDocente({
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-2 mb-0.5">
-                                                                        <span className="bg-indigo-50 text-indigo-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">{grupoNombre}</span>
+                                                                        <span 
+                                                                            onClick={(e) => { e.stopPropagation(); setTareaSeleccionadaDetalle(t); }}
+                                                                            className="bg-indigo-50 text-indigo-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all cursor-pointer"
+                                                                        >
+                                                                            {grupoNombre}
+                                                                        </span>
                                                                         {t.estado === 'revision' && <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>}
                                                                     </div>
                                                                     <p className="font-bold text-slate-800 truncate text-[13px] leading-none">{t.titulo}</p>
@@ -1091,7 +1115,12 @@ export function DashboardDocente({
                                                                 )}
                                                                 <div className="flex flex-col items-center gap-1 min-w-[65px]">
                                                                     {getEstadoBadgeInternal(t.estado)}
-                                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">10 pts</span>
+                                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                                        {t.calificacion !== undefined && t.calificacion !== null && (
+                                                                            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">{t.calificacion}</span>
+                                                                        )}
+                                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.puntos_maximos} pts</span>
+                                                                    </div>
                                                                 </div>
                                                                 <div className="flex items-center gap-1 group-hover:translate-x-0 transition-all">
                                                                     <button
@@ -1291,12 +1320,19 @@ export function DashboardDocente({
                 <ModalDetalleTarea
                     tarea={tareaSeleccionadaDetalle}
                     grupos={grupos}
-                    onClose={() => setTareaSeleccionadaDetalle(null)}
-                    onEstadoChange={async (id, nuevoEstado) => {
-                        await handleEstadoChangeWithPoints(id, nuevoEstado, tareaSeleccionadaDetalle);
+                    onClose={() => { setTareaSeleccionadaDetalle(null); setTargetGrupoId(undefined); }}
+                    onEstadoChange={async (id, nuevoEstado, nota) => {
+                        await handleEstadoChangeWithPoints(id, nuevoEstado, tareaSeleccionadaDetalle, nota);
                         setTareaSeleccionadaDetalle(null);
+                        setTargetGrupoId(undefined);
                     }}
-                    onDelete={(id) => handleEliminarTareaGlobal(id, tareaSeleccionadaDetalle.titulo)}
+                    onDelete={(id) => {
+                        handleEliminarTareaGlobal(id, tareaSeleccionadaDetalle.titulo);
+                        setTargetGrupoId(undefined);
+                    }}
+                    onUpdateTarea={handleUpdateTarea}
+                    isStudent={false}
+                    targetGrupoId={targetGrupoId}
                 />
             )}
 
@@ -1306,6 +1342,11 @@ export function DashboardDocente({
                     grupos={grupos}
                     onClose={() => setModalSeguimientoAbierto(null)}
                     onUpdate={fetchTareasProyecto}
+                    onSelectGrupo={(gId) => {
+                        setTargetGrupoId(gId);
+                        setTareaSeleccionadaDetalle(modalSeguimientoAbierto);
+                        // setModalSeguimientoAbierto(null); // ELIMINADO: Mantener el Hub abierto debajo del detalle
+                    }}
                 />
             )}
 

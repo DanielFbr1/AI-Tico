@@ -1,5 +1,14 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.7.2] - 2026-03-20
+### Rediseño Maestro: Hub de Misión Editable
+- **Edición Directa**: Los docentes ahora pueden editar todos los campos de una misión (título, instrucciones, puntos, fecha, grupo) directamente desde el Hub de Misión sin navegar a otros menús.
+- **Trigger Inteligente**: Al pulsar sobre el nombre del grupo en la lista de tareas, se abre automáticamente el editor del Hub de Misión.
+- **Interfaz Unificada**: Transformación estética del Hub para igualar el diseño de creación de Classroom, manteniendo la consistencia visual ("Premium Glassmorphism").
+- **Evaluación Numérica**: Integración de un campo numérico para calificar misiones de forma rápida y sencilla.
+- **Gestión de Archivos**: Capacidad para que el docente suba o elimine archivos adjuntos directamente desde el detalle de la misión.
+- **Sincronización de Versión**: Actualización global a V5.7.2.
+
 ## [V5.7.1] - 2026-03-20
 ### Añadido
 - Nuevo sistema de creación de tareas con selectores de fecha y hora independientes para mayor precisión.
