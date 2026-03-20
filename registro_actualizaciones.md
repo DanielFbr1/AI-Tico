@@ -1,5 +1,24 @@
 # Registro de Actualizaciones - TICO.ia
 
+## [V5.7.1] - 2026-03-20
+### Añadido
+- Nuevo sistema de creación de tareas con selectores de fecha y hora independientes para mayor precisión.
+- Iconografía mejorada en el panel de ajustes de tareas (Calendario, Reloj, Medalla).
+- Input numérico directo para puntos de recompensa en la creación de tareas (más rápido y minimalista).
+
+### Cambiado
+- Panel de evaluación docente simplificado: se elimina el slider y se sustituye por un input numérico minimalista de 1-10.
+- Mejora estética general en los modales de tareas hacia un estilo más "premium" y limpio.
+- Sincronización de versiones global a V5.7.1.
+
+## [V5.7.0] - 2026-03-18
+### Integración con Microsoft Teams
+- **Conectividad con Teams**: Implementación del manifiesto de aplicación (`teams_manifest.json`) para permitir la integración de Tico.ai como una pestaña (Tab) y aplicación personal dentro de Microsoft Teams.
+- **Soporte HTTPS**: Configuración optimizada para despliegues en Vercel, asegurando la compatibilidad con los requisitos de seguridad de Teams.
+- **Unificación de Versiones**: Actualización global de la plataforma a la versión **V5.7.0** en todos los componentes principales (Docente, Alumno y App Core).
+- **Iconografía**: Preparación de assets visuales para la tienda de aplicaciones de Teams.
+
+
 ## [V5.6.10] - 2026-03-18
 ### Evaluación Numérica (Hub de Misión)
 - **Calificación 1-10**: Se ha implementado un nuevo sistema de evaluación en el Hub de Misión que permite a los docentes asignar una nota numérica del 1 al 10.

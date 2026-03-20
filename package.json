@@ -1,6 +1,6 @@
 {
     "name": "dashboard-docente-feedback",
-    "version": "1.5.23",
+    "version": "5.7.0",
     "type": "module",
     "private": true,
     "engines": {
@@ -9,6 +9,7 @@
     "dependencies": {
         "@fontsource/lexend": "^5.2.11",
         "@imgly/background-removal-node": "^1.4.5",
+        "@microsoft/teams-js": "^2.50.0",
         "@radix-ui/react-accordion": "^1.2.3",
         "@radix-ui/react-alert-dialog": "^1.1.6",
         "@radix-ui/react-aspect-ratio": "^1.1.2",

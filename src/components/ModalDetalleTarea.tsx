@@ -360,24 +360,26 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                             {/* Professor Actions Hub (SOLO SI ESTÁ EN REVISIÓN) */}
                             {!isStudent && tarea.estado === 'revision' && (
                                 <div className="pt-4 space-y-3">
-                                    <div className="bg-slate-50 border border-slate-100 p-6 rounded-2xl flex flex-col gap-4">
+                                    <div className="bg-slate-50 border border-slate-100 p-6 rounded-3xl flex flex-col gap-3 shadow-inner">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calificación (1-10)</p>
-                                            <span className="text-2xl font-black text-indigo-600">{calificacion}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="1"
-                                            max="10"
-                                            step="1"
-                                            value={calificacion}
-                                            onChange={(e) => setCalificacion(parseInt(e.target.value))}
-                                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                                        />
-                                        <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                                            <span>1</span>
-                                            <span>5</span>
-                                            <span>10</span>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                                                    <Award className="w-3.5 h-3.5" />
+                                                </div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Nota Final</p>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="10"
+                                                    step="1"
+                                                    value={calificacion}
+                                                    onChange={(e) => setCalificacion(parseInt(e.target.value))}
+                                                    className="w-16 bg-white border-2 border-indigo-100 rounded-xl px-2 py-1 text-xl font-black text-indigo-600 focus:outline-none focus:border-indigo-500 text-center transition-all shadow-sm"
+                                                />
+                                                <span className="text-sm font-black text-slate-300">/ 10</span>
+                                            </div>
                                         </div>
                                     </div>
 

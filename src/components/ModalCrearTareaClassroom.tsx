@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Upload, Link2, FileText, Calendar, Users, Award, Paperclip, Trash2, Bold, Italic, Underline, List, Strikethrough } from 'lucide-react';
+import { X, Upload, Link2, FileText, Calendar, Clock, Users, Award, Paperclip, Trash2, Bold, Italic, Underline, List, Strikethrough } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Grupo, TareaDetallada } from '../types';
@@ -23,7 +23,8 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
     const [titulo, setTitulo] = useState('');
     const [instrucciones, setInstrucciones] = useState('');
     const [puntos, setPuntos] = useState(1);
-    const [fechaEntrega, setFechaEntrega] = useState('');
+    const [fecha, setFecha] = useState('');
+    const [hora, setHora] = useState('23:59');
     const [grupoSeleccionado, setGrupoSeleccionado] = useState<string>(preselectedGrupoId || 'todos');
     const [archivos, setArchivos] = useState<ArchivoLocal[]>([]);
     const [guardando, setGuardando] = useState(false);
@@ -138,7 +139,7 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                 grupo_id: grupoSeleccionado !== 'todos' ? parseInt(grupoSeleccionado) : null,
                 titulo: titulo.trim(),
                 descripcion: instrucciones.trim() || null,
-                fecha_entrega: fechaEntrega ? new Date(fechaEntrega).toISOString() : null,
+                fecha_entrega: fecha ? new Date(`${fecha}T${hora}`).toISOString() : null,
                 archivos_adjuntos: archivosSubidos,
                 puntos_maximos: puntos,
                 creador_id: user.id,
@@ -357,54 +358,52 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                             </select>
                         </div>
 
-                        {/* Puntos */}
+                        {/* Puntos de Recompensa */}
                         <div className="space-y-2">
-                            <label className="text-xs font-black text-slate-500 uppercase tracking-wider">Puntos</label>
-                            <div className="relative">
-                                <select
-                                    value={puntos}
-                                    onChange={(e) => setPuntos(Number(e.target.value))}
-                                    className="w-24 px-3 py-2.5 bg-white rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all cursor-pointer appearance-none"
-                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                                >
-                                    <option value={1}>1</option>
-                                    <option value={2}>2</option>
-                                    <option value={5}>5</option>
-                                    <option value={10}>10</option>
-                                </select>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Award className="w-3.5 h-3.5" />
+                                Recompensa
+                            </label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={puntos}
+                                onChange={(e) => setPuntos(Number(e.target.value))}
+                                className="w-full px-4 py-3 bg-white rounded-2xl border-2 border-slate-100 text-sm font-black text-slate-700 focus:outline-none focus:border-blue-500 transition-all placeholder:text-slate-300 shadow-sm"
+                                placeholder="0"
+                            />
+                        </div>
+
+                        {/* Fecha de Entrega */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Calendar className="w-3.5 h-3.5" />
+                                Fecha límite
+                            </label>
+                            <div className="relative group">
+                                <input
+                                    type="date"
+                                    value={fecha}
+                                    onChange={(e) => setFecha(e.target.value)}
+                                    className="w-full px-4 py-3 bg-white rounded-2xl border-2 border-slate-100 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition-all cursor-pointer hover:bg-slate-50 appearance-none shadow-sm"
+                                />
                             </div>
                         </div>
 
-                        {/* Fecha de entrega */}
+                        {/* Hora de Entrega */}
                         <div className="space-y-2">
-                            <label className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                                <Calendar className="w-3.5 h-3.5" />
-                                Fecha de entrega
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Clock className="w-3.5 h-3.5" />
+                                Hora límite
                             </label>
-                            <div className="relative">
+                            <div className="relative group">
                                 <input
-                                    type="datetime-local"
-                                    value={fechaEntrega}
-                                    onChange={(e) => setFechaEntrega(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white rounded-2xl border-2 border-slate-200 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all cursor-pointer hover:border-blue-300 appearance-none"
-                                    style={{ colorScheme: 'light' }}
+                                    type="time"
+                                    value={hora}
+                                    onChange={(e) => setHora(e.target.value)}
+                                    className="w-full px-4 py-3 bg-white rounded-2xl border-2 border-slate-100 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition-all cursor-pointer hover:bg-slate-50 appearance-none shadow-sm"
                                 />
                             </div>
-                            {fechaEntrega ? (
-                                <div className="flex items-center gap-2 px-1">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                    <span className="text-[11px] text-blue-600 font-bold">
-                                        {new Date(fechaEntrega).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                    <button onClick={() => setFechaEntrega('')} className="text-slate-300 hover:text-red-400 transition-colors ml-auto">
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <span className="text-[11px] text-slate-300 font-medium px-1 flex items-center gap-1">
-                                    📅 Sin fecha límite
-                                </span>
-                            )}
                         </div>
 
                         {/* Visual Summary */}
@@ -422,10 +421,10 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                                     <Award className="w-3.5 h-3.5" />
                                     <span className="font-bold">{puntos} puntos de misión</span>
                                 </div>
-                                {fechaEntrega && (
+                                {fecha && (
                                     <div className="flex items-center gap-2 text-xs text-slate-500">
                                         <Calendar className="w-3.5 h-3.5" />
-                                        <span className="font-bold">{new Date(fechaEntrega).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span className="font-bold">{new Date(`${fecha}T${hora}`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                 )}
                             </div>

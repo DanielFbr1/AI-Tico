@@ -1,0 +1,46 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "5.7.0",
+  "id": "47d2f9a2-4a8e-4b6e-8d9c-f8e1d2c3b4a5",
+  "developer": {
+    "name": "Ai Tico",
+    "websiteUrl": "https://ai-tico.vercel.app",
+    "privacyUrl": "https://ai-tico.vercel.app/privacy",
+    "termsOfUseUrl": "https://ai-tico.vercel.app/terms"
+  },
+  "icons": {
+    "outline": "outline.png",
+    "color": "color.png"
+  },
+  "name": {
+    "short": "Ai Tico",
+    "full": "Ai Tico - Dashboard Docente y Feedback"
+  },
+  "description": {
+    "short": "Conecta con tus alumnos y gestiona el feedback en tiempo real.",
+    "full": "Ai Tico es una plataforma integral para docentes y alumnos que permite gestionar el feedback, tareas y comunicación en un entorno gamificado y educativo."
+  },
+  "accentColor": "#2563EB",
+  "staticTabs": [
+    {
+      "entityId": "index",
+      "name": "Dashboard",
+      "contentUrl": "https://ai-tico.vercel.app",
+      "websiteUrl": "https://ai-tico.vercel.app",
+      "scopes": ["personal"]
+    }
+  ],
+  "configurableTabs": [
+    {
+      "configurationUrl": "https://ai-tico.vercel.app",
+      "canUpdateConfiguration": true,
+      "scopes": ["team", "groupchat"]
+    }
+  ],
+  "permissions": ["identity", "messageTeamMembers"],
+  "validDomains": [
+    "ai-tico.vercel.app",
+    "jkqtzvvvrbdzhxepsiox.supabase.co"
+  ]
+}
