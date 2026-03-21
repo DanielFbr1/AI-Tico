@@ -1,6 +1,11 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.55] - 2026-03-21
+### Mejorado
+- **Interfaz de Notas (Familia):** Se ha rediseñado la disposición de las calificaciones. Ahora las notas por rúbrica se muestran a la izquierda y las notas por misión/tarea a la derecha en pantallas grandes, optimizando el espacio y facilitando la comparación.
+
 ## [V5.8.54] - 2026-03-21
+
 ### Mejorado
 - **Formato de Entregas (Familia):** El indicador de tareas entregadas en el panel familiar ahora muestra un formato de fracción (ej. 5/6), indicando tanto las tareas entregadas como el total de tareas disponibles en el proyecto.
 

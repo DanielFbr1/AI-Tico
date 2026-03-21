@@ -418,54 +418,69 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                 </div>
                                                             </div>
 
-                                                            {/* Criteria breakdown */}
-                                                            <div className="space-y-2 mb-6 max-w-2xl">
-                                                                {proyecto.evaluacion.map((item: any, index: number) => {
-                                                                    const puntos = Number(item.puntos || 0);
-                                                                    const styles = getNivelStyles(puntos);
-                                                                    return (
-                                                                        <div key={index} className="flex items-center gap-4 p-2.5 bg-slate-50/50 rounded-xl hover:bg-slate-50 transition-colors">
-                                                                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight truncate w-1/2 md:w-64">
-                                                                                {item.nombre || item.criterio}
-                                                                            </span>
-                                                                            <div className="flex items-center gap-3 flex-1 justify-end md:justify-start">
-                                                                                <div className={`px-2 py-0.5 rounded text-[9px] font-black uppercase shrink-0 ${styles.bgLight} ${styles.color}`}>
-                                                                                    {puntos.toFixed(1)}
-                                                                                </div>
-                                                                                <div className="flex-1 max-w-[120px] h-1.5 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
-                                                                                    <div className={`h-full ${styles.bg} transition-all duration-700`} style={{ width: `${puntos * 10}%` }} />
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-
-                                                            {/* Tareas Evaluadas */}
-                                                            {proyecto.tareasEvaluadas.length > 0 && (
-                                                                <div className="mb-6">
-                                                                    <div className="flex items-center gap-2 mb-3">
-                                                                        <FileText className="w-3.5 h-3.5 text-indigo-500" />
-                                                                        <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Calificaciones por Tarea</span>
+                                                            {/* Detailed Grades Grid */}
+                                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                                                                {/* Left: Rubric Criteria */}
+                                                                <div>
+                                                                    <div className="flex items-center gap-2 mb-4">
+                                                                        <Star className="w-3.5 h-3.5 text-emerald-500" />
+                                                                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Evaluación por Rúbrica</span>
                                                                     </div>
-                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                                        {proyecto.tareasEvaluadas.map((tarea) => {
-                                                                            const cal = tarea.calificacion ?? 0;
-                                                                            const styles = getNivelStyles(cal);
+                                                                    <div className="space-y-2">
+                                                                        {proyecto.evaluacion.map((item: any, index: number) => {
+                                                                            const puntos = Number(item.puntos || 0);
+                                                                            const styles = getNivelStyles(puntos);
                                                                             return (
-                                                                                <div key={tarea.id} className="flex items-center justify-between p-3 bg-indigo-50/30 rounded-xl border border-indigo-100/50">
-                                                                                    <span className="text-[10px] font-bold text-slate-600 truncate mr-2" title={tarea.titulo}>
-                                                                                        {tarea.titulo}
+                                                                                <div key={index} className="flex items-center gap-4 p-2.5 bg-slate-50/50 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                                                                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight truncate flex-1">
+                                                                                        {item.nombre || item.criterio}
                                                                                     </span>
-                                                                                    <div className={`px-2 py-0.5 rounded text-[10px] font-black ${styles.bgLight} ${styles.color} shrink-0`}>
-                                                                                        {cal.toFixed(1)}
+                                                                                    <div className="flex items-center gap-3 shrink-0">
+                                                                                        <div className={`px-2 py-0.5 rounded text-[9px] font-black uppercase shrink-0 ${styles.bgLight} ${styles.color}`}>
+                                                                                            {puntos.toFixed(1)}
+                                                                                        </div>
+                                                                                        <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
+                                                                                            <div className={`h-full ${styles.bg} transition-all duration-700`} style={{ width: `${puntos * 10}%` }} />
+                                                                                        </div>
                                                                                     </div>
                                                                                 </div>
                                                                             );
                                                                         })}
                                                                     </div>
                                                                 </div>
-                                                            )}
+
+                                                                {/* Right: Task Grades */}
+                                                                <div>
+                                                                    <div className="flex items-center gap-2 mb-4">
+                                                                        <FileText className="w-3.5 h-3.5 text-indigo-500" />
+                                                                        <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Calificaciones por Misión</span>
+                                                                    </div>
+                                                                    {proyecto.tareasEvaluadas.length > 0 ? (
+                                                                        <div className="grid grid-cols-1 gap-2">
+                                                                            {proyecto.tareasEvaluadas.map((tarea) => {
+                                                                                const cal = tarea.calificacion ?? 0;
+                                                                                const styles = getNivelStyles(cal);
+                                                                                return (
+                                                                                    <div key={tarea.id} className="flex items-center justify-between p-3 bg-indigo-50/30 rounded-xl border border-indigo-100/50 hover:bg-indigo-50 transition-colors">
+                                                                                        <span className="text-[10px] font-bold text-slate-600 truncate mr-2" title={tarea.titulo}>
+                                                                                            {tarea.titulo}
+                                                                                        </span>
+                                                                                        <div className={`px-2 py-0.5 rounded text-[10px] font-black ${styles.bgLight} ${styles.color} shrink-0`}>
+                                                                                            {cal.toFixed(1)}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="h-[200px] flex flex-col items-center justify-center p-8 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-100 text-center animate-in fade-in duration-500">
+                                                                            <FileText className="w-8 h-8 text-slate-200 mb-2" />
+                                                                            <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Sin misiones evaluadas</p>
+                                                                            <p className="text-[9px] text-slate-300 font-medium mt-1">Cuando el profesor califique una misión individual aparecerá aquí.</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
 
                                                             {/* Observations - Always shown */}
                                                             <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
