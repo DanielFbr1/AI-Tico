@@ -1091,27 +1091,58 @@ export function DashboardDocente({
 
                                         <div className="space-y-3">
                                             {(() => {
+                                                const gidFilter = filtroGrupo === 'todos' ? null : filtroGrupo;
                                                 const filtered = tareasProyecto.filter(t => {
-                                                    const entregas = entregasProyecto.filter(e => e.tarea_id === t.id);
-                                                    const totalEsperados = t.grupo_id ? 1 : grupos.length;
-                                                    
-                                                    let estadoReal = t.estado;
-                                                    if (!t.grupo_id) {
-                                                        // Tarea GLOBAL: Lógica de agregación
-                                                        const numEntregadas = entregas.filter(e => e.estado === 'entregada').length;
-                                                        const numEvaluadas = entregas.filter(e => e.estado === 'evaluada' || e.estado === 'revisado').length;
-                                                        
-                                                        if (numEvaluadas >= totalEsperados) estadoReal = 'completado';
-                                                        else if (numEntregadas > 0) estadoReal = 'revision';
-                                                        else estadoReal = 'pendiente';
+                                                    // 1. Filtrado por GRUPO
+                                                    if (gidFilter) {
+                                                        const esDeEsteGrupo = String(t.grupo_id) === gidFilter;
+                                                        const esGlobal = !t.grupo_id || String(t.grupo_id) === 'all';
+                                                        if (!esDeEsteGrupo && !esGlobal) return false;
                                                     }
 
-                                                    const matchEstado = filtroEstado === 'todos' || estadoReal === filtroEstado || (filtroEstado === 'completado' && (estadoReal === 'aprobado' || estadoReal === 'completado'));
+                                                    // 2. Determinación del ESTADO para el filtro
+                                                    let estadoReal = t.estado;
                                                     
-                                                    // 2. Lógica de GRUPO: Incluir globales si se filtra por grupo específico
-                                                    const matchGrupo = filtroGrupo === 'todos' || String(t.grupo_id) === filtroGrupo || t.grupo_id === null;
+                                                    if (gidFilter) {
+                                                        // Contexto de un grupo específico: la realidad es lo que haya hecho ESE grupo
+                                                        const entrega = entregasProyecto.find(e => e.tarea_id === t.id && String(e.grupo_id) === gidFilter);
+                                                        if (entrega) {
+                                                            if (entrega.estado === 'evaluada') estadoReal = 'completado';
+                                                            else if (entrega.estado === 'entregada') estadoReal = 'revision';
+                                                            else estadoReal = 'pendiente';
+                                                        } else {
+                                                            // Si no hay entrega, usamos el estado de la tarea si es específica
+                                                            if (String(t.grupo_id) === gidFilter) {
+                                                                if (t.estado === 'aprobado') estadoReal = 'completado';
+                                                                else estadoReal = t.estado;
+                                                            } else {
+                                                                // Es global pero este grupo no ha entregado
+                                                                estadoReal = 'pendiente';
+                                                            }
+                                                        }
+                                                    } else {
+                                                        // Contexto "Todos los grupos": Lógica de agregación para globales
+                                                        if (!t.grupo_id || String(t.grupo_id) === 'all') {
+                                                            const entregas = entregasProyecto.filter(e => e.tarea_id === t.id);
+                                                            const numEntregadas = entregas.filter(e => e.estado === 'entregada').length;
+                                                            const numEvaluadas = entregas.filter(e => e.estado === 'evaluada').length;
+                                                            const totalEsperados = grupos.length;
+
+                                                            if (numEvaluadas >= totalEsperados && totalEsperados > 0) estadoReal = 'completado';
+                                                            else if (numEntregadas > 0 || numEvaluadas > 0) estadoReal = 'revision';
+                                                            else estadoReal = 'pendiente';
+                                                        } else {
+                                                            if (t.estado === 'aprobado') estadoReal = 'completado';
+                                                            else estadoReal = t.estado;
+                                                        }
+                                                    }
+
+                                                    // 3. Filtrado por ESTADO
+                                                    const matchEstado = filtroEstado === 'todos' || 
+                                                                       estadoReal === filtroEstado || 
+                                                                       (filtroEstado === 'completado' && (estadoReal === 'aprobado' || estadoReal === 'completado'));
                                                     
-                                                    return matchEstado && matchGrupo;
+                                                    return matchEstado;
                                                 });
 
                                                 if (filtered.length === 0) {
