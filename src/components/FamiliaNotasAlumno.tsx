@@ -26,6 +26,7 @@ interface ProyectoNotas {
     asistencia: { present: number; total: number; percentage: number };
     comentarios: { id: string, contenido: string, created_at: string }[];
     puntos: number;
+    tareasEvaluadas: { id: string, titulo: string, calificacion: number | null, estado: string }[];
     curso?: string;
     asignatura?: string;
 }
@@ -143,6 +144,33 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     .ilike('alumno_nombre', alumno.alumno_nombre)
                     .order('created_at', { ascending: false });
 
+                // Fetch tasks for the project and group
+                const { data: tasksData } = await supabase
+                    .from('tareas')
+                    .select('id, titulo, calificacion, estado, grupo_id')
+                    .eq('proyecto_id', proyectoId)
+                    .or(`grupo_id.eq.${grupo.id},grupo_id.is.null`);
+
+                // Fetch student deliveries for these tasks to get grades
+                const { data: deliveriesData } = await supabase
+                    .from('entregas_tareas')
+                    .select('tarea_id, calificacion, estado')
+                    .eq('grupo_id', grupo.id);
+
+                const tareasEvaluadas = (tasksData || []).map(t => {
+                    // Try to get grade from delivery first (global tasks)
+                    const delivery = deliveriesData?.find(d => d.tarea_id === t.id);
+                    const calificacion = t.calificacion ?? delivery?.calificacion ?? null;
+                    const finalEstado = (t.estado === 'evaluada' || delivery?.estado === 'evaluada' || t.estado === 'aprobado' || t.estado === 'completado') ? 'evaluada' : t.estado;
+                    
+                    return {
+                        id: t.id,
+                        titulo: t.titulo,
+                        calificacion: calificacion,
+                        estado: finalEstado
+                    };
+                }).filter(t => t.calificacion !== null); // Show only if evaluated
+
                 // Fetch points
                 const { data: puntosData } = await supabase
                     .from('alumno_puntos')
@@ -169,6 +197,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     },
                     puntos,
                     comentarios: commentsData || [],
+                    tareasEvaluadas,
                     curso: (grupo as any).proyectos?.curso || 'Sin curso',
                     asignatura: (grupo as any).proyectos?.asignatura || ''
                 });
@@ -394,6 +423,32 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                     );
                                                                 })}
                                                             </div>
+
+                                                            {/* Tareas Evaluadas */}
+                                                            {proyecto.tareasEvaluadas.length > 0 && (
+                                                                <div className="mb-6">
+                                                                    <div className="flex items-center gap-2 mb-3">
+                                                                        <FileText className="w-3.5 h-3.5 text-indigo-500" />
+                                                                        <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Calificaciones por Tarea</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                        {proyecto.tareasEvaluadas.map((tarea) => {
+                                                                            const cal = tarea.calificacion ?? 0;
+                                                                            const styles = getNivelStyles(cal);
+                                                                            return (
+                                                                                <div key={tarea.id} className="flex items-center justify-between p-3 bg-indigo-50/30 rounded-xl border border-indigo-100/50">
+                                                                                    <span className="text-[10px] font-bold text-slate-600 truncate mr-2" title={tarea.titulo}>
+                                                                                        {tarea.titulo}
+                                                                                    </span>
+                                                                                    <div className={`px-2 py-0.5 rounded text-[10px] font-black ${styles.bgLight} ${styles.color} shrink-0`}>
+                                                                                        {cal.toFixed(1)}
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
 
                                                             {/* Observations - Always shown */}
                                                             <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">

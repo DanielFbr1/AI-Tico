@@ -6,7 +6,7 @@ import { FamiliaNotasAlumno } from './FamiliaNotasAlumno';
 import { ChatFamiliaProfesor } from './ChatFamiliaProfesor';
 import { toast } from 'sonner';
 
-const VERSION = 'V5.7.6 (Final Sync Fix)';
+const VERSION = 'V5.8.51';
 
 interface AlumnoVinculado {
     id: string;

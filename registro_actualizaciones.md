@@ -1,5 +1,12 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.51] - 2026-03-21
+### Añadido
+- **Calificaciones por Tarea para Alumnos:** Nueva sección en "Mis Notas" que muestra el desglose de calificaciones obtenidas en cada misión/tarea específica.
+- **Acceso para Familias:** Los padres ahora pueden ver el desglose detallado de las calificaciones por tarea de sus hijos desde el panel familiar.
+- **Sincronización de Versiones:** Unificación de la versión del sistema en todos los paneles (Docente, Alumno y Familia).
+
+
 ## [V5.8.50] - 2026-03-21
 ### Corregido
 - **Optimización de Filtros:** Se ha simplificado la lógica interna del filtrado de misiones para evitar errores de tipo y asegurar la detección correcta de estados completados.

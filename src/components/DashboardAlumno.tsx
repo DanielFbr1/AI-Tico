@@ -946,7 +946,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.50</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.51</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -1841,6 +1841,53 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                   )}
                 </div>
               </div>
+              {/* SECCIÓN CALIFICACIONES POR TAREA */}
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <FileText className="w-6 h-6 text-indigo-600" />
+                  Calificaciones por Misión
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {tareasAlumno.filter(t => {
+                    const entrega = entregasTareas.find(e => e.tarea_id === t.id);
+                    return (t.calificacion !== undefined && t.calificacion !== null) || (entrega?.calificacion !== undefined && entrega?.calificacion !== null);
+                  }).length === 0 ? (
+                    <div className="col-span-full py-10 text-center opacity-50">
+                      <p className="text-sm font-bold text-gray-400">Sin misiones evaluadas aún</p>
+                    </div>
+                  ) : (
+                    tareasAlumno.filter(t => {
+                      const entrega = entregasTareas.find(e => e.tarea_id === t.id);
+                      return (t.calificacion !== undefined && t.calificacion !== null) || (entrega?.calificacion !== undefined && entrega?.calificacion !== null);
+                    }).map((t) => {
+                      const entrega = entregasTareas.find(e => e.tarea_id === t.id);
+                      const cal = t.calificacion ?? entrega?.calificacion ?? 0;
+                      
+                      const getNivelStyles = (p: number) => {
+                        if (p >= 9) return { color: 'text-emerald-600', bg: 'bg-emerald-50' };
+                        if (p >= 7) return { color: 'text-blue-600', bg: 'bg-blue-50' };
+                        if (p >= 5) return { color: 'text-amber-600', bg: 'bg-amber-50' };
+                        return { color: 'text-rose-600', bg: 'bg-rose-50' };
+                      };
+                      const styles = getNivelStyles(cal);
+
+                      return (
+                        <div key={t.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-bold text-slate-700 text-sm truncate uppercase tracking-tight" title={t.titulo}>{t.titulo}</h4>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Misión Evaluada</span>
+                          </div>
+                          <div className={`ml-4 px-3 py-1.5 rounded-xl font-black text-sm ${styles.bg} ${styles.color} shadow-sm border border-white/50`}>
+                            {cal.toFixed(1)}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
               {/* SECCION COMENTARIOS */}
               <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
                 <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
