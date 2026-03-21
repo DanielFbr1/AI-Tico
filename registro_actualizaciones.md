@@ -1,5 +1,10 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.48] - 2026-03-21
+### Corregido
+- **Filtros de Tareas Inteligentes:** Se ha rediseñado el sistema de filtrado de misiones. Ahora, al seleccionar un grupo específico, el estado "Completado" se calcula únicamente para ese grupo (detectando sus entregas individuales), permitiendo ver misiones como completadas aunque otros grupos no las hayan terminado aún.
+- **Contexto de Grupo:** Al filtrar por un grupo, solo se muestran sus misiones específicas y las globales, ocultando las misiones de otros equipos.
+
 ## [V5.8.47] - 2026-03-21
 ### Corregido
 - **Consistencia de Progreso:** Se ha unificado la lógica de cálculo de progreso entre la lista de "Gestión de Equipos" y la vista de detalle. Ahora ambos paneles usan el mismo algoritmo riguroso que detecta entregas evaluadas, tareas específicas y misiones globales sincronizadas.
