@@ -1,6 +1,11 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.54] - 2026-03-21
+### Mejorado
+- **Formato de Entregas (Familia):** El indicador de tareas entregadas en el panel familiar ahora muestra un formato de fracción (ej. 5/6), indicando tanto las tareas entregadas como el total de tareas disponibles en el proyecto.
+
 ## [V5.8.53] - 2026-03-21
+
 ### Añadido
 - **Resumen de Misiones para Familias:** Se ha añadido un panel de estadísticas en la vista de notas para padres que incluye la **Nota Media de Misiones** y el **Número de Tareas Entregadas**.
 - **UI de Estadísticas:** Rediseño del panel de resumen de cada proyecto para mostrar de forma clara y colorida el progreso individual del alumno en sus entregas.

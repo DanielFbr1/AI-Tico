@@ -29,6 +29,7 @@ interface ProyectoNotas {
     tareasEvaluadas: { id: string, titulo: string, calificacion: number | null, estado: string }[];
     notaMediaMisiones: number;
     tareasEntregadasCount: number;
+    tareasTotalCount: number;
     curso?: string;
     asignatura?: string;
 }
@@ -176,6 +177,8 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     ? tareasEvaluadas.reduce((sum, t) => sum + (t.calificacion ?? 0), 0) / tareasEvaluadas.length
                     : 0;
 
+                const tasksForProject = tasksData || [];
+                const tareasTotalCount = tasksForProject.length;
                 const tareasEntregadasCount = (deliveriesData || []).length;
 
                 // Fetch points
@@ -207,6 +210,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     tareasEvaluadas,
                     notaMediaMisiones,
                     tareasEntregadasCount,
+                    tareasTotalCount,
                     curso: (grupo as any).proyectos?.curso || 'Sin curso',
                     asignatura: (grupo as any).proyectos?.asignatura || ''
                 });
@@ -398,7 +402,9 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                 </div>
                                                                 <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
                                                                     <span className="text-[8px] text-blue-500 font-black uppercase tracking-widest block mb-1">ENTREGADAS</span>
-                                                                    <div className="text-xl font-black text-blue-600">{proyecto.tareasEntregadasCount}</div>
+                                                                    <div className="text-xl font-black text-blue-600">
+                                                                        {proyecto.tareasEntregadasCount}/{proyecto.tareasTotalCount}
+                                                                    </div>
                                                                 </div>
                                                                 <div className="bg-slate-50 rounded-xl p-3">
                                                                     <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">ASISTENCIA</span>
