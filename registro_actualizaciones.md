@@ -1,6 +1,12 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.57] - 2026-03-21
+### Estilizado
+- **Colorización de Paneles (Familia):** Se han asignado colores armónicos (Azul, Cian, Esmeralda, Ámbar y Naranja) a cada panel de estadísticas para una mejor distinción visual.
+- **Barras de Progreso en Misiones:** Las calificaciones individuales de cada tarea ahora incluyen una mini barra de progreso visual, idéntica a la utilizada en los criterios de rúbrica.
+
 ## [V5.8.56] - 2026-03-21
+
 ### Estilizado
 - **Reordenación de Estadísticas (Familia):** Se han reordenado los paneles de resumen para una mejor jerarquía visual: 1º Media Criterios, 2º Asistencia, 3º Puntos, 4º Media Tareas y 5º Tareas Entregadas.
 - **Renombrado de Etiquetas:** Los indicadores ahora utilizan nombres más claros: "MEDIA CRITERIOS" (antes Media Proyecto) y "MEDIA TAREAS" (antes Media Misiones).

@@ -392,27 +392,27 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                         <div className="px-5 pb-5 border-t border-slate-50 pt-5 animate-in fade-in zoom-in-95 duration-200">
                                                             {/* Stats Summary */}
                                                             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
-                                                                <div className="bg-slate-50 rounded-xl p-3">
-                                                                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">MEDIA CRITERIOS</span>
-                                                                    <div className="text-xl font-black text-slate-800">{proyecto.notaMedia.toFixed(1)}</div>
+                                                                <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
+                                                                    <span className="text-[8px] text-blue-500 font-black uppercase tracking-widest block mb-1">MEDIA CRITERIOS</span>
+                                                                    <div className="text-xl font-black text-blue-600">{proyecto.notaMedia.toFixed(1)}</div>
                                                                 </div>
-                                                                <div className="bg-slate-50 rounded-xl p-3">
-                                                                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">ASISTENCIA</span>
-                                                                    <div className="text-xl font-black text-slate-800">{proyecto.asistencia.percentage}%</div>
-                                                                </div>
-                                                                <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
-                                                                    <span className="text-[8px] text-indigo-500 font-black uppercase tracking-widest block mb-1">PUNTOS</span>
-                                                                    <div className="text-xl font-black text-indigo-600 flex items-center gap-1">
-                                                                        {proyecto.puntos} <Award className="w-4 h-4 text-indigo-500" />
-                                                                    </div>
+                                                                <div className="bg-cyan-50 rounded-xl p-3 border border-cyan-100">
+                                                                    <span className="text-[8px] text-cyan-500 font-black uppercase tracking-widest block mb-1">ASISTENCIA</span>
+                                                                    <div className="text-xl font-black text-cyan-600">{proyecto.asistencia.percentage}%</div>
                                                                 </div>
                                                                 <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
-                                                                    <span className="text-[8px] text-emerald-500 font-black uppercase tracking-widest block mb-1">MEDIA TAREAS</span>
-                                                                    <div className="text-xl font-black text-emerald-600">{proyecto.notaMediaMisiones.toFixed(1)}</div>
+                                                                    <span className="text-[8px] text-emerald-500 font-black uppercase tracking-widest block mb-1">PUNTOS</span>
+                                                                    <div className="text-xl font-black text-emerald-600 flex items-center gap-1">
+                                                                        {proyecto.puntos} <Award className="w-4 h-4 text-emerald-500" />
+                                                                    </div>
                                                                 </div>
-                                                                <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
-                                                                    <span className="text-[8px] text-blue-500 font-black uppercase tracking-widest block mb-1">TAREAS ENTREGADAS</span>
-                                                                    <div className="text-xl font-black text-blue-600">
+                                                                <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
+                                                                    <span className="text-[8px] text-amber-500 font-black uppercase tracking-widest block mb-1">MEDIA TAREAS</span>
+                                                                    <div className="text-xl font-black text-amber-600">{proyecto.notaMediaMisiones.toFixed(1)}</div>
+                                                                </div>
+                                                                <div className="bg-orange-50 rounded-xl p-3 border border-orange-100">
+                                                                    <span className="text-[8px] text-orange-500 font-black uppercase tracking-widest block mb-1">TAREAS ENTREGADAS</span>
+                                                                    <div className="text-xl font-black text-orange-600">
                                                                         {proyecto.tareasEntregadasCount}/{proyecto.tareasTotalCount}
                                                                     </div>
                                                                 </div>
@@ -462,11 +462,16 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                                 const styles = getNivelStyles(cal);
                                                                                 return (
                                                                                     <div key={tarea.id} className="flex items-center justify-between p-3 bg-indigo-50/30 rounded-xl border border-indigo-100/50 hover:bg-indigo-50 transition-colors">
-                                                                                        <span className="text-[10px] font-bold text-slate-600 truncate mr-2" title={tarea.titulo}>
+                                                                                        <span className="text-[10px] font-bold text-slate-600 truncate flex-1" title={tarea.titulo}>
                                                                                             {tarea.titulo}
                                                                                         </span>
-                                                                                        <div className={`px-2 py-0.5 rounded text-[10px] font-black ${styles.bgLight} ${styles.color} shrink-0`}>
-                                                                                            {cal.toFixed(1)}
+                                                                                        <div className="flex items-center gap-3 shrink-0 ml-4">
+                                                                                            <div className={`px-2 py-0.5 rounded text-[10px] font-black ${styles.bgLight} ${styles.color} shrink-0`}>
+                                                                                                {cal.toFixed(1)}
+                                                                                            </div>
+                                                                                            <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
+                                                                                                <div className={`h-full ${styles.bg} transition-all duration-700`} style={{ width: `${cal * 10}%` }} />
+                                                                                            </div>
                                                                                         </div>
                                                                                     </div>
                                                                                 );
