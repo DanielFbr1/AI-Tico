@@ -6,7 +6,7 @@ import { FamiliaNotasAlumno } from './FamiliaNotasAlumno';
 import { ChatFamiliaProfesor } from './ChatFamiliaProfesor';
 import { toast } from 'sonner';
 
-const VERSION = 'V5.8.51';
+const VERSION = 'V5.8.52';
 
 interface AlumnoVinculado {
     id: string;
@@ -42,7 +42,7 @@ export function DashboardFamilia({ familia, onLogout }: DashboardFamiliaProps) {
     const [chatLoading, setChatLoading] = useState<string | null>(null);
 
     // Form state for adding student
-    const [addName, setAddName] = useState('');
+    const [addEmail, setAddEmail] = useState('');
     const [addPassword, setAddPassword] = useState('');
     const [addLoading, setAddLoading] = useState(false);
     const [addError, setAddError] = useState('');
@@ -107,12 +107,11 @@ export function DashboardFamilia({ familia, onLogout }: DashboardFamiliaProps) {
         setAddError('');
 
         try {
-            if (!addName.trim() || !addPassword.trim()) {
-                throw new Error('Completa nombre y contraseña del alumno');
+            if (!addEmail.trim() || !addPassword.trim()) {
+                throw new Error('Completa el email y la contraseña del alumno');
             }
 
-            const cleanUser = addName.trim().replace(/\s+/g, '').toLowerCase();
-            const studentEmail = `${cleanUser}.student@tico.ia`;
+            const studentEmail = addEmail.trim().toLowerCase();
 
             // Crear cliente temporal SOLO cuando se necesita (evita 403 al inicializar)
             const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -129,13 +128,22 @@ export function DashboardFamilia({ familia, onLogout }: DashboardFamiliaProps) {
             });
 
             if (loginError) {
-                throw new Error('Nombre o contraseña del alumno incorrectos. Asegúrate de usar las mismas credenciales que usa tu hijo/a para entrar.');
+                throw new Error('Email o contraseña del alumno incorrectos. Asegúrate de usar las mismas credenciales que usa tu hijo/a para entrar.');
             }
 
             const studentUserId = loginData.user?.id;
             if (!studentUserId) {
                 throw new Error('No se pudo identificar al alumno.');
             }
+
+            // Fetch the actual student name from their profile
+            const { data: profileData } = await tempSupabase
+                .from('profiles')
+                .select('nombre')
+                .eq('id', studentUserId)
+                .single();
+
+            const studentName = profileData?.nombre || addEmail.split('@')[0];
 
             await tempSupabase.auth.signOut();
 
@@ -149,14 +157,14 @@ export function DashboardFamilia({ familia, onLogout }: DashboardFamiliaProps) {
                 .insert({
                     familia_user_id: familia.id,
                     alumno_user_id: studentUserId,
-                    alumno_nombre: addName.trim()
+                    alumno_nombre: studentName
                 });
 
             if (insertError) throw insertError;
 
-            toast.success(`¡${addName.trim()} vinculado correctamente!`);
+            toast.success(`¡${studentName} vinculado correctamente!`);
             setModalAddOpen(false);
-            setAddName('');
+            setAddEmail('');
             setAddPassword('');
             fetchAlumnos();
 
@@ -394,7 +402,7 @@ export function DashboardFamilia({ familia, onLogout }: DashboardFamiliaProps) {
                     <>
                         {/* Add Student Button */}
                         <button
-                            onClick={() => { setModalAddOpen(true); setAddError(''); setAddName(''); setAddPassword(''); }}
+                            onClick={() => { setModalAddOpen(true); setAddError(''); setAddEmail(''); setAddPassword(''); }}
                             className="w-full mb-8 p-6 bg-white rounded-3xl border-2 border-dashed border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/30 transition-all group flex items-center justify-center gap-3"
                         >
                             <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
@@ -402,7 +410,7 @@ export function DashboardFamilia({ familia, onLogout }: DashboardFamiliaProps) {
                             </div>
                             <div className="text-left">
                                 <h3 className="font-black text-slate-700 uppercase tracking-tight text-sm">Añadir Alumno/a</h3>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Vincular con nombre y contraseña</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Vincular con email y contraseña</p>
                             </div>
                         </button>
 
@@ -505,20 +513,20 @@ export function DashboardFamilia({ familia, onLogout }: DashboardFamiliaProps) {
 
                         <h2 className="text-xl font-black text-slate-800 text-center mb-2 uppercase tracking-tight">Vincular Alumno</h2>
                         <p className="text-slate-400 text-center mb-6 text-sm font-medium">
-                            Introduce el nombre y la contraseña que tu hijo/a usa para entrar en Tico.
+                            Introduce el email y la contraseña que tu hijo/a usa para entrar en Tico.
                         </p>
 
                         <form onSubmit={handleAddAlumno} className="space-y-4">
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
-                                    Nombre del Alumno
+                                    Email del Alumno
                                 </label>
                                 <input
-                                    type="text"
-                                    value={addName}
-                                    onChange={(e) => setAddName(e.target.value)}
+                                    type="email"
+                                    value={addEmail}
+                                    onChange={(e) => setAddEmail(e.target.value)}
                                     className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all font-bold text-sm"
-                                    placeholder="Ej: JuanPerez"
+                                    placeholder="ejemplo@correo.com"
                                     required
                                     autoFocus
                                 />

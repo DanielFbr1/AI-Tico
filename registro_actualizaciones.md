@@ -1,6 +1,12 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.52] - 2026-03-21
+### Corregido
+- **Vincular Alumno (Familia):** Se ha actualizado el sistema de vinculación para familias. Ahora se requiere el **email** y contraseña del alumno en lugar del nombre, alineándose con el nuevo sistema de inicio de sesión de los estudiantes.
+- **Sincronización de Perfiles:** Al vincular un alumno, el sistema ahora recupera automáticamente su nombre real desde su perfil de usuario.
+
 ## [V5.8.51] - 2026-03-21
+
 ### Añadido
 - **Calificaciones por Tarea para Alumnos:** Nueva sección en "Mis Notas" que muestra el desglose de calificaciones obtenidas en cada misión/tarea específica.
 - **Acceso para Familias:** Los padres ahora pueden ver el desglose detallado de las calificaciones por tarea de sus hijos desde el panel familiar.
