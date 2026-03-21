@@ -83,16 +83,21 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
       // Actualizar estado local de tareas
       const nuevasTareas = tareasGrupo.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t);
       setTareasGrupo(nuevasTareas);
-
       // Recalcular progreso del grupo (Batería) - SOPORTAR TAREAS GLOBALES
       const total = nuevasTareas.length;
       const aprobadas = nuevasTareas.filter(t => {
-        // En tareas específicas del grupo, nos vale el t.estado
-        if (t.grupo_id === grupo.id) return (t.estado === 'aprobado' || t.estado === 'completado');
-        // En tareas globales, nos vale la entrega del grupo específica
+        // Si hay una entrega de este grupo y está evaluada, cuenta como aprobada
         const e = (entregasGrupo || []).find(ent => ent.tarea_id === t.id);
-        return (e && (e.estado === 'aprobado' || e.estado === 'completado'));
+        if (e && (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado')) {
+          return true;
+        }
+        // Si es específica de este grupo, nos vale el t.estado
+        if (t.grupo_id && String(t.grupo_id) !== 'all') {
+          return t.estado === 'aprobado' || t.estado === 'completado';
+        }
+        return false;
       }).length;
+
       const nuevoProgreso = total > 0 ? Math.round((aprobadas / total) * 100) : 0;
 
       await supabase
@@ -124,6 +129,46 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
       ).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [grupo.id, grupo.proyecto_id]);
+
+  // CALCULO DE PROGRESO REACTIVO (Solución definitiva para la batería al 0%)
+  const progresoCalculado = useMemo(() => {
+    const total = tareasGrupo.length;
+    if (total === 0) return 0;
+    const aprobadas = tareasGrupo.filter(t => {
+      // 1. Priorizar estado de entrega (para misiones globales y específicas)
+      const e = (entregasGrupo || []).find(ent => ent.tarea_id === t.id);
+      if (e && (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado')) {
+        return true;
+      }
+      // 2. Si es específica de este grupo, el estado de la tarea en sí
+      if (t.grupo_id && String(t.grupo_id) !== 'all') {
+        return t.estado === 'aprobado' || t.estado === 'completado';
+      }
+      // 3. Si la tarea es global y está aprobada pero NO hay entrega (caso raro pero posible)
+      if (!t.grupo_id && (t.estado === 'aprobado' || t.estado === 'completado')) {
+        return true; 
+      }
+      return false;
+    }).length;
+    return Math.round((aprobadas / total) * 100);
+  }, [tareasGrupo, entregasGrupo]);
+
+  // Sincronizar con la base de datos si el cálculo local difiere del almacenado
+  useEffect(() => {
+    if (progresoCalculado !== grupo.progreso) {
+      console.log(`📡 Sincronizando progreso DB para ${grupo.nombre}: ${progresoCalculado}%`);
+      supabase
+        .from('grupos')
+        .update({ progreso: progresoCalculado })
+        .eq('id', grupo.id)
+        .then(({ error }) => {
+          if (!error) {
+              // Si quisiéramos actualizar el objeto grupo localmente lo haríamos aquí, 
+              // pero DashboardDocente ya maneja el estado global
+          }
+        });
+    }
+  }, [progresoCalculado, grupo.id, grupo.progreso]);
 
   const getEstadoColor = (estado: Grupo['estado']) => {
     switch (estado) {
@@ -258,7 +303,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
 
                 <div className="relative z-10 transform hover:scale-105 transition-transform duration-500">
                   <LivingTree
-                    progress={grupo.progreso}
+                    progress={progresoCalculado}
                     health={100}
                     size={280}
                     showLabels={false}
@@ -267,7 +312,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
                 </div>
 
                 <div className="mt-8 text-center relative z-10 w-full">
-                  <div className="text-4xl font-black text-blue-600 mb-1">{grupo.progreso.toFixed(0)}%</div>
+                  <div className="text-4xl font-black text-blue-600 mb-1">{progresoCalculado.toFixed(0)}%</div>
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-blue-50 py-1.5 px-3 rounded-full inline-flex border border-blue-100">Energía Recolectada</div>
                 </div>
               </div>

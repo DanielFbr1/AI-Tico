@@ -496,7 +496,7 @@ export function DashboardDocente({
         // Buscamos en entregasProyecto cuántas de esas tareas están aprobadas/completadas para este grupo específico
         const completadas = (entregasProyecto || []).filter(e => 
             Number(e.grupo_id) === Number(grupoId) && 
-            (e.estado === 'aprobado' || e.estado === 'completado') &&
+            (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado') &&
             tareasDelGrupo.some(t => t.id === e.tarea_id)
         ).length;
 
@@ -694,7 +694,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.45</span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.46</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -899,6 +899,7 @@ export function DashboardDocente({
                                         {unreadFamilyMessages > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-bounce border border-white" />}
                                     </button>
                                  </div>
+
                                 <div className="flex items-center gap-2">
                                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Sala: {proyectoActual?.codigo_sala}</span>
                                     <button
@@ -1081,7 +1082,6 @@ export function DashboardDocente({
                                         <div className="space-y-3">
                                             {(() => {
                                                 const filtered = tareasProyecto.filter(t => {
-                                                    // 1. Calcular el estado REAL basado en las entregas para este filtro
                                                     const entregas = entregasProyecto.filter(e => e.tarea_id === t.id);
                                                     const totalEsperados = t.grupo_id ? 1 : grupos.length;
                                                     
