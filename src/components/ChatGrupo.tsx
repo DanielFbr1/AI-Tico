@@ -12,6 +12,8 @@ interface MensajeChat {
     audio_url?: string;
     tipo: 'alumno' | 'profesor';
     modo: 'equipo';
+    tarea_id?: string;
+    tarea_titulo?: string;
 }
 
 interface ChatGrupoProps {
@@ -318,6 +320,11 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
                                                 ? 'bg-purple-50 border border-purple-100 text-purple-800 rounded-bl-none'
                                                 : 'bg-white border border-slate-100 text-slate-700 rounded-bl-none'
                                         }`}>
+                                        {msg.tarea_titulo && (
+                                            <div className={`text-[9px] font-black uppercase tracking-[0.2em] mb-1 py-0.5 px-2 rounded-md ${esMio ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'}`}>
+                                                Misión: {msg.tarea_titulo}
+                                            </div>
+                                        )}
                                         {!esMio && <p className="text-[9px] font-bold opacity-50 mb-0.5 uppercase tracking-wider">{msg.remitente}</p>}
 
                                         {msg.audio_url ? (

@@ -9,9 +9,10 @@ interface ModalRevisionHitosProps {
     onClose: () => void;
     onUpdateBatch: (grupoId: string | number, updates: { hitoId: string, nuevoEstado: 'aprobado' | 'rechazado' | 'pendiente' | 'revision' }[]) => Promise<void>;
     onUpdateTarea?: (tareaId: string, nuevoEstado: 'aprobado' | 'pendiente') => Promise<void>;
+    onOpenTask?: (tarea: TareaDetallada) => void;
 }
 
-export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpdateBatch, onUpdateTarea }: ModalRevisionHitosProps) {
+export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpdateBatch, onUpdateTarea, onOpenTask }: ModalRevisionHitosProps) {
     const [selectedGroupId, setSelectedGroupId] = useState<string | number | null>(null);
     const [decisiones, setDecisiones] = useState<Record<string, { accion: 'aprobar' | 'rechazar' | 'pendiente', comentario?: string }>>({});
 
@@ -191,20 +192,27 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
                                         decision.accion === 'rechazar' ? 'bg-rose-50 border-rose-200' : 'bg-white border-slate-200'
                                     }`}>
                                         <div className="flex justify-between items-start">
-                                            <div className="flex-1 mr-4">
-                                                <span className="text-[9px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full uppercase tracking-tighter mb-2 inline-block">Misión Global</span>
-                                                <h3 className="text-lg font-bold text-slate-800 tracking-tight">{tarea.titulo}</h3>
-                                                {tarea.contenido_alumno && (
-                                                    <div className="mt-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 italic">"{tarea.contenido_alumno}"</div>
-                                                )}
-                                                {tarea.archivos_alumno && tarea.archivos_alumno.length > 0 && (
-                                                    <div className="mt-3 flex flex-wrap gap-2">
-                                                        {tarea.archivos_alumno.map((f, i) => (
-                                                            <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-indigo-50"><FileText className="w-3 h-3 text-indigo-500" /><span className="max-w-[100px] truncate">{f.nombre}</span><Download className="w-3 h-3 text-slate-400" /></a>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
+                                                <div 
+                                                    onClick={() => onOpenTask?.(tarea)}
+                                                    className="flex-1 mr-4 cursor-pointer hover:bg-slate-50 transition-all rounded-xl p-2 -m-2 group/taskitem"
+                                                    title="Hacer clic para ver detalles y evaluar"
+                                                >
+                                                    <span className="text-[9px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full uppercase tracking-tighter mb-2 inline-block group-hover/taskitem:bg-blue-600 group-hover/taskitem:text-white transition-colors">Misión Global</span>
+                                                    <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                                                        {tarea.titulo}
+                                                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover/taskitem:translate-x-1 transition-all" />
+                                                    </h3>
+                                                    {tarea.contenido_alumno && (
+                                                        <div className="mt-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 italic group-hover/taskitem:bg-white transition-colors">"{tarea.contenido_alumno}"</div>
+                                                    )}
+                                                    {tarea.archivos_alumno && tarea.archivos_alumno.length > 0 && (
+                                                        <div className="mt-3 flex flex-wrap gap-2">
+                                                            {tarea.archivos_alumno.map((f, i) => (
+                                                                <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-indigo-50"><FileText className="w-3 h-3 text-indigo-500" /><span className="max-w-[100px] truncate">{f.nombre}</span><Download className="w-3 h-3 text-slate-400" /></a>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => handleDecision(tarea.id, 'aprobar')} className={`p-2 rounded-lg transition-all ${decision.accion === 'aprobar' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-emerald-100'}`}><CheckCircle2 className="w-5 h-5" /></button>
                                                 <button onClick={() => handleDecision(tarea.id, 'rechazar')} className={`p-2 rounded-lg transition-all ${decision.accion === 'rechazar' ? 'bg-rose-500 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-rose-100'}`}><XCircle className="w-5 h-5" /></button>

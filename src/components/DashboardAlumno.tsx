@@ -86,9 +86,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [puntosTotales, setPuntosTotales] = useState<number>(0);
 
   // Custom Hook for Tracking
-  useGroupTracking(alumno.grupo_id ? Number(alumno.grupo_id) : 0);
-
   const [grupoReal, setGrupoReal] = useState<Grupo | null>(null);
+  useGroupTracking(grupoReal?.id || 0);
   const [nombreProyecto, setNombreProyecto] = useState<string>(''); // New state for AI context
   const [asignaturaProyecto, setAsignaturaProyecto] = useState<string>('');
   const [contextoProyecto, setContextoProyecto] = useState<string>(''); // NEW: AI Context from Project
@@ -107,6 +106,9 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [faseParaProponer, setFaseParaProponer] = useState<any>(null);
   const [refreshRecursos, setRefreshRecursos] = useState(0);
   const [tareasAlumno, setTareasAlumno] = useState<TareaDetallada[]>([]);
+  const [entregasTareas, setEntregasTareas] = useState<any[]>([]); // New state for task deliveries correlation
+  const [localProjectId, setLocalProjectId] = useState<string | null>(null);
+  const [localRoomCode, setLocalRoomCode] = useState<string | null>(null);
   const [tareaSeleccionadaDetalle, setTareaSeleccionadaDetalle] = useState<TareaDetallada | null>(null);
 
   // Estado del tutorial para Alumnos
@@ -123,83 +125,65 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [historialClases, setHistorialClases] = useState<any[]>([]);
   const [notaGrupal, setNotaGrupal] = useState<number | null>(null);
   const [comentarios, setComentarios] = useState<{ id: string, contenido: string, created_at: string }[]>([]);
-  const [entregasTareas, setEntregasTareas] = useState<any[]>([]);
 
   useEffect(() => {
-    if (alumno?.nombre) {
+    if (alumno?.id) {
       const fetchMisClases = async () => {
         try {
-          // Fetch ALL groups ensuring we get the project data
           const { data: allGroups, error } = await supabase
             .from('grupos')
             .select(`
-              id,
-              nombre,
-              miembros,
-              proyecto_id,
-              proyectos (
-                nombre,
-                codigo_sala,
-                asignatura,
-                curso
-              )
+              id, nombre, miembros, proyecto_id,
+              proyectos (nombre, codigo_sala, asignatura, curso)
             `);
 
-          if (error) {
-            console.error("Error fetching all groups for history:", error);
-            return;
-          }
+          if (error) throw error;
 
           if (allGroups) {
-            // Filtrado manual en cliente para mayor robustez con JSONB
             const gruposDondeEstoy = allGroups.filter((g: any) => {
               if (!g.miembros) return false;
-              // Check if members array contains the name (case insensitive or exact)
               const miembrosArr = Array.isArray(g.miembros) ? g.miembros : [];
-              return miembrosArr.some((m: string) => m.includes(alumno.nombre) || alumno.nombre.includes(m));
+              return miembrosArr.some((m: string) => m.includes(alumno.nombre));
             });
 
             const recentKey = `recent_student_projects_${alumno.id}`;
             const recentsStr = localStorage.getItem(recentKey);
             const recents: string[] = recentsStr ? JSON.parse(recentsStr) : [];
 
-            // Mapeamos a la estructura que espera el dropdown
             const historialReal = gruposDondeEstoy.map((g: any) => {
-              // Determine order priority
               let orderIndex = recents.indexOf(String(g.proyecto_id));
               if (orderIndex === -1) orderIndex = 9999;
 
               return {
                 id: g.proyecto_id,
-                nombre: g.proyectos?.nombre || g.nombre, // Prefer project name, fallback group name
+                nombre: g.proyectos?.nombre || g.nombre,
                 codigo: g.proyectos?.codigo_sala || '???',
-                asignatura: g.proyectos?.asignatura || '', // Capture asignatura
-                curso: g.proyectos?.curso || 'Sin Curso', // Capture curso
+                asignatura: g.proyectos?.asignatura || '',
+                curso: g.proyectos?.curso || 'Sin Curso',
                 grupo_interno_id: g.id,
                 orden_reciente: orderIndex
               };
             });
 
-            // Sort by recent access, then alphabetically by name
-            historialReal.sort((a, b) => {
-              if (a.orden_reciente !== b.orden_reciente) {
-                return a.orden_reciente - b.orden_reciente;
-              }
-              return a.nombre.localeCompare(b.nombre);
-            });
+            historialReal.sort((a, b) => a.orden_reciente - b.orden_reciente || a.nombre.localeCompare(b.nombre));
 
-            // Eliminar duplicados por ID de proyecto
             const uniqueHistory = Array.from(new Map(historialReal.map((item: any) => [item.id, item])).values());
-            setHistorialClases(uniqueHistory.slice(0, 6)); // Top 6 para la cabecera
+            setHistorialClases(uniqueHistory.slice(0, 6));
+
+            if (!alumno.proyecto_id && !localProjectId && uniqueHistory.length > 0) {
+              const lastProject = uniqueHistory[0];
+              console.log("🚀 Auto-seleccionando última clase:", lastProject.nombre);
+              setLocalProjectId(String(lastProject.id));
+              setLocalRoomCode(lastProject.codigo);
+            }
           }
         } catch (err) {
           console.error("Error en fetchMisClases:", err);
         }
       };
-
       fetchMisClases();
     }
-  }, [alumno?.nombre]);
+  }, [alumno?.id, alumno?.nombre, localProjectId]);
 
   useEffect(() => {
     fetchDatosAlumno();
@@ -241,8 +225,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     try {
       if (!silent) setLoading(true);
       setErrorStatus(null);
-      let targetProjectId = alumno.proyecto_id;
-      let roomCode = alumno.codigo_sala || '';
+      let targetProjectId = localProjectId || alumno.proyecto_id;
+      let roomCode = localRoomCode || alumno.codigo_sala || '';
 
       if (!targetProjectId && roomCode) {
         const { data: proyecto, error: errorProyecto } = await supabase
@@ -350,7 +334,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         .from('evaluaciones')
         .select('*')
         .eq('alumno_nombre', alumno.nombre)
-        .eq('proyecto_id', targetProjectId)
+        .eq('proyecto_id', String(targetProjectId))
         .maybeSingle();
 
       if (evalData && evalData.criterios) {
@@ -391,7 +375,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       // Fetch Puntos Totales
       try {
         if (targetProjectId) {
-          const puntosProyecto = await fetchPuntosProyecto(targetProjectId);
+          const puntosProyecto = await fetchPuntosProyecto(String(targetProjectId));
           const match = puntosProyecto.find((p: any) => p.alumno_nombre === alumno.nombre);
           setPuntosTotales(match ? match.puntos : 0);
         }
@@ -472,6 +456,23 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     } catch (err) {
       console.error('Error updating task status:', err);
       toast.error('No se pudo actualizar el estado');
+    }
+  };
+
+  const handleUpdateTarea = async (id: string, updates: any) => {
+    try {
+      const { error } = await supabase
+        .from('tareas')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Actualizar estado local para feedback inmediato
+      setTareasAlumno(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    } catch (err) {
+      console.error('Error al actualizar detalles de la tarea:', err);
+      toast.error('No se pudo guardar el archivo');
     }
   };
 
@@ -622,6 +623,27 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       setLoading(false);
     }
   };
+
+  // NUEVO EFFECT: Calificaciones en Tiempo Real (entregas_tareas)
+  useEffect(() => {
+    if (!grupoReal?.id) return;
+
+    const channelEntregas = supabase
+      .channel(`rt_entregas_grupo_${grupoReal.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'entregas_tareas',
+        filter: `grupo_id=eq.${grupoReal.id}`
+      }, () => {
+        fetchTareasAlumno(); // Actualiza tanto las tareas como la calificación cruzada
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channelEntregas);
+    };
+  }, [grupoReal?.id]);
 
   const handleTutorialComplete = () => {
     localStorage.setItem(tutorialKey, 'true');
@@ -854,32 +876,40 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
   const tareasCategorizadas = React.useMemo(() => {
     const panels = {
-      pendientes: [] as TareaDetallada[],
-      revision: [] as TareaDetallada[],
-      completado: [] as TareaDetallada[],
-      expirado: [] as TareaDetallada[]
+      pendientes: [] as any[],
+      revision: [] as any[],
+      completado: [] as any[],
+      expirado: [] as any[]
     };
 
     const now = new Date();
 
     tareasAlumno.forEach(t => {
-      const isCompletada = t.estado === 'aprobado' || t.estado === 'completado';
-      const isRevision = t.estado === 'revision';
-      const isExpirada = t.fecha_entrega && new Date(t.fecha_entrega) < now;
+      // Cruzar con datos de entrega
+      const entrega = entregasTareas.find((e: any) => e.tarea_id === t.id);
+      const tareaConEntrega = {
+        ...t,
+        calificacion: entrega?.calificacion,
+        estadoEntrega: entrega?.estado
+      };
+
+      const isCompletada = t.estado === 'aprobado' || t.estado === 'completado' || entrega?.estado === 'evaluada' || entrega?.estado === 'revisado';
+      const isRevision = t.estado === 'revision' || entrega?.estado === 'entregada';
+      const isExpirada = t.fecha_entrega && new Date(t.fecha_entrega) < now && !isCompletada && !isRevision;
 
       if (isCompletada) {
-        panels.completado.push(t);
+        panels.completado.push(tareaConEntrega);
       } else if (isRevision) {
-        panels.revision.push(t);
+        panels.revision.push(tareaConEntrega);
       } else if (isExpirada) {
-        panels.expirado.push(t);
+        panels.expirado.push(tareaConEntrega);
       } else {
-        panels.pendientes.push(t);
+        panels.pendientes.push(tareaConEntrega);
       }
     });
 
     return panels;
-  }, [tareasAlumno]);
+  }, [tareasAlumno, entregasTareas]);
 
   if (loading) {
     return (
@@ -916,7 +946,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] bg-white/5 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">V5.8.5</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.45</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -1358,7 +1388,11 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                            <span className="text-[10px] font-black text-slate-400 uppercase">{t.puntos_maximos} Puntos</span>
                         </div>
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleUpdateTareaEstado(t.id, 'revision'); }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            handleUpdateTareaEstado(t.id, 'revision');
+                            toast.success('¡Misión enviada a revisión!');
+                          }}
                           className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-100 flex items-center gap-2"
                         >
                           <Send className="w-3 h-3" />
@@ -1440,9 +1474,15 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                         <Trophy className="w-5 h-5" />
                       </div>
                       <h5 className="font-black text-slate-800 text-sm leading-tight mb-2 line-through decoration-emerald-500/30">{t.titulo}</h5>
-                      <div className="flex items-center gap-1.5">
-                         <div className="px-3 py-1 bg-emerald-500 text-white rounded-lg font-black text-[8px] uppercase tracking-tighter shadow-sm">¡Excelente!</div>
-                         <span className="text-[10px] font-black text-emerald-600">+{t.puntos_maximos} Puntos</span>
+                      <div className="flex items-center justify-between mt-auto">
+                         <div className="flex items-center gap-1.5">
+                            <Trophy className="w-3.5 h-3.5 text-emerald-500" />
+                            <span className="text-[10px] font-black text-emerald-600">+{t.puntos_maximos} Puntos</span>
+                         </div>
+                         <div className="flex flex-col items-end">
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Puntuación Final</span>
+                            <span className="text-sm font-black text-indigo-600">{t.calificacion !== undefined && t.calificacion !== null ? `${t.calificacion}/10` : 'S/N'}</span>
+                         </div>
                       </div>
                     </div>
                   ))}
@@ -1995,10 +2035,13 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           tarea={tareaSeleccionadaDetalle}
           grupos={todosLosGrupos}
           isStudent={true}
-          targetGrupoId={alumno.grupo_id}
+          targetGrupoId={grupoReal?.id}
           onClose={() => setTareaSeleccionadaDetalle(null)}
           onEstadoChange={handleUpdateTareaEstado}
+          onUpdateTarea={handleUpdateTarea}
           onSaveAlumnoContent={handleSaveAlumnoContent}
+          currentUserId={alumno.id}
+          currentUserNombre={alumno.nombre}
         />
       )}
     </div >

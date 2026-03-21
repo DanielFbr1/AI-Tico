@@ -29,6 +29,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [chatMode, setChatMode] = useState<'menu' | 'mentor' | 'group'>('menu');
   const [tareasGrupo, setTareasGrupo] = useState<TareaDetallada[]>([]);
+  const [entregasGrupo, setEntregasGrupo] = useState<any[]>([]);
   const [tareaSeleccionada, setTareaSeleccionada] = useState<TareaDetallada | null>(null);
   const [modalSubirRecursoAbierto, setModalSubirRecursoAbierto] = useState(false);
   const [refreshRecursos, setRefreshRecursos] = useState(0);
@@ -49,6 +50,13 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
         .order('created_at', { ascending: false });
       if (error) throw error;
       setTareasGrupo(data || []);
+
+      // Fetch entregas para calcular progreso REAL individual
+      const { data: entregas, error: eError } = await supabase
+        .from('entregas_tareas')
+        .select('*')
+        .eq('grupo_id', grupo.id);
+      if (!eError) setEntregasGrupo(entregas || []);
     } catch (err) {
       console.error('Error fetching group tasks:', err);
     }
@@ -71,10 +79,30 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
         .eq('id', id);
 
       if (error) throw error;
-      setTareasGrupo(prev => prev.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t));
+      
+      // Actualizar estado local de tareas
+      const nuevasTareas = tareasGrupo.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t);
+      setTareasGrupo(nuevasTareas);
+
+      // Recalcular progreso del grupo (Batería) - SOPORTAR TAREAS GLOBALES
+      const total = nuevasTareas.length;
+      const aprobadas = nuevasTareas.filter(t => {
+        // En tareas específicas del grupo, nos vale el t.estado
+        if (t.grupo_id === grupo.id) return (t.estado === 'aprobado' || t.estado === 'completado');
+        // En tareas globales, nos vale la entrega del grupo específica
+        const e = (entregasGrupo || []).find(ent => ent.tarea_id === t.id);
+        return (e && (e.estado === 'aprobado' || e.estado === 'completado'));
+      }).length;
+      const nuevoProgreso = total > 0 ? Math.round((aprobadas / total) * 100) : 0;
+
+      await supabase
+        .from('grupos')
+        .update({ progreso: nuevoProgreso })
+        .eq('id', grupo.id);
+
       toast.success(nuevoEstado === 'aprobado' ? 'Misión aprobada' : 'Misión rechazada');
     } catch (err) {
-      console.error('Error updating task status:', err);
+      console.error('Error updating task status or progress:', err);
       toast.error('No se pudo actualizar la misión');
     }
   };

@@ -39,6 +39,23 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
 
     useEffect(() => {
         fetchEntregas();
+
+        // Suscripción en tiempo real para actualizaciones de notas/entregas
+        const channel = supabase
+            .channel(`entregas_tarea_${tarea.id}`)
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'entregas_tareas',
+                filter: `tarea_id=eq.${tarea.id}`
+            }, () => {
+                fetchEntregas();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [tarea.id]);
 
     // Lógica de Priorización y Estadísticas
@@ -51,8 +68,16 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
             
             // Determinar estados precisos
             const haEntregado = !!entrega?.respuesta_texto || (entrega?.archivos_entregados && entrega.archivos_entregados.length > 0);
-            const notaActual = isSpecificTask ? (tarea.estado === 'completado' ? tarea.puntos_maximos : 0) : (entrega?.calificacion || 0);
-            const estaEvaluado = isSpecificTask ? tarea.estado === 'completado' : (!!entrega && entrega.calificacion !== null && entrega.calificacion !== undefined);
+            
+            // Lógica jerárquica de calificación:
+            // 1. Nota específica de la entrega (Manual/Slider)
+            // 2. Nota cargada en el objeto tarea (Manual Global)
+            // 3. Fallback a 0
+            const notaActual = entrega?.calificacion !== undefined && entrega?.calificacion !== null 
+                ? entrega.calificacion 
+                : (tarea.calificacion !== undefined && tarea.calificacion !== null ? tarea.calificacion : 0);
+
+            const estaEvaluado = (entrega?.calificacion !== null && entrega?.calificacion !== undefined) || (tarea.calificacion !== null && tarea.calificacion !== undefined && isSpecificTask);
             
             let estadoVisual: 'evaluado' | 'pendiente_nota' | 'sin_entrega' = 'sin_entrega';
             if (estaEvaluado) estadoVisual = 'evaluado';
@@ -94,37 +119,31 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
         try {
             const isSpecificTask = tarea.grupo_id === Number(grupoId);
             
+            // 1. Siempre guardar/actualizar en entregas_tareas (Fuente de verdad del Hub)
+            const entregaData = {
+                tarea_id: tarea.id,
+                grupo_id: Number(grupoId),
+                calificacion: nota,
+                estado: 'evaluada',
+                updated_at: new Date().toISOString()
+            };
+
+            const { error: entError } = await supabase
+                .from('entregas_tareas')
+                .upsert(entregaData, { onConflict: 'tarea_id,grupo_id' });
+            
+            if (entError) throw entError;
+
+            // 2. Si es una tarea específica para ese grupo, actualizar también la tarea principal
             if (isSpecificTask) {
-                const { error } = await supabase
+                const { error: tarError } = await supabase
                     .from('tareas')
-                    .update({ estado: 'completado' })
+                    .update({ 
+                        estado: 'completado',
+                        calificacion: nota 
+                    })
                     .eq('id', tarea.id);
-                if (error) throw error;
-            } else {
-                const entregaExistente = entregas.find(e => e.grupo_id === grupoId);
-                if (entregaExistente) {
-                    const { error } = await supabase
-                        .from('entregas_tareas')
-                        .update({ 
-                            calificacion: nota, 
-                            estado: 'revisado',
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('id', entregaExistente.id);
-                    if (error) throw error;
-                } else {
-                    const { error } = await supabase
-                        .from('entregas_tareas')
-                        .insert({
-                            tarea_id: tarea.id,
-                            grupo_id: grupoId,
-                            calificacion: nota,
-                            estado: 'revisado',
-                            fecha_entrega: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
-                        });
-                    if (error) throw error;
-                }
+                if (tarError) throw tarError;
             }
 
             toast.success('Evaluación guardada con éxito');
@@ -157,7 +176,7 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Hub de Misión</h2>
-                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200/50">V5.8.5</span>
+                                <span className="px-5 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">Versión V5.8.6</span>
                             </div>
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{tarea.titulo} (Máx: 10 pts)</p>
                         </div>
@@ -249,14 +268,13 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
                         </div>
                     ) : (
                         gruposOrdenados.map(g => {
-                            const isEditing = editandoId === g.id;
                             const isViewingContent = verEntregasId === g.id;
 
                             return (
                                 <div 
                                     key={g.id} 
                                     onClick={() => onSelectGrupo && onSelectGrupo(g.id)}
-                                    className={`rounded-[2.5rem] border-2 transition-all flex flex-col cursor-pointer hover:shadow-xl hover:scale-[1.01] ${isEditing ? 'border-indigo-400 bg-white shadow-2xl' : g.estadoVisual === 'pendiente_nota' ? 'border-amber-200 bg-amber-50/30' : 'border-white bg-white shadow-sm'}`}
+                                    className={`rounded-[2.5rem] border-2 transition-all flex flex-col cursor-pointer hover:shadow-xl hover:scale-[1.01] ${g.estadoVisual === 'pendiente_nota' ? 'border-amber-200 bg-amber-50/30' : 'border-white bg-white shadow-sm'}`}
                                 >
                                     <div className="p-6 flex flex-wrap items-center justify-between gap-6">
                                         <div className="flex items-center gap-5 flex-1">
@@ -281,7 +299,7 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
                                                     )}
                                                     {g.haEntregado && (
                                                         <button 
-                                                            onClick={() => setVerEntregasId(isViewingContent ? null : g.id)}
+                                                            onClick={(e) => { e.stopPropagation(); setVerEntregasId(isViewingContent ? null : g.id); }}
                                                             className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border transition-all ${isViewingContent ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-white text-indigo-600 border-indigo-100 hover:bg-indigo-50'}`}
                                                         >
                                                             {isViewingContent ? 'Ocultar Entrega' : 'Ver Entrega'}
@@ -295,44 +313,12 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
                                             <div className="flex flex-col items-end">
                                                 <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">Puntuación Final</span>
                                                 <div className="flex items-baseline gap-1">
-                                                    <span className={`text-4xl font-black ${g.notaActual > 0 ? 'text-indigo-600' : 'text-slate-200'}`}>{g.notaActual}</span>
+                                                    <span className={`text-4xl font-black ${g.notaActual > 0 ? 'text-indigo-600' : 'text-slate-200'}`}>{g.notaActual !== null ? g.notaActual.toFixed(1) : '0.0'}</span>
                                                     <span className="text-xs font-bold text-slate-300">/10</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Slider de Calificación */}
-                                    {isEditing && (
-                                        <div className="px-8 pb-8 pt-2 animate-in zoom-in-95 duration-300">
-                                            <div className="bg-slate-50/50 rounded-[2.5rem] p-10 border border-slate-100 flex flex-col gap-8">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">Mandos de Evaluación</span>
-                                                        <span className={`text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-tighter text-white shadow-xl transition-all duration-500 ${getBarColor(notaTemp, tarea.puntos_maximos)}`}>
-                                                            Nivel: {notaTemp / tarea.puntos_maximos >= 0.9 ? 'Élite' : notaTemp / tarea.puntos_maximos >= 0.7 ? 'Maestro' : notaTemp / tarea.puntos_maximos >= 0.5 ? 'Aprendiz' : 'Reintentar'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-6xl font-black text-slate-800 tracking-tighter tabular-nums">
-                                                        {notaTemp}
-                                                        <span className="text-xl font-bold text-slate-300 ml-2">/10</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-8 group/evaluation">
-                                                    <button onClick={() => setNotaTemp(Math.max(0, parseFloat((notaTemp - 0.5).toFixed(1))))} className="w-16 h-16 flex items-center justify-center bg-white border-2 border-slate-100 rounded-[1.2rem] text-slate-400 hover:text-indigo-600 hover:border-indigo-200 shadow-sm active:scale-90 transition-all"><Minus className="w-8 h-8" /></button>
-                                                    <div className="flex-1 relative h-20 flex items-center">
-                                                        <div className="w-full h-6 bg-slate-200 rounded-full overflow-hidden shadow-inner border-4 border-white">
-                                                            <div className={`h-full transition-all duration-700 ease-out shadow-lg ${getBarColor(notaTemp, 10)}`} style={{ width: `${(notaTemp / 10) * 100}%` }} />
-                                                        </div>
-                                                        <input type="range" min="0" max="10" step="0.5" value={notaTemp} onChange={(e) => setNotaTemp(Number(e.target.value))} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
-                                                        <div className="absolute h-10 w-10 bg-white border-[8px] border-indigo-600 rounded-full shadow-2xl pointer-events-none transition-all duration-150 ease-out z-10" style={{ left: `calc(${(notaTemp / 10) * 100}% - 20px)` }} />
-                                                    </div>
-                                                    <button onClick={() => setNotaTemp(Math.min(10, parseFloat((notaTemp + 0.5).toFixed(1))))} className="w-16 h-16 flex items-center justify-center bg-white border-2 border-slate-100 rounded-[1.2rem] text-slate-400 hover:text-indigo-600 hover:border-indigo-200 shadow-sm active:scale-90 transition-all"><Plus className="w-8 h-8" /></button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
 
                                     {/* Visor de Trabajo del Alumno */}
                                     {isViewingContent && g.entrega && (
@@ -370,22 +356,6 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
                             );
                         })
                     )}
-                </div>
-
-                {/* Footer del Hub */}
-                <div className="p-8 bg-slate-50 border-t border-slate-100 flex flex-wrap justify-between items-center gap-6">
-                    <div className="flex flex-col items-start gap-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                            <BarChart3 className="w-3 h-3" /> Consola Maestra de Seguimiento TICO.ia
-                        </p>
-                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Sincronización de datos mediante motor cuántico Supabase</span>
-                    </div>
-                    <div className="flex items-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white px-6 py-3 rounded-full border border-slate-200 shadow-sm">
-                        <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm" /> Crítico</span>
-                        <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm" /> Pendiente</span>
-                        <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm" /> Óptimo</span>
-                        <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" /> Élite</span>
-                    </div>
                 </div>
             </div>
         </div>

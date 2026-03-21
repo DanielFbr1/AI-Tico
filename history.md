@@ -1,5 +1,18 @@
 # Registro de Cambios - V5.7.8
-# Registro de Cambios - V5.8.0
+# Historial de Versiones - Tico.AI
+
+## [V5.8.6] - 2026-03-20
+### Cambios y Mejoras
+- **Remoción de Reflexiones**: Se ha eliminado el área de texto de "reflexiones/respuesta" en `ModalDetalleTarea.tsx` a petición del usuario.
+- **Fix Batería del Grupo**: El progreso del grupo ahora se recalcula y actualiza automáticamente en la base de datos cada vez que un docente aprueba una misión en `DetalleGrupo.tsx`.
+- **Bidireccionalidad Reforzada**: Se ha corregido la lógica de `upsert` en archivos y chat para evitar sobreescritura accidental del `alumno_id` durante subidas de archivos por parte de estudiantes.
+- **Rebranding de Interfaz**: Se ha renombrado "Evidencias del Alumno" a "Depósito de la Misión" para un enfoque más colaborativo.
+- **Corrección de Sintaxis**: Limpieza de errores en el bloque de chat del modal.
+
+## [V5.7.5] - 2026-03-20
+- **Despliegue Final y Depósito Compartido**:
+    - **Adiós "Evidencias"**: Rebranding de la sección de archivos a "Depósito de la Misión" para reflejar un espacio compartido.
+    - **Sincronización Reforzada**: Forzada la comparación numérica de IDs en Realtime para evitar fallos de tipos.
 # Registro de Cambios - V5.8.1
 
 ## Actualizaciones Realizadas
@@ -7,7 +20,7 @@
 - **Error 400 Solucionado**: Implementado mapeo de estados compatible con la tabla `entregas_tareas`.
 - **Visibilidad Inmediata**: Las instrucciones de la misión ahora se ven al instante, eliminando el bloqueo de carga global.
 - **Tipado de IDs**: Asegurada la conversión a `bigint` para identificadores de grupo en Supabase.
-- **V5.8.5**: Despliegue Final y Depósito Compartido.
+- **V5.7.5**: Despliegue Final y Depósito Compartido.
 - **Adiós "Evidencias"**: Rebranding de la sección de archivos a "Depósito de la Misión" para reflejar un espacio compartido.
 - **Sincronización Reforzada**: Forzada la comparación numérica de IDs en Realtime para evitar fallos de tipos.
 - **V5.8.4**: Restricción de Unicidad (Saneamiento BD).

@@ -13,6 +13,8 @@ interface Mensaje {
     mensaje: string;
     created_at: string;
     leido: boolean;
+    tarea_id?: string;
+    tarea_titulo?: string;
 }
 
 interface AlumnoChatInfo {
@@ -317,7 +319,12 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
                                             </div>
                                             <div className="flex items-center gap-2 justify-between mt-0.5">
                                                 <p className={`text-xs truncate flex-1 min-w-0 ${noLeidos > 0 ? 'font-bold text-slate-800' : 'text-slate-500'}`}>
-                                                    {ultMsg ? ultMsg.mensaje : <span className="italic text-slate-400">Sin mensajes</span>}
+                                                    {ultMsg ? (
+                                                        <span>
+                                                            {ultMsg.tarea_titulo && <span className="text-blue-600 font-black mr-1">[Misión]</span>}
+                                                            {ultMsg.mensaje}
+                                                        </span>
+                                                    ) : <span className="italic text-slate-400">Sin mensajes</span>}
                                                 </p>
                                             </div>
                                         </div>
@@ -383,6 +390,11 @@ export function ModalChatAlumnosDocente({ isOpen, onClose, docenteId, docenteNom
                                         return (
                                             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                                 <div className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-5 py-3 shadow-sm ${isMe ? 'bg-fuchsia-600 text-white rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'}`}>
+                                                    {msg.tarea_titulo && (
+                                                        <div className={`text-[9px] font-black uppercase tracking-[0.2em] mb-1 py-0.5 px-2 rounded-md ${isMe ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'}`}>
+                                                            Misión: {msg.tarea_titulo}
+                                                        </div>
+                                                    )}
                                                     <p className="text-[13px] leading-relaxed break-words">{msg.mensaje}</p>
                                                     <div className={`flex items-center gap-1 mt-1 text-[9px] font-bold uppercase tracking-widest ${isMe ? 'text-emerald-100' : 'text-slate-400'}`}>
                                                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

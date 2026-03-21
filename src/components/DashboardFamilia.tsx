@@ -6,7 +6,7 @@ import { FamiliaNotasAlumno } from './FamiliaNotasAlumno';
 import { ChatFamiliaProfesor } from './ChatFamiliaProfesor';
 import { toast } from 'sonner';
 
-const VERSION = 'V5.7.0 (Microsoft Teams Sync)';
+const VERSION = 'V5.7.6 (Final Sync Fix)';
 
 interface AlumnoVinculado {
     id: string;

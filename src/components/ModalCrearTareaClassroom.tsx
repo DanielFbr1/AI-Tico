@@ -139,7 +139,12 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                 grupo_id: grupoSeleccionado !== 'todos' ? parseInt(grupoSeleccionado) : null,
                 titulo: titulo.trim(),
                 descripcion: instrucciones.trim() || null,
-                fecha_entrega: fecha ? new Date(`${fecha}T${hora}`).toISOString() : null,
+                fecha_entrega: (() => {
+                    if (!fecha) return null;
+                    const [year, month, day] = fecha.split('-').map(Number);
+                    const [h, m] = hora.split(':').map(Number);
+                    return new Date(year, month - 1, day, h, m).toISOString();
+                })(),
                 archivos_adjuntos: archivosSubidos,
                 puntos_maximos: puntos,
                 creador_id: user.id,

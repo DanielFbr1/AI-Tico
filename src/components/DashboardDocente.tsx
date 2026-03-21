@@ -98,6 +98,7 @@ export function DashboardDocente({
     const [editingProjectName, setEditingProjectName] = useState('');
     const [refreshRecursos, setRefreshRecursos] = useState(0);
     const [tareasProyecto, setTareasProyecto] = useState<TareaDetallada[]>([]);
+    const [entregasProyecto, setEntregasProyecto] = useState<any[]>([]);
     const [modalCrearTareaAbierto, setModalCrearTareaAbierto] = useState(false);
     const [tareaSeleccionadaDetalle, setTareaSeleccionadaDetalle] = useState<TareaDetallada | null>(null);
     const [modalSeguimientoAbierto, setModalSeguimientoAbierto] = useState<TareaDetallada | null>(null);
@@ -254,15 +255,24 @@ export function DashboardDocente({
     const fetchTareasProyecto = async () => {
         if (!proyectoActual?.id) return;
         try {
-            const { data, error } = await supabase
+            const { data: tareas, error: tError } = await supabase
                 .from('tareas')
                 .select('*')
                 .eq('proyecto_id', proyectoActual.id)
                 .order('created_at', { ascending: false });
-            if (error) throw error;
-            setTareasProyecto(data || []);
+            
+            if (tError) throw tError;
+
+            // Fetch entregas para calcular el ratio x/y
+            const { data: entregas, error: eError } = await supabase
+                .from('entregas_tareas')
+                .select('tarea_id, grupo_id, estado, calificacion')
+                .in('tarea_id', (tareas || []).map(t => t.id));
+
+            if (!eError) setEntregasProyecto(entregas || []);
+            setTareasProyecto(tareas || []);
         } catch (err) {
-            console.error('Error fetching tareas:', err);
+            console.error('Error fetching tareas/entregas:', err);
         }
     };
 
@@ -290,9 +300,21 @@ export function DashboardDocente({
                     const isInsertedAsRevision = payload.eventType === 'INSERT' && payload.new?.estado === 'revision';
 
                     if (isNewRevision || isInsertedAsRevision) {
-                        toast.info(`¡Nueva misión para revisar: "${payload.new?.titulo}"!`, {
-                            duration: 8000,
-                            icon: '🔔'
+                        const equipoNombre = grupos.find(g => Number(g.id) === Number(payload.new?.grupo_id))?.nombre || 'Toda la clase';
+                        toast.success(`🚀 [${equipoNombre}] ¡Misión para revisar: "${payload.new?.titulo}"!`, {
+                            duration: 15000,
+                            description: `Nueva entrega disponible. Pulsa REVISAR para evaluar el trabajo.`,
+                            icon: '🔔',
+                            action: {
+                                label: 'REVISAR',
+                                onClick: () => {
+                                    const t = tareasProyecto.find(t => t.id === payload.new?.id);
+                                    if (t) {
+                                        setTareaSeleccionadaDetalle(t);
+                                        setTargetGrupoId(payload.new?.grupo_id);
+                                    }
+                                }
+                            }
                         });
                     }
                     fetchTareasProyecto();
@@ -395,8 +417,28 @@ export function DashboardDocente({
                 updateData.calificacion = calificacion;
             }
 
-            const { error } = await supabase.from('tareas').update(updateData).eq('id', id);
-            if (error) throw error;
+            // 1. Actualizar la tarea base (tareas)
+            const { error: errorTarea } = await supabase.from('tareas').update(updateData).eq('id', id);
+            if (errorTarea) throw errorTarea;
+
+            // 2. Si estamos en contexto de grupo (Hub), actualizar también entregas_tareas
+            if (targetGrupoId) {
+                const targetGidNum = typeof targetGrupoId === 'number' ? targetGrupoId : parseInt(targetGrupoId as any);
+                
+                // Mapear estado para cumplir con el CHECK constraint de entregas_tareas
+                let estadoEntrega = 'entregada';
+                if (nuevoEstado === 'aprobado' || nuevoEstado === 'completado' || nuevoEstado === 'evaluada') {
+                    estadoEntrega = 'evaluada';
+                }
+
+                await supabase.from('entregas_tareas').upsert({
+                    tarea_id: id,
+                    grupo_id: targetGidNum,
+                    calificacion: calificacion || 0,
+                    estado: estadoEntrega,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'tarea_id,grupo_id' });
+            }
             
             // SUMAR PUNTOS SI SE APRUEBA
             if (nuevoEstado === 'aprobado' || nuevoEstado === 'completado') {
@@ -442,16 +484,27 @@ export function DashboardDocente({
 
     const totalInteracciones = grupos.reduce((sum, g) => sum + g.interacciones_ia, 0);
     
-    // Cálculo de progreso basado en TAREAS (Issue 5)
+    // Cálculo de progreso basado en TAREAS (Issue 5 - Mejorado para tareas globales)
     const getProgresoGrupo = (grupoId: string | number) => {
-        const tareasGrupo = tareasProyecto.filter(t => t.grupo_id === Number(grupoId));
-        if (tareasGrupo.length === 0) return 0;
-        const completadas = tareasGrupo.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length;
-        return Math.round((completadas / tareasGrupo.length) * 100);
+        // Tareas que le corresponden a este grupo (específicas + generales)
+        const tareasDelGrupo = tareasProyecto.filter(t => 
+            t.grupo_id === Number(grupoId) || t.grupo_id === null || t.grupo_id === undefined
+        );
+        
+        if (tareasDelGrupo.length === 0) return 0;
+
+        // Buscamos en entregasProyecto cuántas de esas tareas están aprobadas/completadas para este grupo específico
+        const completadas = (entregasProyecto || []).filter(e => 
+            Number(e.grupo_id) === Number(grupoId) && 
+            (e.estado === 'aprobado' || e.estado === 'completado') &&
+            tareasDelGrupo.some(t => t.id === e.tarea_id)
+        ).length;
+
+        return Math.round((completadas / tareasDelGrupo.length) * 100);
     };
 
-    const progresoGlobal = tareasProyecto.length > 0 
-        ? Math.round((tareasProyecto.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length / tareasProyecto.length) * 100)
+    const progresoGlobal = grupos.length > 0
+        ? Math.round(grupos.reduce((acc, g) => acc + getProgresoGrupo(g.id), 0) / grupos.length)
         : 0;
 
     const hitosCompletados = tareasProyecto.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length;
@@ -533,6 +586,7 @@ export function DashboardDocente({
                     tareasGlobales={tareasProyecto}
                     onClose={() => setModalRevisionAbierto(false)}
                     onUpdateBatch={handleUpdateBatchMilestones}
+                    onOpenTask={(t) => setTareaSeleccionadaDetalle(t)}
                     onUpdateTarea={async (tareaId, nuevoEstado) => {
                         try {
                             const { error } = await supabase
@@ -562,27 +616,6 @@ export function DashboardDocente({
                 />
             )}
 
-            {/* Modal Detalle Tarea (Issue 3) */}
-            {tareaSeleccionadaDetalle && (
-                <ModalDetalleTarea
-                    tarea={tareaSeleccionadaDetalle}
-                    grupos={grupos}
-                    onClose={() => { setTareaSeleccionadaDetalle(null); setTargetGrupoId(undefined); }}
-                    onDelete={async (id) => {
-                        await handleEliminarTareaGlobal(id, tareaSeleccionadaDetalle.titulo);
-                        setTareaSeleccionadaDetalle(null);
-                        setTargetGrupoId(undefined);
-                    }}
-                    onEstadoChange={async (id, nuevoEstado, nota) => {
-                        await handleEstadoChangeWithPoints(id, nuevoEstado, tareaSeleccionadaDetalle, nota);
-                        setTareaSeleccionadaDetalle(null);
-                        setTargetGrupoId(undefined);
-                    }}
-                    onUpdateTarea={handleUpdateTarea}
-                    isStudent={false}
-                    targetGrupoId={targetGrupoId}
-                />
-            )}
 
             {/* Modal unificado: Crear Tarea Classroom (reemplaza ModalAsignarTareas) */}
             {modalAsignarAbierto && proyectoActual && (
@@ -661,7 +694,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">V5.8.5</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.45</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -682,13 +715,20 @@ export function DashboardDocente({
 
                             <button
                                 onClick={() => { onSectionChange('resumen'); setMobileMenuOpen(false); }}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'resumen'
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'resumen'
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
                                     : 'text-gray-600 hover:bg-gray-100 font-medium'
                                     }`}
                             >
-                                <LayoutList className="w-5 h-5" />
-                                <span>Tareas</span>
+                                <div className="flex items-center gap-3">
+                                    <LayoutList className="w-5 h-5" />
+                                    <span>Tareas</span>
+                                </div>
+                                {numPendientesTareas > 0 && (
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${currentSection === 'resumen' ? 'bg-white text-blue-600' : 'bg-amber-500 text-white animate-pulse shadow-lg shadow-amber-200'}`}>
+                                        {numPendientesTareas}
+                                    </span>
+                                )}
                             </button>
 
                             <button
@@ -702,16 +742,7 @@ export function DashboardDocente({
                                 <span>Trabajo compartido</span>
                             </button>
 
-                            <button
-                                onClick={() => { onSectionChange('calendario'); setMobileMenuOpen(false); }}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'calendario'
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
-                                    : 'text-gray-600 hover:bg-gray-100 font-medium'
-                                    }`}
-                            >
-                                <CalendarDays className="w-5 h-5" />
-                                <span>Calendario</span>
-                            </button>
+
 
                             <button
                                 onClick={() => { onSectionChange('evaluacion'); setMobileMenuOpen(false); }}
@@ -741,7 +772,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            V5.7.0 (Microsoft Teams Sync)
+                            V5.7.2 (Microsoft Teams Sync)
                         </div>
                     </div>
                 </aside>
@@ -835,6 +866,15 @@ export function DashboardDocente({
                                                     >
                                                         <Calendar className="w-4 h-4" />
                                                         <span>HORARIO</span>
+                                                     </button>
+
+                                                    <button
+                                                        onClick={() => onSectionChange('calendario')}
+                                                        className={`flex items-center gap-2 px-4 py-1.5 rounded-xl transition-all font-black text-xs shadow-sm ${currentSection === 'calendario' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100'}`}
+                                                        title="Ver calendario del proyecto"
+                                                    >
+                                                        <CalendarDays className="w-4 h-4" />
+                                                        <span>CALENDARIO</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -867,6 +907,13 @@ export function DashboardDocente({
                                     >
                                         <Calendar className="w-2.5 h-2.5" />
                                         HORARIO
+                                    </button>
+                                    <button
+                                        onClick={() => onSectionChange('calendario')}
+                                        className={`p-1 px-2 rounded-lg text-[9px] font-black flex items-center gap-1 border ${currentSection === 'calendario' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}
+                                    >
+                                        <CalendarDays className="w-2.5 h-2.5" />
+                                        CALENDARIO
                                     </button>
                                 </div>
                             </div>
@@ -1034,8 +1081,26 @@ export function DashboardDocente({
                                         <div className="space-y-3">
                                             {(() => {
                                                 const filtered = tareasProyecto.filter(t => {
-                                                    const matchEstado = filtroEstado === 'todos' || t.estado === filtroEstado;
-                                                    const matchGrupo = filtroGrupo === 'todos' || String(t.grupo_id) === filtroGrupo;
+                                                    // 1. Calcular el estado REAL basado en las entregas para este filtro
+                                                    const entregas = entregasProyecto.filter(e => e.tarea_id === t.id);
+                                                    const totalEsperados = t.grupo_id ? 1 : grupos.length;
+                                                    
+                                                    let estadoReal = t.estado;
+                                                    if (!t.grupo_id) {
+                                                        // Tarea GLOBAL: Lógica de agregación
+                                                        const numEntregadas = entregas.filter(e => e.estado === 'entregada').length;
+                                                        const numEvaluadas = entregas.filter(e => e.estado === 'evaluada' || e.estado === 'revisado').length;
+                                                        
+                                                        if (numEvaluadas >= totalEsperados) estadoReal = 'completado';
+                                                        else if (numEntregadas > 0) estadoReal = 'revision';
+                                                        else estadoReal = 'pendiente';
+                                                    }
+
+                                                    const matchEstado = filtroEstado === 'todos' || estadoReal === filtroEstado || (filtroEstado === 'completado' && (estadoReal === 'aprobado' || estadoReal === 'completado'));
+                                                    
+                                                    // 2. Lógica de GRUPO: Incluir globales si se filtra por grupo específico
+                                                    const matchGrupo = filtroGrupo === 'todos' || String(t.grupo_id) === filtroGrupo || t.grupo_id === null;
+                                                    
                                                     return matchEstado && matchGrupo;
                                                 });
 
@@ -1114,11 +1179,31 @@ export function DashboardDocente({
                                                                     </div>
                                                                 )}
                                                                 <div className="flex flex-col items-center gap-1 min-w-[65px]">
-                                                                    {getEstadoBadgeInternal(t.estado)}
+                                                                    {(() => {
+                                                                        const entregas = entregasProyecto.filter(e => e.tarea_id === t.id);
+                                                                        const totalEsperados = t.grupo_id ? 1 : grupos.length;
+                                                                        
+                                                                        let estadoReal = t.estado;
+                                                                        if (!t.grupo_id) {
+                                                                            const numEntregadas = entregas.filter(e => e.estado === 'entregada').length;
+                                                                            const numEvaluadas = entregas.filter(e => e.estado === 'evaluada' || e.estado === 'revisado').length;
+                                                                            if (numEvaluadas >= totalEsperados) estadoReal = 'completado';
+                                                                            else if (numEntregadas > 0) estadoReal = 'revision';
+                                                                            else estadoReal = 'pendiente';
+                                                                        }
+                                                                        return getEstadoBadgeInternal(estadoReal);
+                                                                    })()}
                                                                     <div className="flex items-center gap-1.5 mt-1">
-                                                                        {t.calificacion !== undefined && t.calificacion !== null && (
-                                                                            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">{t.calificacion}</span>
-                                                                        )}
+                                                                        {(() => {
+                                                                            const entregas = entregasProyecto.filter(e => e.tarea_id === t.id);
+                                                                            const numEntregados = entregas.length;
+                                                                            const totalEsperados = t.grupo_id ? 1 : grupos.length;
+                                                                            return (
+                                                                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border shadow-sm ${numEntregados >= totalEsperados ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
+                                                                                    {numEntregados}/{totalEsperados}
+                                                                                </span>
+                                                                            );
+                                                                        })()}
                                                                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.puntos_maximos} pts</span>
                                                                     </div>
                                                                 </div>
@@ -1209,7 +1294,10 @@ export function DashboardDocente({
                                                 ...grupo,
                                                 progreso: getProgresoGrupo(grupo.id)
                                             }}
-                                            onClick={() => onSelectGrupo(grupo)}
+                                            onClick={() => onSelectGrupo({
+                                                ...grupo,
+                                                progreso: getProgresoGrupo(grupo.id)
+                                            })}
                                             onEdit={() => {
                                                 setGrupoEditando(grupo);
                                                 setModalCrearGrupoAbierto(true);
@@ -1279,7 +1367,7 @@ export function DashboardDocente({
                             />
                         )}
 
-                        {currentSection === 'evaluacion' && <EvaluacionRubricas grupos={grupos} rubrica={proyectoActual?.rubrica} proyectoId={proyectoActual?.id} />}
+                        {currentSection === 'evaluacion' && <EvaluacionRubricas grupos={grupos} rubrica={proyectoActual?.rubrica} proyectoId={proyectoActual?.id} tareasProyecto={tareasProyecto} entregasProyecto={entregasProyecto} />}
                     </div>
                 </div>
             </div>
@@ -1333,6 +1421,8 @@ export function DashboardDocente({
                     onUpdateTarea={handleUpdateTarea}
                     isStudent={false}
                     targetGrupoId={targetGrupoId}
+                    currentUserId={user?.id}
+                    currentUserNombre={perfil?.nombre || 'Profesor'}
                 />
             )}
 
@@ -1393,7 +1483,7 @@ export function DashboardDocente({
                         <div className={`p-2 rounded-2xl transition-all ${currentSection === 'calendario' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
                             <CalendarDays className={`w-5 h-5 ${currentSection === 'calendario' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
                         </div>
-                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'calendario' ? 'opacity-100' : 'opacity-80'}`}>Tareas</span>
+                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'calendario' ? 'opacity-100' : 'opacity-80'}`}>Calendario</span>
                     </button>
 
                     <button
