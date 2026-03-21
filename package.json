@@ -1,6 +1,6 @@
 {
     "name": "dashboard-docente-feedback",
-    "version": "5.8.47",
+    "version": "5.8.50",
     "type": "module",
     "private": true,
     "engines": {

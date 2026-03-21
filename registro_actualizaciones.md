@@ -1,5 +1,14 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.50] - 2026-03-21
+### Corregido
+- **Optimización de Filtros:** Se ha simplificado la lógica interna del filtrado de misiones para evitar errores de tipo y asegurar la detección correcta de estados completados.
+- **Navegación Fluida:** Verificada la compatibilidad del atajo al editor en el despliegue de producción.
+
+## [V5.8.49] - 2026-03-21
+### Añadido
+- **Atajo Directo al Editor:** Al filtrar por grupo específico, el sistema salta el Hub de Misión y abre directamente la entrega del grupo.
+
 ## [V5.8.48] - 2026-03-21
 ### Corregido
 - **Filtros de Tareas Inteligentes:** Se ha rediseñado el sistema de filtrado de misiones. Ahora, al seleccionar un grupo específico, el estado "Completado" se calcula únicamente para ese grupo (detectando sus entregas individuales), permitiendo ver misiones como completadas aunque otros grupos no las hayan terminado aún.

@@ -227,11 +227,10 @@ export default function App() {
         <Toaster position="top-right" richColors />
         <div className="fixed bottom-2 right-2 flex flex-col items-end gap-1 opacity-50 z-50 pointer-events-none">
           <span className="text-white/40 font-mono text-[10px] bg-white/5 px-2 py-0.5 rounded-full">
-            V5.8.48
+            V5.8.50
           </span>
           {/* The 'session' variable is not defined in this scope. If intended, it should be passed or fetched here. */}
-          {/* {session && (
-                    <span className="text-[10px] font-mono text-emerald-500 bg-emerald-50/80 px-2 py-1 rounded-md border border-emerald-100 shadow-sm backdrop-blur-sm">
+          {/* {session &&                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.50</span>ld-50/80 px-2 py-1 rounded-md border border-emerald-100 shadow-sm backdrop-blur-sm">
                         Online
                     </span>
                 )} */}

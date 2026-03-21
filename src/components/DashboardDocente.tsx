@@ -704,7 +704,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.47</span>
+                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.50</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -1140,7 +1140,7 @@ export function DashboardDocente({
                                                     // 3. Filtrado por ESTADO
                                                     const matchEstado = filtroEstado === 'todos' || 
                                                                        estadoReal === filtroEstado || 
-                                                                       (filtroEstado === 'completado' && (estadoReal === 'aprobado' || estadoReal === 'completado'));
+                                                                       (filtroEstado === 'completado' && estadoReal === 'completado');
                                                     
                                                     return matchEstado;
                                                 });
@@ -1192,10 +1192,19 @@ export function DashboardDocente({
                                                             key={t.id}
                                                             className="w-full flex items-center gap-4 p-3 bg-white rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all group"
                                                         >
-                                                            <div 
-                                                                onClick={() => setModalSeguimientoAbierto(t)}
-                                                                className="flex-1 min-w-0 flex items-center gap-4 cursor-pointer"
-                                                            >
+                                                              <div 
+                                                                  onClick={() => {
+                                                                      if (gidFilter) {
+                                                                          // Atajo: Si hay filtro de grupo, abrir directamente el editor para ese grupo
+                                                                          setTargetGrupoId(gidFilter);
+                                                                          setTareaSeleccionadaDetalle(t);
+                                                                      } else {
+                                                                          // Si es vista general, abrir el Hub (seguimiento)
+                                                                          setModalSeguimientoAbierto(t);
+                                                                      }
+                                                                  }}
+                                                                  className="flex-1 min-w-0 flex items-center gap-4 cursor-pointer"
+                                                              >
                                                                 <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors border border-slate-100">
                                                                     <FileText className="w-5 h-5" />
                                                                 </div>
