@@ -27,6 +27,8 @@ interface ProyectoNotas {
     comentarios: { id: string, contenido: string, created_at: string }[];
     puntos: number;
     tareasEvaluadas: { id: string, titulo: string, calificacion: number | null, estado: string }[];
+    notaMediaMisiones: number;
+    tareasEntregadasCount: number;
     curso?: string;
     asignatura?: string;
 }
@@ -162,7 +164,6 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     const delivery = deliveriesData?.find(d => d.tarea_id === t.id);
                     const calificacion = t.calificacion ?? delivery?.calificacion ?? null;
                     const finalEstado = (t.estado === 'evaluada' || delivery?.estado === 'evaluada' || t.estado === 'aprobado' || t.estado === 'completado') ? 'evaluada' : t.estado;
-                    
                     return {
                         id: t.id,
                         titulo: t.titulo,
@@ -170,6 +171,12 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                         estado: finalEstado
                     };
                 }).filter(t => t.calificacion !== null); // Show only if evaluated
+
+                const notaMediaMisiones = tareasEvaluadas.length > 0
+                    ? tareasEvaluadas.reduce((sum, t) => sum + (t.calificacion ?? 0), 0) / tareasEvaluadas.length
+                    : 0;
+
+                const tareasEntregadasCount = (deliveriesData || []).length;
 
                 // Fetch points
                 const { data: puntosData } = await supabase
@@ -198,6 +205,8 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     puntos,
                     comentarios: commentsData || [],
                     tareasEvaluadas,
+                    notaMediaMisiones,
+                    tareasEntregadasCount,
                     curso: (grupo as any).proyectos?.curso || 'Sin curso',
                     asignatura: (grupo as any).proyectos?.asignatura || ''
                 });
@@ -378,20 +387,22 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                     {isExpanded && (
                                                         <div className="px-5 pb-5 border-t border-slate-50 pt-5 animate-in fade-in zoom-in-95 duration-200">
                                                             {/* Stats Summary */}
-                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                                                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
                                                                 <div className="bg-slate-50 rounded-xl p-3">
-                                                                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">MÉDIA</span>
+                                                                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">MEDIA PROYECTO</span>
                                                                     <div className="text-xl font-black text-slate-800">{proyecto.notaMedia.toFixed(1)}</div>
+                                                                </div>
+                                                                <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+                                                                    <span className="text-[8px] text-emerald-500 font-black uppercase tracking-widest block mb-1">MEDIA MISIONES</span>
+                                                                    <div className="text-xl font-black text-emerald-600">{proyecto.notaMediaMisiones.toFixed(1)}</div>
+                                                                </div>
+                                                                <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
+                                                                    <span className="text-[8px] text-blue-500 font-black uppercase tracking-widest block mb-1">ENTREGADAS</span>
+                                                                    <div className="text-xl font-black text-blue-600">{proyecto.tareasEntregadasCount}</div>
                                                                 </div>
                                                                 <div className="bg-slate-50 rounded-xl p-3">
                                                                     <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">ASISTENCIA</span>
                                                                     <div className="text-xl font-black text-slate-800">{proyecto.asistencia.percentage}%</div>
-                                                                </div>
-                                                                <div className="bg-slate-50 rounded-xl p-3">
-                                                                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">GRUPAL</span>
-                                                                    <div className="text-xl font-black text-slate-800">
-                                                                        {proyecto.notaGrupal !== null ? proyecto.notaGrupal.toFixed(1) : '—'}
-                                                                    </div>
                                                                 </div>
                                                                 <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
                                                                     <span className="text-[8px] text-indigo-500 font-black uppercase tracking-widest block mb-1">PUNTOS</span>

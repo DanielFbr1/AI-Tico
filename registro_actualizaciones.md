@@ -1,6 +1,12 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.53] - 2026-03-21
+### Añadido
+- **Resumen de Misiones para Familias:** Se ha añadido un panel de estadísticas en la vista de notas para padres que incluye la **Nota Media de Misiones** y el **Número de Tareas Entregadas**.
+- **UI de Estadísticas:** Rediseño del panel de resumen de cada proyecto para mostrar de forma clara y colorida el progreso individual del alumno en sus entregas.
+
 ## [V5.8.52] - 2026-03-21
+
 ### Corregido
 - **Vincular Alumno (Familia):** Se ha actualizado el sistema de vinculación para familias. Ahora se requiere el **email** y contraseña del alumno en lugar del nombre, alineándose con el nuevo sistema de inicio de sesión de los estudiantes.
 - **Sincronización de Perfiles:** Al vincular un alumno, el sistema ahora recupera automáticamente su nombre real desde su perfil de usuario.
