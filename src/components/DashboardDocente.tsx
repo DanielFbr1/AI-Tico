@@ -484,23 +484,33 @@ export function DashboardDocente({
 
     const totalInteracciones = grupos.reduce((sum, g) => sum + g.interacciones_ia, 0);
     
-    // Cálculo de progreso basado en TAREAS (Issue 5 - Mejorado para tareas globales)
     const getProgresoGrupo = (grupoId: string | number) => {
+        const gidNum = Number(grupoId);
         // Tareas que le corresponden a este grupo (específicas + generales)
         const tareasDelGrupo = tareasProyecto.filter(t => 
-            t.grupo_id === Number(grupoId) || t.grupo_id === null || t.grupo_id === undefined
+            Number(t.grupo_id) === gidNum || t.grupo_id === null || t.grupo_id === undefined
         );
         
         if (tareasDelGrupo.length === 0) return 0;
 
-        // Buscamos en entregasProyecto cuántas de esas tareas están aprobadas/completadas para este grupo específico
-        const completadas = (entregasProyecto || []).filter(e => 
-            Number(e.grupo_id) === Number(grupoId) && 
-            (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado') &&
-            tareasDelGrupo.some(t => t.id === e.tarea_id)
-        ).length;
+        const completadasCount = tareasDelGrupo.filter(t => {
+            // 1. Priorizar estado de entrega (para misiones globales y específicas)
+            const e = (entregasProyecto || []).find(ent => ent.tarea_id === t.id && Number(ent.grupo_id) === gidNum);
+            if (e && (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado')) {
+                return true;
+            }
+            // 2. Si es específica de este grupo, el estado de la tarea en sí
+            if (Number(t.grupo_id) === gidNum) {
+                return t.estado === 'aprobado' || t.estado === 'completado';
+            }
+            // 3. Si la tarea es global y está aprobada pero NO hay entrega
+            if (!t.grupo_id && (t.estado === 'aprobado' || t.estado === 'completado')) {
+                return true; 
+            }
+            return false;
+        }).length;
 
-        return Math.round((completadas / tareasDelGrupo.length) * 100);
+        return Math.round((completadasCount / tareasDelGrupo.length) * 100);
     };
 
     const progresoGlobal = grupos.length > 0
@@ -694,7 +704,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.46</span>
+                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.47</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>

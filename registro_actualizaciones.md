@@ -1,5 +1,14 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.47] - 2026-03-21
+### Corregido
+- **Consistencia de Progreso:** Se ha unificado la lógica de cálculo de progreso entre la lista de "Gestión de Equipos" y la vista de detalle. Ahora ambos paneles usan el mismo algoritmo riguroso que detecta entregas evaluadas, tareas específicas y misiones globales sincronizadas.
+
+## [V5.8.46] - 2026-03-21
+### Corregido
+- **Cálculo de Batería:** Se corrigió la detección del estado `evaluada` en la base de datos para misiones globales.
+- **Progreso Reactivo:** La batería ahora se calcula localmente al instante para evitar el 0% visual durante la carga.
+
 ## [V5.8.45] - 2026-03-21
 ### Corregido
 - **Barra de Progreso (Batería):** Corregido el error donde la batería SVG siempre mostraba 0% en el detalle del grupo. Ahora el progreso se calcula correctamente para cada grupo, teniendo en cuenta tanto las tareas específicas como las globales (mediante la tabla `entregas_tareas`).
