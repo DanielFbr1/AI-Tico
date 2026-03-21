@@ -393,18 +393,8 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                             {/* Stats Summary */}
                                                             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
                                                                 <div className="bg-slate-50 rounded-xl p-3">
-                                                                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">MEDIA PROYECTO</span>
+                                                                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">MEDIA CRITERIOS</span>
                                                                     <div className="text-xl font-black text-slate-800">{proyecto.notaMedia.toFixed(1)}</div>
-                                                                </div>
-                                                                <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
-                                                                    <span className="text-[8px] text-emerald-500 font-black uppercase tracking-widest block mb-1">MEDIA MISIONES</span>
-                                                                    <div className="text-xl font-black text-emerald-600">{proyecto.notaMediaMisiones.toFixed(1)}</div>
-                                                                </div>
-                                                                <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
-                                                                    <span className="text-[8px] text-blue-500 font-black uppercase tracking-widest block mb-1">ENTREGADAS</span>
-                                                                    <div className="text-xl font-black text-blue-600">
-                                                                        {proyecto.tareasEntregadasCount}/{proyecto.tareasTotalCount}
-                                                                    </div>
                                                                 </div>
                                                                 <div className="bg-slate-50 rounded-xl p-3">
                                                                     <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block mb-1">ASISTENCIA</span>
@@ -414,6 +404,16 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                     <span className="text-[8px] text-indigo-500 font-black uppercase tracking-widest block mb-1">PUNTOS</span>
                                                                     <div className="text-xl font-black text-indigo-600 flex items-center gap-1">
                                                                         {proyecto.puntos} <Award className="w-4 h-4 text-indigo-500" />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+                                                                    <span className="text-[8px] text-emerald-500 font-black uppercase tracking-widest block mb-1">MEDIA TAREAS</span>
+                                                                    <div className="text-xl font-black text-emerald-600">{proyecto.notaMediaMisiones.toFixed(1)}</div>
+                                                                </div>
+                                                                <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
+                                                                    <span className="text-[8px] text-blue-500 font-black uppercase tracking-widest block mb-1">TAREAS ENTREGADAS</span>
+                                                                    <div className="text-xl font-black text-blue-600">
+                                                                        {proyecto.tareasEntregadasCount}/{proyecto.tareasTotalCount}
                                                                     </div>
                                                                 </div>
                                                             </div>

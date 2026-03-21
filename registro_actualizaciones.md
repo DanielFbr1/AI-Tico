@@ -1,6 +1,12 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.56] - 2026-03-21
+### Estilizado
+- **Reordenación de Estadísticas (Familia):** Se han reordenado los paneles de resumen para una mejor jerarquía visual: 1º Media Criterios, 2º Asistencia, 3º Puntos, 4º Media Tareas y 5º Tareas Entregadas.
+- **Renombrado de Etiquetas:** Los indicadores ahora utilizan nombres más claros: "MEDIA CRITERIOS" (antes Media Proyecto) y "MEDIA TAREAS" (antes Media Misiones).
+
 ## [V5.8.55] - 2026-03-21
+
 ### Mejorado
 - **Interfaz de Notas (Familia):** Se ha rediseñado la disposición de las calificaciones. Ahora las notas por rúbrica se muestran a la izquierda y las notas por misión/tarea a la derecha en pantallas grandes, optimizando el espacio y facilitando la comparación.
 
