@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Grupo, TareaDetallada } from '../types';
 import { toast } from 'sonner';
+import { crearNotificacionMasiva, getAlumnosDelProyecto, getAlumnosDelGrupo } from '../lib/notificaciones';
 
 interface ModalCrearTareaClassroomProps {
     proyectoId: string;
@@ -158,6 +159,33 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                 .single();
 
             if (error) throw error;
+
+            // === NOTIFICACIONES ===
+            // Notificar a los alumnos del grupo o a todos
+            try {
+                const grupoNombre = grupoSeleccionado !== 'todos'
+                    ? grupos.find(g => String(g.id) === grupoSeleccionado)?.nombre || 'tu equipo'
+                    : 'toda la clase';
+
+                let alumnoIds: string[] = [];
+                if (grupoSeleccionado !== 'todos') {
+                    alumnoIds = await getAlumnosDelGrupo(parseInt(grupoSeleccionado), proyectoId);
+                } else {
+                    alumnoIds = await getAlumnosDelProyecto(proyectoId);
+                }
+
+                if (alumnoIds.length > 0) {
+                    await crearNotificacionMasiva(alumnoIds, {
+                        proyectoId,
+                        tipo: 'tarea_asignada',
+                        titulo: `Nueva misión: "${titulo.trim()}"`,
+                        descripcion: `El profesor ha asignado una nueva tarea a ${grupoNombre}. ${puntos > 0 ? `Vale ${puntos} puntos.` : ''}`,
+                        metadata: { tarea_id: data.id, grupo_id: grupoSeleccionado }
+                    });
+                }
+            } catch (notifError) {
+                console.error('Error enviando notificaciones:', notifError);
+            }
 
             toast.success('¡Tarea creada con éxito! 🎉');
             onTareaCreada(data);

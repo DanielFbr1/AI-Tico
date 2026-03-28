@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Send, Loader2, MessageCircle, User } from 'lucide-react';
+import { crearNotificacion } from '../lib/notificaciones';
 
 interface ChatFamiliaProfesorProps {
     currentUserId: string;
@@ -129,6 +130,27 @@ export function ChatFamiliaProfesor({
                 });
 
             if (error) throw error;
+            
+            // === NOTIFICACIONES ===
+            try {
+                const targetUserId = currentRole === 'familia' ? profesorId : familiaId;
+                await crearNotificacion({
+                    userId: targetUserId,
+                    tipo: 'mensaje_familia',
+                    titulo: `Nuevo mensaje de ${currentUserName}`,
+                    descripcion: newMessage.trim().length > 50 
+                        ? newMessage.trim().substring(0, 47) + '...' 
+                        : newMessage.trim(),
+                    metadata: { 
+                        sender_id: currentUserId, 
+                        alumno_nombre: alumnoNombre,
+                        tipo_chat: 'familia_profesor'
+                    }
+                });
+            } catch (notifErr) {
+                console.error('Error enviando notificación de chat:', notifErr);
+            }
+
             setNewMessage('');
             inputRef.current?.focus();
         } catch (err) {

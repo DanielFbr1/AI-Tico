@@ -1,5 +1,16 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.69] - 2026-03-28
+### Nuevo
+- **Generación Automática de Notificaciones**: Se han integrado disparadores de notificaciones en toda la plataforma:
+    - **Creación de Tareas**: Notifica automáticamente a todos los alumnos implicados (grupo o clase completa).
+    - **Subida de Recursos**: Notifica a los alumnos cuando el profesor publica nuevo material.
+    - **Evaluación de Misiones**: Los alumnos reciben una alerta inmediata cuando su trabajo ha sido calificado y aprobado.
+    - **Entrega de Tareas**: Los profesores reciben notificaciones cuando un equipo envía una misión para revisión.
+    - **Mano Levantada (Dudas)**: Notificación persistente para el profesor cuando un equipo necesita ayuda urgente.
+- **Librería de Mensajería Centralizada**: Implementación de `notificaciones.ts` para gestionar el envío masivo y selectivo de alertas.
+- **Sincronización Global de Versión**: Actualizada la plataforma a la V5.8.69 para asegurar la persistencia de las nuevas notificaciones.
+
 ## [V5.8.68] - 2026-03-28
 ### Nuevo
 - **Sistema de Notificaciones**: Nuevo apartado de notificaciones en tiempo real tanto para profesores como para alumnos.

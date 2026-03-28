@@ -3,6 +3,7 @@ import { TareaDetallada, Grupo } from '../types';
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { crearNotificacionMasiva, getAlumnosDelGrupo } from '../lib/notificaciones';
 
 interface ModalDetalleTareaProps {
     tarea: TareaDetallada;
@@ -143,6 +144,22 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                 // Si el docente aprueba desde el hub, otorgar puntos
                 if (!isStudent && (estadoLocal === 'aprobado' || estadoLocal === 'completado')) {
                     onEstadoChange(tarea.id, estadoLocal, calificacion); 
+                    
+                    // Notificar a los alumnos del grupo
+                    try {
+                        const alumnoIds = await getAlumnosDelGrupo(targetGidNum, tarea.proyecto_id);
+                        if (alumnoIds.length > 0) {
+                            await crearNotificacionMasiva(alumnoIds, {
+                                proyectoId: tarea.proyecto_id,
+                                tipo: 'notas_actualizadas',
+                                titulo: `Misión evaluada: "${tarea.titulo}"`,
+                                descripcion: `El profesor ha evaluado vuestra entrega. Calificación: ${calificacion || 0} puntos.`,
+                                metadata: { tarea_id: tarea.id, calificacion }
+                            });
+                        }
+                    } catch (notifErr) {
+                        console.error('Error enviando notificación de evaluación:', notifErr);
+                    }
                 }
             }
 

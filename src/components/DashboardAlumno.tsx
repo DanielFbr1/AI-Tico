@@ -66,6 +66,7 @@ import { ModalDetalleTarea } from './ModalDetalleTarea';
 import { VistaCalendario } from './VistaCalendario';
 import { TareaDetallada } from '../types';
 import { NotificacionesPanel } from './NotificacionesPanel';
+import { crearNotificacionMasiva, getProfesoresDelProyecto } from '../lib/notificaciones';
 
 interface DashboardAlumnoProps {
   alumno: {
@@ -494,7 +495,28 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
       // Update local state for immediate feedback
       setTareasAlumno(prev => prev.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t));
-      toast.success(nuevoEstado === 'revision' ? 'Misión enviada a revisión' : 'Estado actualizado');
+      
+      if (nuevoEstado === 'revision') {
+        toast.success('Misión enviada a revisión');
+        
+        // Notificar a los profesores
+        if (alumno.proyecto_id) {
+          getProfesoresDelProyecto(alumno.proyecto_id).then(profIds => {
+            if (profIds.length > 0) {
+              const tarea = tareasAlumno.find(t => t.id === id);
+              crearNotificacionMasiva(profIds, {
+                proyectoId: alumno.proyecto_id,
+                tipo: 'tarea_revision',
+                titulo: `Misión para revisar: "${tarea?.titulo || 'Nueva entrega'}"`,
+                descripcion: `El alumno ${alumno.nombre} ha enviado una tarea para revisión.`,
+                metadata: { tarea_id: id, alumno_id: alumno.id, alumno_nombre: alumno.nombre }
+              });
+            }
+          });
+        }
+      } else {
+        toast.success('Estado actualizado');
+      }
     } catch (err) {
       console.error('Error updating task status:', err);
       toast.error('No se pudo actualizar el estado');
@@ -914,7 +936,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   };
 
   const tareasCategorizadas = React.useMemo(() => {
-    const VERSION = "V5.8.68";
+    const VERSION = "V5.8.69";
     const panels = {
       pendientes: [] as any[],
       revision: [] as any[],
@@ -986,7 +1008,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.68</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.69</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -1019,8 +1041,25 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
                     if (error) throw error;
 
-                    if (newState) toast.success("✋ ¡Duda enviada!");
-                    else toast.info("✅ Duda resuelta");
+                    if (newState) {
+                      toast.success("✋ ¡Duda enviada!");
+                      // Notificar a los profesores del proyecto
+                      if (alumno.proyecto_id) {
+                        getProfesoresDelProyecto(alumno.proyecto_id).then(profIds => {
+                          if (profIds.length > 0) {
+                            crearNotificacionMasiva(profIds, {
+                              proyectoId: alumno.proyecto_id,
+                              tipo: 'mano_levantada',
+                              titulo: `✋ ${alumno.nombre} ha levantado la mano`,
+                              descripcion: `El equipo ${grupoReal.nombre} necesita ayuda del profesor.`,
+                              metadata: { grupo_id: grupoReal.id, alumno_nombre: alumno.nombre }
+                            });
+                          }
+                        });
+                      }
+                    } else {
+                      toast.info("✅ Duda resuelta");
+                    }
                   } catch (e: any) {
                     console.error("Error updating help status:", e);
                     toast.error(`Error: ${e.message || 'No se pudo actualizar'}`);

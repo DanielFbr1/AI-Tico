@@ -5,6 +5,7 @@ import { Grupo } from '../types';
 import { supabase } from '../lib/supabase';
 import { Recurso } from '../types';
 import { Eye, EyeOff } from 'lucide-react';
+import { crearNotificacionMasiva, getAlumnosDelProyecto, getAlumnosDelGrupo } from '../lib/notificaciones';
 
 interface ModalSubirRecursoProps {
     grupo: Grupo;
@@ -155,6 +156,31 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess, esDoc
             };
 
             toast.success('Recurso publicado con éxito');
+
+            // === NOTIFICACIONES ===
+            if (esProfesor && publicado) {
+                try {
+                    let targetUserIds: string[] = [];
+                    if (isGlobal && proyectoId) {
+                        targetUserIds = await getAlumnosDelProyecto(proyectoId);
+                    } else if (grupoIdValue && proyectoId) {
+                        targetUserIds = await getAlumnosDelGrupo(grupoIdValue, proyectoId);
+                    }
+
+                    if (targetUserIds.length > 0) {
+                        await crearNotificacionMasiva(targetUserIds, {
+                            proyectoId,
+                            tipo: 'recurso_subido',
+                            titulo: `Nuevo recurso disponible: "${finalTitulo}"`,
+                            descripcion: `El profesor ha subido un nuevo recurso en ${grupo.nombre}.`,
+                            metadata: { recurso_id: data.id, grupo_id: grupoIdValue }
+                        });
+                    }
+                } catch (notifErr) {
+                    console.error('Error enviando notificaciones de recurso:', notifErr);
+                }
+            }
+
             onSuccess(nuevoRecurso);
             onClose();
 

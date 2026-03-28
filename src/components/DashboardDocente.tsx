@@ -31,6 +31,7 @@ import { ModalDetalleTarea } from './ModalDetalleTarea';
 import { ModalSeguimientoGrupos } from './ModalSeguimientoGrupos';
 import { updatePuntosAlumno, addPointsToGroupMembers } from '../lib/puntos';
 import { NotificacionesPanel } from './NotificacionesPanel';
+import { crearNotificacion, crearNotificacionMasiva, getAlumnosDelProyecto, getProfesoresDelProyecto } from '../lib/notificaciones';
 
 interface DashboardDocenteProps {
     onSelectGrupo: (grupo: Grupo) => void;
@@ -326,21 +327,18 @@ export function DashboardDocente({
 
                     if (isNewRevision || isInsertedAsRevision) {
                         const equipoNombre = grupos.find(g => Number(g.id) === Number(payload.new?.grupo_id))?.nombre || 'Toda la clase';
-                        toast.success(`🚀 [${equipoNombre}] ¡Misión para revisar: "${payload.new?.titulo}"!`, {
-                            duration: 15000,
-                            description: `Nueva entrega disponible. Pulsa REVISAR para evaluar el trabajo.`,
-                            icon: '🔔',
-                            action: {
-                                label: 'REVISAR',
-                                onClick: () => {
-                                    const t = tareasProyecto.find(t => t.id === payload.new?.id);
-                                    if (t) {
-                                        setTareaSeleccionadaDetalle(t);
-                                        setTargetGrupoId(payload.new?.grupo_id);
-                                    }
-                                }
-                            }
-                        });
+                        
+                        // Crear notificación persistente para el profesor
+                        if (user) {
+                            crearNotificacion({
+                                userId: user.id,
+                                proyectoId: proyectoActual?.id,
+                                tipo: 'tarea_revision',
+                                titulo: `Misión para revisar: "${payload.new?.titulo}"`,
+                                descripcion: `El equipo ${equipoNombre} ha enviado una entrega para revisión.`,
+                                metadata: { tarea_id: payload.new?.id, grupo_id: payload.new?.grupo_id }
+                            });
+                        }
                     }
                     fetchTareasProyecto();
                 }
@@ -730,7 +728,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.68</span>
+                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.69</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -826,7 +824,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            V5.8.68
+                            V5.8.69
                         </div>
                     </div>
                 </aside>
