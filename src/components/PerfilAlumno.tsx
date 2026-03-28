@@ -285,8 +285,8 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all scale-100">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-2 md:p-4 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white rounded-[2.5rem] shadow-2xl w-[98vw] h-[95vh] max-h-[95vh] overflow-hidden flex flex-col transform transition-all scale-100 border border-white/20">
         <div className={`bg-gradient-to-r ${getDepartamentoColor('General')} text-white relative overflow-hidden shrink-0`}>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/3 translate-x-1/3 blur-3xl"></div>
 
@@ -324,14 +324,14 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 bg-[#f8f9fc]">
-          <div className="max-w-4xl mx-auto flex flex-col gap-10">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#f8f9fc]">
+          <div className="max-w-[100%] mx-auto flex flex-col gap-6 md:gap-8">
             <section>
               <h3 className="text-lg font-black text-slate-800 mb-5 uppercase tracking-tight flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-indigo-600" /> Rendimiento Clave
               </h3>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
                   <div className="w-10 h-10 md:w-16 md:h-16 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
                     <Calendar className="w-5 h-5 md:w-8 md:h-8" />
                   </div>
@@ -341,17 +341,7 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
-                  <div className="w-10 h-10 md:w-16 md:h-16 bg-purple-50 rounded-xl md:rounded-2xl flex items-center justify-center text-purple-600 shrink-0">
-                    <MessageSquare className="w-5 h-5 md:w-8 md:h-8" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-slate-900 leading-none mb-1">{Math.floor(grupo.interacciones_ia / Math.max(1, grupo.miembros.length))}</div>
-                    <div className="text-[8px] md:text-xs font-bold text-slate-400 uppercase tracking-wider leading-none">IA</div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
                   <div className="w-10 h-10 md:w-16 md:h-16 bg-pink-50 rounded-xl md:rounded-2xl flex items-center justify-center text-pink-600 shrink-0">
                     <Clock className="w-5 h-5 md:w-8 md:h-8" />
                   </div>
@@ -361,7 +351,7 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
                   <div className="w-10 h-10 md:w-16 md:h-16 bg-amber-50 rounded-xl md:rounded-2xl flex items-center justify-center text-amber-500 shrink-0 shadow-sm">
                     <Award className="w-5 h-5 md:w-8 md:h-8" />
                   </div>
@@ -371,7 +361,7 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
                   <div className="w-10 h-10 md:w-16 md:h-16 bg-fuchsia-50 rounded-xl md:rounded-2xl flex items-center justify-center text-fuchsia-600 shrink-0 shadow-sm">
                     <TrendingUp className="w-5 h-5 md:w-8 md:h-8" />
                   </div>
@@ -381,7 +371,7 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                   </div>
                 </div>
 
-                <div className="bg-indigo-50 rounded-2xl p-3 md:p-6 shadow-sm border border-indigo-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                <div className="bg-indigo-50 rounded-2xl p-4 md:p-6 shadow-sm border border-indigo-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
                   <div className="w-10 h-10 md:w-16 md:h-16 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-indigo-500 shrink-0 shadow-sm">
                     <Star className="w-5 h-5 md:w-8 md:h-8" fill="currentColor" />
                   </div>
@@ -393,145 +383,159 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
               </div>
             </section>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* EVALUACIÓN */}
-              <div className="bg-white rounded-2xl p-6 shadow-md border-2 border-gray-200">
-                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <Target className="w-6 h-6 text-blue-600" />
-                  Evaluación del Proyecto
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8">
+              {/* EVALUACIÓN POR RÚBRICA */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col">
+                <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tight">
+                  <Target className="w-6 h-6 text-indigo-600" />
+                  Evaluación Rúbrica
                 </h3>
 
                 {loading ? (
                   <div className="flex flex-col items-center py-10 gap-3">
                     <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-                    <p className="text-slate-500 font-bold">Cargando criterios...</p>
-                  </div>
-                ) : evaluacion.length > 0 ? (
-                  <div className="space-y-5">
-                    {evaluacion.map((item, index) => {
-                      const cleanComment = (item.comentario || '').replace('Nota sincronizada con grupo: ', '').trim();
-                      const hasComment = cleanComment.length > 0;
-
-                      return (
-                        <div key={index} className={`bg-gray-50 rounded-xl border-2 border-gray-200 transition-all hover:bg-white hover:shadow-md ${hasComment ? 'p-4 md:p-6' : 'p-3 md:p-4 items-center'}`}>
-                          <div className={`flex flex-col md:flex-row justify-between ${hasComment ? 'items-start' : 'items-center'} gap-4`}>
-                            <div className="flex-1 w-full md:mr-6">
-                              <h4 className={`font-bold text-gray-900 text-lg ${hasComment ? 'mb-2' : 'mb-0'}`}>{item.nombre}</h4>
-                              {hasComment && (
-                                <p className="text-gray-700 font-medium text-base leading-relaxed bg-white p-3 rounded-lg border border-gray-100 shadow-sm inline-block">
-                                  {cleanComment}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="text-right flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start gap-2 min-w-full md:min-w-[120px]">
-                              <span className={`inline-flex items-center gap-2 px-3 py-1 text-[10px] md:text-xs font-bold rounded-lg shadow-sm border border-white/20 uppercase tracking-wider ${getNivelColor(item.puntos)}`}>
-                                {getNivelIcon(item.puntos)}
-                                <span className="hidden sm:inline">{getNivelFromPuntos(item.puntos)}</span>
-                                <span className="sm:hidden">{getNivelFromPuntos(item.puntos).slice(0, 4)}.</span>
-                              </span>
-                              <div className="text-2xl md:text-3xl font-black text-gray-900 leading-none flex items-baseline gap-1">
-                                {Number(item.puntos).toFixed(1)}
-                                <span className="text-xs md:text-sm text-gray-400 font-bold">/10</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {hasComment && (
-                            <div className="w-full h-3 bg-gray-300 rounded-full overflow-hidden mt-4">
-                              <div
-                                className={`h-full transition-all duration-500 ${getBarColor(item.puntos)}`}
-                                style={{ width: `${(Number(item.puntos) / 10) * 100}%` }}
-                              />
-                            </div>
-                          )}
-                          {!hasComment && (
-                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-3">
-                              <div
-                                className={`h-full transition-all duration-500 opacity-50 ${getBarColor(item.puntos)}`}
-                                style={{ width: `${(Number(item.puntos) / 10) * 100}%` }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                    <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Cargando...</p>
                   </div>
                 ) : (
-                  <div className="bg-blue-50 p-8 rounded-3xl border-2 border-dashed border-blue-200 text-center">
-                    <Info className="w-10 h-10 text-blue-400 mx-auto mb-3" />
-                    <p className="text-blue-900 font-bold">El grupo aún no ha sido evaluado.</p>
+                  <div className="space-y-4">
+                    {evaluacion.length > 0 ? (
+                      evaluacion.map((item, index) => (
+                        <div key={index} className="bg-slate-50 rounded-xl p-4 border border-slate-100 hover:shadow-md transition-all">
+                          <div className="flex justify-between items-start gap-3 mb-2">
+                            <h4 className="font-bold text-slate-700 text-sm leading-tight">{item.nombre}</h4>
+                            <div className="text-right">
+                              <span className="text-xl font-black text-slate-900 leading-none">{Number(item.puntos).toFixed(1)}</span>
+                              <span className="text-[10px] text-slate-400 font-bold ml-0.5">/10</span>
+                            </div>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div className={`h-full ${getBarColor(item.puntos)} transition-all duration-700`} style={{ width: `${Number(item.puntos) * 10}%` }}></div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-10 opacity-40">
+                        <Info className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest">Sin datos de rúbrica</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* COMENTARIOS Y OBSERVACIONES */}
-              <div className="flex flex-col gap-6">
-                <div className="bg-white rounded-2xl p-6 shadow-md border-2 border-gray-200 flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <FileText className="w-6 h-6 text-purple-600" />
-                    Observaciones y Notas
-                  </h3>
+              {/* CALIFICACIONES DE TAREAS (MISIONES) */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col">
+                <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tight">
+                  <Award className="w-6 h-6 text-amber-500" />
+                  Misiones y Notas
+                </h3>
 
-                  <div className="mb-6">
-                    <textarea
-                      value={nuevoComentario}
-                      onChange={(e) => setNuevoComentario(e.target.value)}
-                      placeholder="Escribe una observación privada sobre el alumno..."
-                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none transition-all text-sm font-medium"
-                      rows={3}
-                    />
-                    <div className="flex justify-end mt-2">
-                      <button
-                        onClick={handleSaveComentario}
-                        disabled={!nuevoComentario.trim() || isSavingComentario}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-purple-200"
-                      >
-                        {isSavingComentario ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        Guardar Nota
-                      </button>
-                    </div>
-                  </div>
+                <div className="space-y-3">
+                  {tareasAlumno.map((tarea, index) => {
+                    const entrega = entregasTareas.find(e => e.tarea_id === tarea.id);
+                    const nota = tarea.grupo_id !== null
+                      ? ((tarea.estado === 'aprobado' || tarea.estado === 'completado') ? tarea.puntos_maximos : 0)
+                      : (entrega?.calificacion || 0);
 
-                  <div className="space-y-4">
-                    {comentarios.length === 0 ? (
-                      <div className="text-center py-10 opacity-50">
-                        <MessageSquare className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                        <p className="text-sm font-bold text-gray-400">Sin observaciones registradas</p>
-                      </div>
-                    ) : (
-                      comentarios.map((comentario) => (
-                        <div key={comentario.id} className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 relative group animate-in fade-in slide-in-from-bottom-2">
-                          <p className="text-gray-700 font-medium text-sm leading-relaxed whitespace-pre-wrap">{comentario.contenido}</p>
-                          <div className="flex justify-between items-center mt-3 pt-3 border-t border-yellow-100/50">
-                            <span className="text-[10px] uppercase font-bold text-yellow-600 opacity-60">
-                              {new Date(comentario.created_at).toLocaleDateString()} • {new Date(comentario.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    const isAprobado = tarea.estado === 'aprobado' || tarea.estado === 'completado' || (entrega && entrega.calificacion >= 5);
+
+                    return (
+                      <div key={index} className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-slate-100/50 transition-colors">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isAprobado ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-500'}`}>
+                          {isAprobado ? <CheckCircle2 className="w-6 h-6" /> : <Award className="w-6 h-6 opacity-40" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-slate-800 text-sm leading-tight truncate mb-1">{tarea.titulo}</h4>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-widest ${tarea.estado === 'aprobado' ? 'bg-emerald-100 text-emerald-700' : tarea.estado === 'revisar' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {tarea.estado || 'Pendiente'}
                             </span>
-                            <button
-                              onClick={() => handleDeleteComentario(comentario.id)}
-                              className="p-1.5 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                              title="Eliminar nota"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none opacity-60">• {tarea.grupo_id ? 'Grupal' : 'Indiv.'}</span>
                           </div>
                         </div>
-                      ))
-                    )}
+                        <div className="text-right shrink-0 bg-white px-2 py-1 rounded-lg border border-slate-100">
+                          <div className={`text-lg font-black leading-none ${nota >= 9 ? 'text-emerald-600' : nota >= 7 ? 'text-blue-600' : nota >= 5 ? 'text-amber-600' : 'text-slate-400'}`}>
+                            {Number(nota).toFixed(1)}
+                          </div>
+                          <div className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Ptos</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {tareasAlumno.length === 0 && (
+                    <div className="text-center py-10 opacity-40">
+                      <Plus className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest">Sin misiones asignadas</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* OBSERVACIONES Y NOTAS PRIVADAS */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col">
+                <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tight">
+                  <FileText className="w-6 h-6 text-purple-600" />
+                  Observaciones
+                </h3>
+
+                <div className="mb-6">
+                  <textarea
+                    value={nuevoComentario}
+                    onChange={(e) => setNuevoComentario(e.target.value)}
+                    placeholder="Escribe una observación privada sobre el alumno..."
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none transition-all text-sm font-medium"
+                    rows={3}
+                  />
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{comentarios.length} notas guardadas</span>
+                    <button
+                      onClick={handleSaveComentario}
+                      disabled={!nuevoComentario.trim() || isSavingComentario}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-purple-200 text-sm"
+                    >
+                      {isSavingComentario ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      Guardar
+                    </button>
                   </div>
+                </div>
+
+                <div className="space-y-4 flex-1 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                  {comentarios.length === 0 ? (
+                    <div className="text-center py-10 opacity-30">
+                      <MessageSquare className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest">Sin observaciones</p>
+                    </div>
+                  ) : (
+                    comentarios.map((comentario) => (
+                      <div key={comentario.id} className="bg-yellow-50/50 p-4 rounded-xl border border-yellow-100 relative group animate-in fade-in slide-in-from-bottom-2">
+                        <p className="text-gray-700 font-medium text-sm leading-relaxed whitespace-pre-wrap">{comentario.contenido}</p>
+                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-yellow-100/50">
+                          <span className="text-[10px] uppercase font-bold text-yellow-600/60">
+                            {new Date(comentario.created_at).toLocaleDateString()}
+                          </span>
+                          <button
+                            onClick={() => handleDeleteComentario(comentario.id)}
+                            className="p-1.5 text-red-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
-        <div className="bg-white px-8 py-6 border-t border-gray-100">
+        <div className="bg-white px-8 py-4 border-t border-gray-100">
           <button
             onClick={onClose}
-            className="w-full px-6 py-5 bg-gray-900 text-white rounded-3xl hover:bg-black transition-all font-black text-xl shadow-xl active:scale-[0.98]"
+            className="w-full px-6 py-4 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all font-black text-lg shadow-xl active:scale-[0.98] uppercase tracking-widest"
           >
-            CERRAR PERFIL
+            Cerrar Perfil
           </button>
         </div>
       </div>

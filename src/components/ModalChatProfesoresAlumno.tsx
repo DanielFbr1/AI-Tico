@@ -51,7 +51,7 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
                 try {
                     const proyIds = historialClases.map(hc => hc.id);
 
-                    // Buscar los proyectos para obtener created_by (UUID del profesor)
+                    // 1. Obtener propietarios (created_by)
                     const { data: proyectosData, error: proyError } = await supabase
                         .from('proyectos')
                         .select('id, created_by, asignatura, nombre')
@@ -62,18 +62,30 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
                         return;
                     }
 
-                    // Obtener UUIDs únicos de profesores
-                    const profesorIds = [...new Set(proyectosData.map(p => p.created_by).filter(Boolean))];
+                    // 2. Obtener colaboradores de esos mismos proyectos
+                    const { data: colaboradoresData, error: colabError } = await supabase
+                        .from('proyecto_colaboradores')
+                        .select('proyecto_id, profesor_id')
+                        .in('proyecto_id', proyIds);
+
+                    if (colabError) {
+                        console.error("Error al cargar colaboradores de proyectos", colabError);
+                    }
+
+                    // Obtener UUIDs únicos de profesores (propietarios + colaboradores)
+                    const ownerIds = proyectosData.map(p => p.created_by).filter(Boolean);
+                    const colabIds = colaboradoresData ? colaboradoresData.map(c => c.profesor_id).filter(Boolean) : [];
+                    const profesorIds = [...new Set([...ownerIds, ...colabIds])];
 
                     if (profesorIds.length === 0) {
                         setProfesores([]);
                         return;
                     }
 
-                    // Buscar los perfiles de esos profesores
+                    // 3. Buscar los perfiles de todos esos profesores
                     const { data: perfilesData, error: perfilError } = await supabase
                         .from('profiles')
-                        .select('id, nombre')
+                        .select('id, nombre, email')
                         .in('id', profesorIds);
 
                     if (perfilError || !perfilesData) {
@@ -81,27 +93,29 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
                         return;
                     }
 
-                    // Crear lista de profesores con su asignatura asociada
                     const profesEncontrados: { id: string, nombre: string, asignatura: string }[] = [];
                     const seenProfs = new Set<string>();
 
-                    proyectosData.forEach(proy => {
-                        if (!proy.created_by || seenProfs.has(proy.created_by)) return;
+                    // Mapear perfiles a la lista final
+                    perfilesData.forEach(perfil => {
+                        if (seenProfs.has(perfil.id)) return;
+                        if (perfil.nombre?.trim().toLowerCase().includes('profesor general')) return;
 
-                        const perfil = perfilesData.find(p => p.id === proy.created_by) as any;
-                        if (perfil?.nombre?.trim().toLowerCase().includes('profesor general')) return; // Excluir al profesor por defecto
+                        // Encontrar asignatura asociada (priorizar proyecto actual o el primero que encontremos)
+                        const proyAsociado = proyectosData.find(p => p.created_by === perfil.id) 
+                                           || proyectosData.find(p => colaboradoresData?.some(c => c.proyecto_id === p.id && c.profesor_id === perfil.id));
 
-                        let displayName = perfil?.nombre;
-                        if (!displayName || displayName === perfil?.email) {
-                            displayName = perfil?.email?.split('@')[0] || 'Profesor';
+                        let displayName = perfil.nombre;
+                        if (!displayName || displayName === perfil.email) {
+                            displayName = (perfil as any).email?.split('@')[0] || 'Profesor';
                             displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
                         }
 
-                        seenProfs.add(proy.created_by);
+                        seenProfs.add(perfil.id);
                         profesEncontrados.push({
-                            id: proy.created_by,
+                            id: perfil.id,
                             nombre: displayName,
-                            asignatura: proy.asignatura || 'General'
+                            asignatura: proyAsociado?.asignatura || 'General'
                         });
                     });
 

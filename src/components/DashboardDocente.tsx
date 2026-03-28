@@ -1,4 +1,4 @@
-import { LayoutList, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices, Gamepad2, LayoutDashboard, Calendar, CalendarDays, Eye, FileText, Clock } from 'lucide-react';
+import { LayoutList, Users, MessageSquare, ClipboardCheck, Plus, CircleHelp, Key, FolderOpen, Share2, LogOut, UserCheck, Sparkles, Pencil, Check, X, Upload, Trash2, Dices, Gamepad2, LayoutDashboard, Calendar, CalendarDays, Eye, FileText, Clock, Bell } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Card_Grupo } from './Card_Grupo';
 import { EvaluacionRubricas } from './EvaluacionRubricas';
@@ -30,6 +30,7 @@ import { VistaCalendario } from './VistaCalendario';
 import { ModalDetalleTarea } from './ModalDetalleTarea';
 import { ModalSeguimientoGrupos } from './ModalSeguimientoGrupos';
 import { updatePuntosAlumno, addPointsToGroupMembers } from '../lib/puntos';
+import { NotificacionesPanel } from './NotificacionesPanel';
 
 interface DashboardDocenteProps {
     onSelectGrupo: (grupo: Grupo) => void;
@@ -92,6 +93,7 @@ export function DashboardDocente({
     const [unreadFamilyMessages, setUnreadFamilyMessages] = useState(0);
     const [solicitudesPendientes, setSolicitudesPendientes] = useState(0);
     const [solicitudEmergente, setSolicitudEmergente] = useState<any | null>(null);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
 
     // Project Renaming State
     const [isEditingProjectName, setIsEditingProjectName] = useState(false);
@@ -249,6 +251,29 @@ export function DashboardDocente({
                 if (collabSub) supabase.removeChannel(collabSub);
             };
         }
+    }, [user]);
+
+    // Fetch unread notifications count
+    useEffect(() => {
+        if (!user) return;
+        const fetchUnread = async () => {
+            const { count } = await supabase
+                .from('notificaciones')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('leida', false);
+            setUnreadNotifications(count || 0);
+        };
+        fetchUnread();
+        const notifSub = supabase.channel(`notif_count_docente_${user.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'notificaciones',
+                filter: `user_id=eq.${user.id}`
+            }, () => fetchUnread())
+            .subscribe();
+        return () => { supabase.removeChannel(notifSub); };
     }, [user]);
 
     // === FETCH TAREAS DEL PROYECTO (tabla `tareas`) ===
@@ -488,7 +513,8 @@ export function DashboardDocente({
         const gidNum = Number(grupoId);
         // Tareas que le corresponden a este grupo (específicas + generales)
         const tareasDelGrupo = tareasProyecto.filter(t => 
-            Number(t.grupo_id) === gidNum || t.grupo_id === null || t.grupo_id === undefined
+            (t.grupo_id !== null && t.grupo_id !== undefined && Number(t.grupo_id) === gidNum) || 
+            (t.grupo_id === null || t.grupo_id === undefined || String(t.grupo_id) === 'all')
         );
         
         if (tareasDelGrupo.length === 0) return 0;
@@ -496,7 +522,7 @@ export function DashboardDocente({
         const completadasCount = tareasDelGrupo.filter(t => {
             // 1. Priorizar estado de entrega (para misiones globales y específicas)
             const e = (entregasProyecto || []).find(ent => ent.tarea_id === t.id && Number(ent.grupo_id) === gidNum);
-            if (e && (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado')) {
+            if (e && (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado' || e.estado === 'revisado')) {
                 return true;
             }
             // 2. Si es específica de este grupo, el estado de la tarea en sí
@@ -704,7 +730,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.57</span>
+                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.68</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -764,6 +790,24 @@ export function DashboardDocente({
                                 <ClipboardCheck className="w-5 h-5" />
                                 <span>Evaluación</span>
                             </button>
+
+                            <button
+                                onClick={() => { onSectionChange('notificaciones'); setMobileMenuOpen(false); }}
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'notificaciones'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 font-bold'
+                                    : 'text-gray-600 hover:bg-gray-100 font-medium'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Bell className="w-5 h-5" />
+                                    <span>Notificaciones</span>
+                                </div>
+                                {unreadNotifications > 0 && (
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${currentSection === 'notificaciones' ? 'bg-white text-blue-600' : 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-200'}`}>
+                                        {unreadNotifications}
+                                    </span>
+                                )}
+                            </button>
                         </div>
 
 
@@ -782,7 +826,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            V5.7.2 (Microsoft Teams Sync)
+                            V5.8.67
                         </div>
                     </div>
                 </aside>
@@ -1400,6 +1444,7 @@ export function DashboardDocente({
                                     <ModalSubirRecurso
                                         grupo={{ id: 0, nombre: 'Docente', miembros: [], progreso: 0, estado: 'En progreso', interacciones_ia: 0 }}
                                         proyectoId={proyectoActual?.id}
+                                        esDocente={true}
                                         onClose={() => setModalSubirRecursoAbierto(false)}
                                         onSuccess={() => {
                                             setModalSubirRecursoAbierto(false);
@@ -1418,6 +1463,10 @@ export function DashboardDocente({
                         )}
 
                         {currentSection === 'evaluacion' && <EvaluacionRubricas grupos={grupos} rubrica={proyectoActual?.rubrica} proyectoId={proyectoActual?.id} tareasProyecto={tareasProyecto} entregasProyecto={entregasProyecto} />}
+
+                        {currentSection === 'notificaciones' && user && (
+                            <NotificacionesPanel userId={user.id} proyectoId={proyectoActual?.id} />
+                        )}
                     </div>
                 </div>
             </div>

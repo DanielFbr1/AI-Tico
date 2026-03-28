@@ -254,6 +254,11 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
             
             toast.success('Proyecto creado con éxito');
             if (data) {
+                // Si es la primera vez que crea un proyecto, marcamos para mostrar el tutorial
+                const hasSeenTutorial = localStorage.getItem('tutorial_docente_seen') === 'true';
+                if (!hasSeenTutorial) {
+                    localStorage.setItem('pendingFirstProjectTutorial', 'true');
+                }
                 onSelectProject(data as Proyecto);
             } else {
                 await fetchProyectos();

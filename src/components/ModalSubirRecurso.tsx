@@ -11,9 +11,10 @@ interface ModalSubirRecursoProps {
     proyectoId?: string;
     onClose: () => void;
     onSuccess: (nuevoRecurso: Recurso) => void;
+    esDocente?: boolean;
 }
 
-export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: ModalSubirRecursoProps) {
+export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess, esDocente = false }: ModalSubirRecursoProps) {
     const [titulo, setTitulo] = useState('');
     const [descripcion, setDescripcion] = useState('');
     const [contenidoTexto, setContenidoTexto] = useState('');
@@ -21,11 +22,17 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
     const [uploading, setUploading] = useState(false);
     const [tipoSeleccionado, setTipoSeleccionado] = useState<Recurso['tipo']>('texto');
     const [publicado, setPublicado] = useState(true);
-    const [esProfesor, setEsProfesor] = useState(false);
+    const [esProfesor, setEsProfesor] = useState(esDocente);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const checkRole = async () => {
+            // Si ya sabemos que es docente por prop, no hace falta consultar
+            if (esDocente) {
+                setEsProfesor(true);
+                return;
+            }
+
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 const { data } = await supabase.from('profiles').select('rol').eq('id', user.id).maybeSingle();
@@ -33,7 +40,7 @@ export function ModalSubirRecurso({ grupo, proyectoId, onClose, onSuccess }: Mod
             }
         };
         checkRole();
-    }, []);
+    }, [esDocente]);
 
     const TiposDisponibles: { id: Recurso['tipo']; label: string; icon: any; color: string }[] = [
         { id: 'texto', label: 'Texto / Documento', icon: FileText, color: 'text-purple-600 bg-purple-50 border-purple-200' },

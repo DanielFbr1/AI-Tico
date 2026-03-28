@@ -110,7 +110,7 @@ export interface AlumnoConectado {
     last_active: string;
 }
 
-export type DashboardSection = 'resumen' | 'grupos' | 'interacciones' | 'evaluacion' | 'trabajo-compartido' | 'solicitudes' | 'calendario';
+export type DashboardSection = 'resumen' | 'grupos' | 'interacciones' | 'evaluacion' | 'trabajo-compartido' | 'solicitudes' | 'calendario' | 'notificaciones';
 
 // --- TAREAS ESTILO CLASSROOM ---
 

@@ -1,5 +1,65 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.68] - 2026-03-28
+### Nuevo
+- **Sistema de Notificaciones**: Nuevo apartado de notificaciones en tiempo real tanto para profesores como para alumnos.
+- **Profesor**: Las notificaciones aparecen debajo de Evaluación en el sidebar. Incluye tipos como: tarea enviada a revisión, mensajes de familias, mano levantada, etc.
+- **Alumno**: Las notificaciones aparecen entre Chat y Mis Notas en la navegación. Incluye tipos como: nueva tarea asignada, nuevo mensaje de grupo, recurso subido, notas actualizadas, etc.
+- **Base de Datos**: Creada tabla `notificaciones` con políticas RLS y suscripción en tiempo real.
+- **Sincronización Global de Versión**: Actualizada la plataforma a la V5.8.68.
+
+## [V5.8.67] - 2026-03-28
+### Corregido
+- **Subida de Archivos para Colaboradores**: Se ha corregido un error que impedía a los profesores colaboradores subir archivos como borradores en proyectos compartidos. Ahora el modal de subida reconoce correctamente su rol de docente independientemente de quién sea el dueño del proyecto.
+- **Sincronización Global de Versión**: Actualizada la plataforma a la V5.8.67 en todos los dashboards y archivos de configuración para mantener la consistencia.
+
+## [V5.8.66] - 2026-03-23
+### Corregido
+- **Tutorial Docente**: Ahora el tutorial interactivo solo se activa automáticamente cuando el profesor crea su **primer proyecto**. Se ha eliminado el trigger automático al registrarse para evitar que aparezca al unirse a proyectos existentes como colaborador.
+- **Sincronización de Versiones**: Actualizada la versión visual en todos los paneles (Docente, Alumno, App) para reflejar la V5.8.66.
+
+## [V5.8.65] - 2026-03-23
+### Mensajería
+- **Sincronización Profesor-Alumno:** Se ha corregido un fallo donde los profesores no aparecían automáticamente en el chat del alumno al unirse a un proyecto. Ahora, el profesor propietario aparece de inmediato.
+- **Soporte Multi-Profesor:** El sistema ahora detecta y muestra a todos los profesores colaboradores de un proyecto en la lista de contactos del alumno, permitiendo una comunicación directa con todo el equipo docente.
+- **Historial Dinámico:** Se ha optimizado la carga del historial de clases para incluir el proyecto activo actual, incluso antes de que el alumno sea asignado a un grupo específico.
+
+
+## [V5.8.64] - 2026-03-22
+### TFG / Documentación
+- **Metodología (4.1):** Redacción completa de las fases de diseño (Figma a código) y arquitectura técnica accesible (Frontend/Backend/IA).
+- **Guía Didáctica (4.2.1):** Desarrollo del perfil docente: gestión de proyectos con IA, rúbricas y monitoreo en tiempo real.
+- **Experiencia del Alumno (4.2.2):** Explicación del Mentor Socrático (DUA), economía de fichas y progreso visual del avatar/cohete.
+- **Herramientas Transversales (4.2.3):** Inclusión de ruletas, dados y generadores de equipos para la gestión de aula.
+
+## [V5.8.63] - 2026-03-21
+### Estilizado
+- **Ampliación Perfil Alumno (Vista Docente):** Se ha maximizado el tamaño de la ventana de perfil (98vw) y se ha rediseñado a 3 columnas para mostrar simultáneamente la Evaluación Rúbrica, el detalle de Misiones con sus notas y las Observaciones privadas.
+- **Sincronización Total de Versión:** Actualización global a la **V5.8.63** para asegurar coherencia en todos los dispositivos.
+
+## [V5.8.62] - 2026-03-21
+### Estilizado
+- **Finalización Perfil Alumno (Vista Docente):** Se ha corregido definitivamente el "Rendimiento Clave" en el perfil del alumno visto por el profesor. Se eliminaron las métricas de IA y se ajustó la rejilla a 5 columnas alineadas en una sola fila.
+- **Sincronización Total de Versión:** Actualización global a la **V5.8.62** para validación del despliegue en todos los dashboards.
+
+## [V5.8.61] - 2026-03-21
+### Mantenimiento
+- **Sincronización de Versión:** Se ha unificado la versión en todos los componentes del sistema (Dashboard Docente, Alumno, Familia y Modales) para evitar confusiones y asegurar que todos los usuarios visualicen la versión más reciente.
+
+## [V5.8.60] - 2026-03-21
+### Estilizado
+- **Simplificación de Estadísticas:** Se han eliminado las métricas de "Preguntas a la IA" de los perfiles de los alumnos y del panel de "Mis Notas" para centrar la atención en el rendimiento académico directo.
+- **Optimización de Layout (5 Paneles):** Los indicadores de rendimiento se han reorganizado en una cuadrícula de 5 columnas en una sola línea, mejorando la coherencia visual y eliminando espacios vacíos en pantallas grandes.
+
+## [V5.8.59] - 2026-03-21
+### Mantenimiento
+- **Actualización de Versión:** Preparación de la infraestructura para el despliegue de las mejoras de diseño y persistencia de sesión.
+
+## [V5.8.58] - 2026-03-21
+### Funcionalidad
+- **Persistencia de Sesión (Alumno):** Se ha implementado el auto-seleccionado de la última clase visitada al iniciar sesión. Esto evita que el dashboard aparezca vacío inicialmente.
+- **Cálculo de Progreso en Tiempo Real:** Se ha mejorado el cálculo de progreso para que sea dinámico tanto en el dashboard del alumno como en el del docente, incluyendo ahora el estado "revisado" para que la batería de energía muestre el avance correcto.
+
 ## [V5.8.57] - 2026-03-21
 ### Estilizado
 - **Colorización de Paneles (Familia):** Se han asignado colores armónicos (Azul, Cian, Esmeralda, Ámbar y Naranja) a cada panel de estadísticas para una mejor distinción visual.
@@ -19,71 +79,5 @@
 ## [V5.8.54] - 2026-03-21
 
 ### Mejorado
-- **Formato de Entregas (Familia):** El indicador de tareas entregadas en el panel familiar ahora muestra un formato de fracción (ej. 5/6), indicando tanto las tareas entregadas como el total de tareas disponibles en el proyecto.
-
-## [V5.8.53] - 2026-03-21
-
-### Añadido
-- **Resumen de Misiones para Familias:** Se ha añadido un panel de estadísticas en la vista de notas para padres que incluye la **Nota Media de Misiones** y el **Número de Tareas Entregadas**.
-- **UI de Estadísticas:** Rediseño del panel de resumen de cada proyecto para mostrar de forma clara y colorida el progreso individual del alumno en sus entregas.
-
-## [V5.8.52] - 2026-03-21
-
-### Corregido
-- **Vincular Alumno (Familia):** Se ha actualizado el sistema de vinculación para familias. Ahora se requiere el **email** y contraseña del alumno en lugar del nombre, alineándose con el nuevo sistema de inicio de sesión de los estudiantes.
-- **Sincronización de Perfiles:** Al vincular un alumno, el sistema ahora recupera automáticamente su nombre real desde su perfil de usuario.
-
-## [V5.8.51] - 2026-03-21
-
-### Añadido
-- **Calificaciones por Tarea para Alumnos:** Nueva sección en "Mis Notas" que muestra el desglose de calificaciones obtenidas en cada misión/tarea específica.
-- **Acceso para Familias:** Los padres ahora pueden ver el desglose detallado de las calificaciones por tarea de sus hijos desde el panel familiar.
-- **Sincronización de Versiones:** Unificación de la versión del sistema en todos los paneles (Docente, Alumno y Familia).
-
-
-## [V5.8.50] - 2026-03-21
-### Corregido
-- **Optimización de Filtros:** Se ha simplificado la lógica interna del filtrado de misiones para evitar errores de tipo y asegurar la detección correcta de estados completados.
-- **Navegación Fluida:** Verificada la compatibilidad del atajo al editor en el despliegue de producción.
-
-## [V5.8.49] - 2026-03-21
-### Añadido
-- **Atajo Directo al Editor:** Al filtrar por grupo específico, el sistema salta el Hub de Misión y abre directamente la entrega del grupo.
-
-## [V5.8.48] - 2026-03-21
-### Corregido
-- **Filtros de Tareas Inteligentes:** Se ha rediseñado el sistema de filtrado de misiones. Ahora, al seleccionar un grupo específico, el estado "Completado" se calcula únicamente para ese grupo (detectando sus entregas individuales), permitiendo ver misiones como completadas aunque otros grupos no las hayan terminado aún.
-- **Contexto de Grupo:** Al filtrar por un grupo, solo se muestran sus misiones específicas y las globales, ocultando las misiones de otros equipos.
-
-## [V5.8.47] - 2026-03-21
-### Corregido
-- **Consistencia de Progreso:** Se ha unificado la lógica de cálculo de progreso entre la lista de "Gestión de Equipos" y la vista de detalle. Ahora ambos paneles usan el mismo algoritmo riguroso que detecta entregas evaluadas, tareas específicas y misiones globales sincronizadas.
-
-## [V5.8.46] - 2026-03-21
-### Corregido
-- **Cálculo de Batería:** Se corrigió la detección del estado `evaluada` en la base de datos para misiones globales.
-- **Progreso Reactivo:** La batería ahora se calcula localmente al instante para evitar el 0% visual durante la carga.
-
-## [V5.8.45] - 2026-03-21
-### Corregido
-- **Barra de Progreso (Batería):** Corregido el error donde la batería SVG siempre mostraba 0% en el detalle del grupo. Ahora el progreso se calcula correctamente para cada grupo, teniendo en cuenta tanto las tareas específicas como las globales (mediante la tabla `entregas_tareas`).
-- **Sesión del Alumno:** Corregido el bug de la "pantalla en blanco" al iniciar sesión. Ahora el dashboard del alumno auto-selecciona automáticamente el último proyecto visitado si no hay uno activo en su perfil.
-- **Navegación Docente:** Se asegura que al hacer clic en un grupo desde la gestión de equipos, se pase el valor de progreso actualizado al panel de detalle.
-
-## [V5.8.44] - 2026-03-21
-- **Consistencia**: "version": "5.8.45",.
-
-## [V5.8.43] - 22-03-2026
-- **Rediseño de Navegación**:
-  - Se ha movido el acceso al **Calendario** desde la barra lateral directamente a la cabecera del proyecto, junto al botón de **Horario**.
-  - El botón ahora se resalta visualmente cuando la sección de calendario está activa.
-  - Mejora de usabilidad al tener los accesos temporales agrupados en la parte superior.
-- **Limpieza de UI**: Eliminado el acceso redundante en el menú lateral.
-- **Consistencia**: Salto a V5.8.43.
-
-## [V5.8.42] - 22-03-2026
-- **Exportación a Excel Completa**:
-  - Se ha añadido una tercera pestaña al archivo Excel llamada **"Misiones (Tareas)"**.
-  - Esta hoja contiene el detalle completo de qué nota tiene cada grupo en cada tarea individual, además del ratio de entrega y la media de tareas.
-  - El archivo final de exportación ahora incluye: **Calificaciones Rúbrica**, **Misiones (Tareas)** y **Definición de Niveles de Rúbrica**.
-- **Consistencia**: Salto a V5.8.42.
+- **Vinculación de Alumnos (Familia):** Se ha corregido el sistema de vinculación de alumnos. Ahora se permite vincular usando el correo electrónico y contraseña del alumno, adaptándose al nuevo flujo de inicio de sesión simplificado.
+- **Vista de Familia mejorada:** Ahora se muestran las tareas entregadas y la media de las tareas directamente en el panel de la familia para un seguimiento más rápido.

@@ -181,10 +181,50 @@ Para comprender cómo funciona *Ai-Tico* tecnológicamente, podemos utilizar la 
     *   **Nano Banana / Veo3:** Modelos de generación y gestión visual, utilizados para complementar dinámicas específicas dentro del ecosistema de la aplicación.
 
 ### 4.2 Guía de Implementación Didáctica (Cómo usar la app en el aula)
-*(Este será el apartado más extenso. Aquí detallaremos el "paso a paso" pedagógico:
-1. Perfil del Docente (Creación de proyectos, rúbricas IA, gestión de alumnos, dashboard...).
-2. Perfil del Alumno (El chat con el Mentor Socrático, el sistema de puntos, la tienda, el cohete de progreso...).
-3. Herramientas transversales (Sorteos, dados, agrupamientos).)*
+
+Este apartado detalla la secuencia de uso de *Ai-Tico* desde una perspectiva operativa y pedagógica, diferenciando los roles del maestro y el estudiante.
+
+#### 4.2.1. El Perfil del Docente: Gestión y Orquestación del Aprendizaje
+
+El docente actúa como el administrador central del ecosistema. Su flujo de trabajo se divide en tres niveles:
+
+**1. Configuración y Curaduría del Proyecto (Fase de Pre-impacto)**
+Al iniciar sesión, el maestro accede a un panel de control (*Dashboard*) donde debe configurar el entorno de aprendizaje. El primer paso consiste en la creación de un nuevo proyecto (ABP). Aquí, la Inteligencia Artificial actúa como un **copiloto de planificación**: el docente introduce el tema del proyecto y la IA sugiere una estructura de objetivos, contenidos y tareas alineadas con el currículo. Un elemento crítico es la **Configuración del Mentor IA**, donde el profesor puede ajustar el "nivel de ayuda" o el tono de la respuesta para asegurar que el tutor virtual se mantenga en la fase socrática deseada.
+
+**2. Gestión de Grupos y Dinámicas de Aula**
+Dada la realidad multigrado del centro (CRA), la plataforma permite organizar a los alumnos en equipos heterogéneos. Desde el panel, el docente puede:
+*   **Asignar tareas específicas:** Diferenciando misiones por niveles o ritmos de aprendizaje.
+*   **Generar Rúbricas:** La IA genera criterios de evaluación automáticos pero editables, facilitando la transparencia en la calificación desde el inicio.
+*   **Herramientas de gestión rápida:** Integración de "dados virtuales" para el azar, un generador de equipos automático y un control de asistencia digital, centralizando todas las micro-gestiones que antes estaban fragmentadas.
+
+**3. Supervisión y Regulación en Tiempo Real (Fase de Impacto)**
+Durante el desarrollo de la clase, el docente monitorea el **Dashboard de seguimiento**. Este panel ofrece una visión escalar:
+*   **Estado de los Equipos:** Indicadores visuales (clima de aula digital) que muestran qué grupos están avanzando, quiénes han completado hitos y, lo más importante, quiénes han pulsado el botón de "Pedir ayuda".
+*   **Revisión de Misiones:** Cuando un grupo entrega una tarea, el profesor recibe una notificación para validarla. Al aprobarla, el sistema asigna automáticamente **puntos al equipo**, alimentando la "economía de fichas" y permitiendo que los alumnos progresen en su nivel de salud o evolución de la mascota virtual.
+*   **Chat Docente-Alumno:** Un canal de comunicación directa para resolver dudas específicas sin necesidad de interrumpir el ritmo general del aula.
+
+#### 4.2.2. El Perfil del Alumno: Aprendizaje Activo y Gamificado
+
+La experiencia del estudiante en *Ai-Tico* está diseñada para transformar el trabajo escolar en una "misión" de exploración. Su interacción se articula en torno a tres ejes:
+
+**1. Interacción con el Mentor Socrático (Andamiaje Cognitivo)**
+El alumno no se enfrenta a una caja de búsqueda fría, sino a una interfaz conversacional amigable. Cuando surge una duda en el proyecto, el estudiante "habla" con Tico. Siguiendo los principios del DUA, la plataforma permite la entrada y salida de información mediante **voz y texto**, eliminando las barreras de lectoescritura para alumnos más pequeños o con dificultades (TEA/TDAH). El Mentor IA, previamente configurado por el docente, nunca ofrece la solución directa; mediante preguntas guía, ayuda al alumno a conectar ideas previas y a encontrar la respuesta por sí mismo, fomentando el pensamiento crítico.
+
+**2. La Economía de Fichas y el Cuidado de la Mascota**
+El sistema de motivación se basa en una narrativa de cuidado y responsabilidad:
+*   **Puntos de Experiencia (XP):** Al completar tareas o hitos del proyecto validados por el profesor, el alumno recibe puntos. 
+*   **La evolución de Tico:** Estos puntos se traducen en la salud y evolución de una mascota virtual personalizada. Si el alumno es constante e investiga de forma ética, su mascota prospera. Este vínculo emocional actúa como un potente regulador de conducta y un incentivo para la persistencia en tareas complejas.
+*   **El Nexo (Progreso Visual):** Un indicador en forma de cohete o árbol de vida muestra el progreso colectivo del grupo, reforzando la interdependencia positiva del trabajo colaborativo.
+
+**3. Autonomía y Metacognición**
+El alumno dispone de un panel personal donde visualiza sus logros, insignias y las observaciones (retroalimentación formativa) que el docente ha compartido. Este espacio permite que el estudiante sea consciente de su propio proceso de aprendizaje, identificando sus fortalezas y áreas de mejora sin la presión de una nota numérica tradicional y constante.
+
+#### 4.2.3. Herramientas Auxiliares de Gestión Transversal
+
+Para completar el ecosistema y reducir la fragmentación de aplicaciones externas, *Ai-Tico* integra utilidades que el docente utiliza para dinamizar la jornada:
+*   **La Ruleta y el Sorteo de Turnos:** Utilizada para dar la palabra de forma aleatoria o asignar roles dentro de los equipos, garantizando la equidad en la participación.
+*   **El Generador de Equipos:** Permite crear agrupamientos heterogéneos basados en criterios pedagógicos (mezclando niveles de competencia) de forma instantánea.
+*   **Cronómetros y Gestores de Tiempo:** Ayudan a los alumnos con TDAH a visualizar el paso del tiempo durante las tareas, facilitando la autorregulación.
 
 ## 5. Análisis de Resultados / Desarrollo
 *(Muestra aquí lo que has construido: capturas de pantalla, flujos de usuario, cómo funciona Tico, el panel del profesor, pruebas realizadas, etc.).*

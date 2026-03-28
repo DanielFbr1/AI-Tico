@@ -28,9 +28,10 @@ import {
   Trash2,
   Check,
   Send,
-  Clock
+  Clock,
+  Bell
 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Grupo, HitoGrupo, ProyectoFase, Rubrica } from '../types';
 import { supabase } from '../lib/supabase';
 import { MentorChat } from './MentorChat';
@@ -64,6 +65,7 @@ import { ModalChatProfesoresAlumno } from './ModalChatProfesoresAlumno';
 import { ModalDetalleTarea } from './ModalDetalleTarea';
 import { VistaCalendario } from './VistaCalendario';
 import { TareaDetallada } from '../types';
+import { NotificacionesPanel } from './NotificacionesPanel';
 
 interface DashboardAlumnoProps {
   alumno: {
@@ -80,7 +82,7 @@ interface DashboardAlumnoProps {
 
 export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   // Estados de Vista
-  const [vistaActiva, setVistaActiva] = useState<'grupo' | 'tareas' | 'comunidad' | 'chat' | 'perfil' | 'calendario'>('grupo');
+  const [vistaActiva, setVistaActiva] = useState<'grupo' | 'tareas' | 'comunidad' | 'chat' | 'perfil' | 'calendario' | 'notificaciones'>('grupo');
   const [chatTab, setChatTab] = useState<'ia' | 'equipo'>('ia');
   const [mobileChatTab, setMobileChatTab] = useState<'menu' | 'ia' | 'equipo'>('menu');
   const [puntosTotales, setPuntosTotales] = useState<number>(0);
@@ -168,7 +170,21 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
             historialReal.sort((a, b) => a.orden_reciente - b.orden_reciente || a.nombre.localeCompare(b.nombre));
 
             const uniqueHistory = Array.from(new Map(historialReal.map((item: any) => [item.id, item])).values());
-            setHistorialClases(uniqueHistory.slice(0, 6));
+            
+            // ASEGURAR QUE EL PROYECTO ACTUAL ESTÉ EN EL HISTORIAL (para que aparezca el profesor en el chat)
+            const currentProjId = alumno.proyecto_id || localProjectId;
+            if (currentProjId && !uniqueHistory.some(h => String(h.id) === String(currentProjId))) {
+                uniqueHistory.unshift({
+                    id: currentProjId,
+                    nombre: nombreProyecto || 'Proyecto Actual',
+                    codigo: alumno.codigo_sala || localRoomCode || '???',
+                    asignatura: asignaturaProyecto || '',
+                    curso: 'Actual',
+                    orden_reciente: -1
+                });
+            }
+
+            setHistorialClases(uniqueHistory.slice(0, 8));
 
             if (!alumno.proyecto_id && !localProjectId && uniqueHistory.length > 0) {
               const lastProject = uniqueHistory[0];
@@ -187,7 +203,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
   useEffect(() => {
     fetchDatosAlumno();
-  }, [alumno.id]);
+  }, [alumno.id, localProjectId, localRoomCode]);
 
   const tutorialKey = `tutorial_alumno_seen_${alumno.id}`;
 
@@ -211,10 +227,33 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     { criterio: 'Reflexión metacognitiva', puntos: 6, nivel: 'Suficiente' }
   ];
 
+  const [unreadProfMessages, setUnreadProfMessages] = useState(0);
   const [realEvaluacion, setRealEvaluacion] = useState<any[]>([]);
   const [asistenciaStats, setAsistenciaStats] = useState({ present: 0, total: 0, percentage: 0 });
   const [hasNewEvaluation, setHasNewEvaluation] = useState(false);
-  const [unreadProfMessages, setUnreadProfMessages] = useState(0);
+
+  const calculatedProgreso = useMemo(() => {
+    if (showExample) return grupoEjemplo.progreso;
+    if (!grupoReal || !tareasAlumno.length) return 0;
+    
+    // Tareas que le corresponden
+    const tareasRel = tareasAlumno.filter(t => t.grupo_id === grupoReal.id || !t.grupo_id);
+    if (!tareasRel.length) return 0;
+    
+    // Contar las aprobadas/evaluadas
+    const evaluadas = tareasRel.filter(t => {
+            // 1. Priorizar estado de entrega (para misiones globales y específicas)
+            const gidNum = Number(grupoReal.id);
+            const e = (entregasTareas || []).find(ent => ent.tarea_id === t.id && Number(ent.grupo_id) === gidNum);
+            if (e && (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado' || e.estado === 'revisado')) {
+                return true;
+            }
+      // 2. Si no hay entrega, usar el estado de la tarea (para tareas sin entrega explícita)
+      return ['aprobado', 'completado'].includes(t.estado);
+    }).length;
+    
+    return Math.round((evaluadas / tareasRel.length) * 100);
+  }, [showExample, grupoReal, tareasAlumno, entregasTareas]);
 
   const evaluacionAlumno = showExample ? evaluacionEjemplo : realEvaluacion;
 
@@ -305,10 +344,13 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       );
 
       // Mapear tareas a grupos para la vista de comunidad
-      const gruposConTareas = (grupos || []).map(g => ({
-        ...g,
-        tareas: (tareasGlobales || []).filter(t => t.grupo_id === g.id || t.grupo_id === null)
-      }));
+      const gruposConTareas = (grupos || []).map(g => {
+        const tareasDelGrupo = (tareasGlobales || []).filter(t => 
+            (t.grupo_id !== null && t.grupo_id !== undefined && Number(t.grupo_id) === g.id) || 
+            (t.grupo_id === null || t.grupo_id === undefined || String(t.grupo_id) === 'all')
+        );
+        return { ...g, tareas: tareasDelGrupo };
+      });
       setTodosLosGrupos(gruposConTareas);
 
       if (miGrupo) {
@@ -611,9 +653,6 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       }).eq('id', alumno.id);
 
       toast.success(`Cambiando a clase: ${classData.nombre}`);
-      // Force reload data by triggering re-fetch via auth state change/reload or just calling fetch
-      // But fetch relies on props `alumno`. `alumno` comes from `App` which watches `user`.
-      // Modifying auth metadata should trigger `useAuth` update eventually, but might be slow.
       // A hard reload is simplest for "Session" changes, or we can just `window.location.reload()`.
       window.location.reload();
 
@@ -875,6 +914,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   };
 
   const tareasCategorizadas = React.useMemo(() => {
+    const VERSION = "V5.8.68";
     const panels = {
       pendientes: [] as any[],
       revision: [] as any[],
@@ -946,7 +986,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.57</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.68</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -1178,6 +1218,18 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               </div>
             </button>
             <button
+              onClick={() => { setVistaActiva('notificaciones'); window.scrollTo(0, 0); }}
+              className={`px-2 md:px-8 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'notificaciones'
+                ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
+                : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
+                }`}
+            >
+              <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
+                <Bell className="w-4 h-4" />
+                <span className="truncate">Alertas</span>
+              </div>
+            </button>
+            <button
               onClick={() => {
                 setVistaActiva('perfil');
                 setHasNewEvaluation(false); // Limpiar aviso al entrar
@@ -1325,7 +1377,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
                       <div className="relative z-10 transform hover:scale-105 transition-transform duration-500">
                         <LivingTree
-                          progress={grupoDisplay.progreso}
+                          progress={calculatedProgreso}
                           health={100}
                           size={260}
                           showLabels={false}
@@ -1334,7 +1386,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       </div>
 
                       <div className="mt-8 text-center relative z-10 w-full">
-                        <div className="text-4xl font-black text-indigo-600 mb-1">{grupoDisplay.progreso.toFixed(0)}%</div>
+                        <div className="text-4xl font-black text-indigo-600 mb-1">{calculatedProgreso.toFixed(0)}%</div>
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-indigo-50 py-1.5 px-4 rounded-full inline-flex border border-indigo-100">Batería recolectada</div>
                       </div>
                     </div>
@@ -1717,69 +1769,68 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           )
         }
 
+        {/* VISTA NOTIFICACIONES */}
+        {
+          vistaActiva === 'notificaciones' && alumno.id && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <NotificacionesPanel userId={alumno.id} proyectoId={alumno.proyecto_id} />
+            </div>
+          )
+        }
+
         {/* VISTA MIS NOTAS (Revertido a solo notas) */}
         {
           vistaActiva === 'perfil' && grupoDisplay && (
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Header de Rendimiento */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-                <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-200 group hover:border-emerald-200 transition-all flex items-center gap-3 md:gap-4 min-w-0">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform shrink-0">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 rounded-xl md:rounded-2xl flex items-center justify-center text-emerald-600 shrink-0">
                     <Trophy className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{notaMedia.toFixed(1)}</div>
-                    <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Nota media</div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-2xl lg:text-3xl font-black text-slate-900 leading-none mb-1">{notaMedia.toFixed(1)}</div>
+                    <div className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">Media Crit.</div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-200 group hover:border-indigo-200 transition-all flex items-center gap-3 md:gap-4 min-w-0">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform shrink-0">
-                    <MessageSquare className="w-5 h-5 md:w-6 md:h-6" />
+                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
+                    <Calendar className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{Math.floor((grupoDisplay.interacciones_ia || 0) / Math.max(1, grupoDisplay.miembros?.length || 1))}</div>
-                    <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Preguntas IA</div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-200 group hover:border-purple-200 transition-all flex items-center gap-3 md:gap-4 min-w-0">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform shrink-0">
-                    <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{asistenciaStats.percentage}%</div>
-                    <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Asistencia</div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-2xl lg:text-3xl font-black text-slate-900 leading-none mb-1">{asistenciaStats.percentage}%</div>
+                    <div className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">Asist.</div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-200 group hover:border-amber-200 transition-all flex items-center gap-3 md:gap-4 min-w-0">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform shrink-0">
+                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-50 rounded-xl md:rounded-2xl flex items-center justify-center text-amber-500 shrink-0 shadow-sm">
                     <Award className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{tareasCompletadasMisiones}/{totalTareasMisiones}</div>
-                    <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Misiones</div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-2xl lg:text-3xl font-black text-amber-600 leading-none mb-1">{tareasCompletadasMisiones}/{totalTareasMisiones}</div>
+                    <div className="text-[8px] md:text-[9px] font-bold text-amber-500 uppercase tracking-wider leading-none">Misiones</div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-200 group hover:border-fuchsia-200 transition-all flex items-center gap-3 md:gap-4 min-w-0">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-fuchsia-50 rounded-xl flex items-center justify-center text-fuchsia-600 group-hover:scale-110 transition-transform shrink-0">
+                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-fuchsia-50 rounded-xl md:rounded-2xl flex items-center justify-center text-fuchsia-600 shrink-0 shadow-sm">
                     <TrendingUp className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none mb-1 truncate">{notaMediaMisiones.toFixed(1)}</div>
-                    <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none truncate">Media Misiones</div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-2xl lg:text-3xl font-black text-fuchsia-600 leading-none mb-1">{notaMediaMisiones.toFixed(1)}</div>
+                    <div className="text-[8px] md:text-[9px] font-bold text-fuchsia-500 uppercase tracking-wider leading-none">Media Mis.</div>
                   </div>
                 </div>
 
-                <div className="bg-amber-50 rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-amber-200 group hover:border-amber-300 transition-all flex items-center gap-3 md:gap-4 min-w-0">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform shrink-0 shadow-sm border border-amber-100">
+                <div className="bg-indigo-50 rounded-2xl p-4 md:p-6 shadow-sm border border-indigo-200 flex items-center gap-3 md:gap-4 hover:scale-[1.02] transition-transform">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-indigo-500 shrink-0 shadow-sm">
                     <Star className="w-5 h-5 md:w-6 md:h-6" fill="currentColor" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xl md:text-3xl font-black text-amber-600 tracking-tight leading-none mb-1 truncate">{puntosTotales}</div>
-                    <div className="text-[8px] md:text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none truncate">Puntos</div>
+                  <div className="min-w-0">
+                    <div className="text-xl md:text-2xl lg:text-3xl font-black text-indigo-600 leading-none mb-1">{puntosTotales}</div>
+                    <div className="text-[8px] md:text-[9px] font-bold text-indigo-500 uppercase tracking-wider leading-none">Puntos</div>
                   </div>
                 </div>
               </div>
@@ -2028,6 +2079,16 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 <MessageSquare className={`w-5 h-5 ${vistaActiva === 'chat' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
               </div>
               <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'chat' ? 'opacity-100' : 'opacity-80'}`}>Chat</span>
+            </button>
+
+            <button
+              onClick={() => { setVistaActiva('notificaciones'); window.scrollTo(0, 0); }}
+              className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${vistaActiva === 'notificaciones' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
+            >
+              <div className={`p-2 rounded-2xl transition-all ${vistaActiva === 'notificaciones' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-transparent'}`}>
+                <Bell className={`w-5 h-5 ${vistaActiva === 'notificaciones' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+              </div>
+              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'notificaciones' ? 'opacity-100' : 'opacity-80'}`}>Alertas</span>
             </button>
 
             <button

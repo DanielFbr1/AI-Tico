@@ -79,7 +79,7 @@ function AppContent() {
       // Mostrar toast con el error
       import('sonner').then(({ toast }) => {
         toast.error('El enlace de verificación ha expirado o no es válido. Solicita uno nuevo desde el registro.', {
-          duration: 8000,
+          duration: 8000
         });
       });
       // Limpiar la URL
@@ -133,8 +133,8 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Iniciando sesión segura...</p>
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Iniciando sesión segura...</p>
         </div>
       </div>
     );
@@ -161,7 +161,7 @@ function AppContent() {
   if (perfil && perfil.rol === 'alumno') {
     return (
       <DashboardAlumno
-        alumno={perfil}
+        alumno={perfil as any}
         onLogout={signOut}
       />
     );
@@ -177,40 +177,53 @@ function AppContent() {
     );
   }
 
+  // Si es profesor
+  if (perfil && perfil.rol === 'profesor') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {currentScreen === 'projects' && (
+          <ProjectsDashboard
+            onSelectProject={handleSelectProject}
+          />
+        )}
+
+        {currentScreen === 'project-detail' && selectedProject && (
+          <ProjectDetail
+            proyecto={selectedProject}
+            onSelectGrupo={handleSelectGrupo}
+            onBack={handleBackToProjects}
+            onSwitchProject={setSelectedProject}
+            onOpenTicoFull={handleOpenTicoFull}
+          />
+        )}
+
+        {currentScreen === 'tico-full' && selectedProject && (
+          <TicoFullScreenPage
+            projectId={selectedProject.id}
+            organizacionId={selectedProject.organizacion_clase_id || selectedProject.clase}
+            onBack={handleCloseTicoFull}
+          />
+        )}
+
+        {currentScreen === 'group-detail' && selectedGrupo && (
+          <GroupDetail
+            grupo={selectedGrupo}
+            fases={selectedProject?.fases || []}
+            rubrica={selectedProject?.rubrica && selectedProject.rubrica.criterios ? selectedProject.rubrica.criterios : []}
+            onBack={handleBackToProjectDetail}
+          />
+        )}
+      </div>
+    );
+  }
+
+
+  // Por si acaso no cae en ningún rol (No debería ocurrir)
   return (
-    <div className="min-h-screen bg-gray-50">
-      {currentScreen === 'projects' && (
-        <ProjectsDashboard
-          onSelectProject={handleSelectProject}
-        />
-      )}
-
-      {currentScreen === 'project-detail' && selectedProject && (
-        <ProjectDetail
-          proyecto={selectedProject}
-          onSelectGrupo={handleSelectGrupo}
-          onBack={handleBackToProjects}
-          onSwitchProject={setSelectedProject}
-          onOpenTicoFull={handleOpenTicoFull}
-        />
-      )}
-
-      {currentScreen === 'tico-full' && selectedProject && (
-        <TicoFullScreenPage
-          projectId={selectedProject.id}
-          organizacionId={selectedProject.organizacion_clase_id || selectedProject.clase} // Prefer organization ID
-          onBack={handleCloseTicoFull}
-        />
-      )}
-
-      {currentScreen === 'group-detail' && selectedGrupo && (
-        <GroupDetail
-          grupo={selectedGrupo}
-          fases={selectedProject?.fases || []}
-          rubrica={selectedProject?.rubrica && selectedProject.rubrica.criterios ? selectedProject.rubrica.criterios : []}
-          onBack={handleBackToProjectDetail}
-        />
-      )}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Redirigiendo...</p>
+      </div>
     </div>
   );
 }
@@ -226,9 +239,7 @@ export default function App() {
         <AppContent />
         <Toaster position="top-right" richColors />
         <div className="fixed bottom-2 right-2 flex flex-col items-end gap-1 opacity-50 z-50 pointer-events-none">
-          <span className="text-white/40 font-mono text-[10px] bg-white/5 px-2 py-0.5 rounded-full">
-            V5.8.57
-          </span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.68</span>
         </div>
       </AuthProvider>
     </ErrorBoundary>

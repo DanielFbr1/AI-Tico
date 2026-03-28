@@ -31,11 +31,12 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
     // Estado del tutorial: Mostrar SOLO si acaba de registrarse (isNewTeacher)
     // O si nunca lo ha visto y queremos forzarlo (opcional, pero el usuario pidió solo al registrarse)
     const [showTutorial, setShowTutorial] = useState(() => {
-        const isNewTeacher = localStorage.getItem('isNewTeacher') === 'true';
-        if (isNewTeacher) {
-            // Es nuevo registro, mostramos y limpiamos la marca de "nuevo"
-            // (La marca de "visto" se pondrá cuando lo termine o cierre)
-            localStorage.removeItem('isNewTeacher');
+        const hasSeenTutorial = localStorage.getItem('tutorial_docente_seen') === 'true';
+        const isPendingTutorial = localStorage.getItem('pendingFirstProjectTutorial') === 'true';
+
+        if (isPendingTutorial && !hasSeenTutorial) {
+            // Se activó tras crear su primer proyecto
+            localStorage.removeItem('pendingFirstProjectTutorial');
             return true;
         }
         return false;

@@ -33,7 +33,7 @@ export function LoginPage() {
             if (isSignUp) {
                 // Flags para onboarding
                 if (targetRole === 'profesor') {
-                    localStorage.setItem('isNewTeacher', 'true');
+                    // El tutorial se activará tras crear el primer proyecto
                 } else if (targetRole === 'familia') {
                     localStorage.setItem('isNewFamily', 'true');
                 } else {
