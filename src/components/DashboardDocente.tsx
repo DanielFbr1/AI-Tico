@@ -826,7 +826,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            V5.8.67
+                            V5.8.68
                         </div>
                     </div>
                 </aside>
