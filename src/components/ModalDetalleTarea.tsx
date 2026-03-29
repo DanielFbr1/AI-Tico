@@ -3,7 +3,7 @@ import { TareaDetallada, Grupo } from '../types';
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
-import { crearNotificacionMasiva, getAlumnosDelGrupo } from '../lib/notificaciones';
+import { crearNotificacionMasiva, getAlumnosDelGrupo, getProfesoresDelProyecto, getAlumnosDelProyecto } from '../lib/notificaciones';
 
 interface ModalDetalleTareaProps {
     tarea: TareaDetallada;
@@ -17,9 +17,10 @@ interface ModalDetalleTareaProps {
     targetGrupoId?: string | number;
     currentUserId?: string;
     currentUserNombre?: string;
+    initialShowChat?: boolean;
 }
 
-export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoChange, onUpdateTarea, onSaveAlumnoContent, isStudent, targetGrupoId, currentUserId, currentUserNombre }: ModalDetalleTareaProps) {
+export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoChange, onUpdateTarea, onSaveAlumnoContent, isStudent, targetGrupoId, currentUserId, currentUserNombre, initialShowChat }: ModalDetalleTareaProps) {
     const [editMode, setEditMode] = useState(!isStudent);
     const [titulo, setTitulo] = useState(tarea.titulo);
     const [descripcion, setDescripcion] = useState(tarea.descripcion || '');
@@ -42,7 +43,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
     const [guardando, setGuardando] = useState(false);
     const [subiendoArchivo, setSubiendoArchivo] = useState(false);
     const [cargandoEntrega, setCargandoEntrega] = useState(!!targetGrupoId);
-    const [showChat, setShowChat] = useState(false);
+    const [showChat, setShowChat] = useState(!!initialShowChat);
     const [lastSeenChatCount, setLastSeenChatCount] = useState<number>(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const adjuntosInputRef = useRef<HTMLInputElement>(null);
@@ -319,8 +320,8 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                 return;
             }
 
-            // 1. Determinar contexto de grupo y tabla (EXCLUSIVAMENTE mensajes_chat)
-            const finalGroupId = tarea.grupo_id || targetGrupoId;
+            // 1. Determinar contexto de grupo (PRIORIDAD: contexto actual > tarea base)
+            const finalGroupId = targetGrupoId || tarea.grupo_id || null;
             const table = 'mensajes_chat';
             
             console.log(`[Sync] Configurando chat INTEGRADO para Tarea ${tarea.id}. GrupoID: ${finalGroupId}`);
@@ -365,9 +366,10 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                     const finalGroupId = tarea.grupo_id || targetGrupoId;
 
                     // Verificar que pertenezca al contexto actual (grupo o tarea global)
+                    // Si el mensaje tiene grupo_id, verificamos que sea el mismo. Si no tiene, solo se muestra en chat global (sin grupo)
                     const belongs = finalGroupId 
-                        ? (m.grupo_id && Number(m.grupo_id) === Number(finalGroupId))
-                        : true; 
+                        ? (Number(m.grupo_id) === Number(finalGroupId))
+                        : !m.grupo_id; 
                     
                     if (belongs) {
                         const isFromProfesor = m.tipo === 'profesor' || m.usuario_id === tarea.creador_id;
@@ -392,6 +394,70 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
         fetchAndSubscribe();
         return () => { if (channel) supabase.removeChannel(channel); };
     }, [alumnoUserId, targetGrupoId, currentUserId, tarea.id, tarea.grupo_id]);
+
+    const handleSendMsg = async () => {
+        const msgTexto = nuevoComentario.trim();
+        if (!msgTexto) return;
+        
+        const autor = currentUserNombre || (isStudent ? 'Alumno' : 'Profesor');
+        const rol = isStudent ? 'alumno' : 'profesor';
+        const rawGid = targetGrupoId || tarea.grupo_id || null;
+        const gid = (rawGid !== null && rawGid !== undefined) ? Number(rawGid) : null;
+        const validGid = (gid !== null && !isNaN(gid)) ? gid : null;
+        
+        setNuevoComentario('');
+
+        try {
+            await supabase.from('mensajes_chat').insert({
+                grupo_id: validGid,
+                usuario_id: currentUserId || (isStudent ? (alumnoUserId || currentUserId) : tarea.creador_id),
+                remitente: autor,
+                contenido: msgTexto,
+                tipo: rol,
+                modo: 'equipo',
+                tarea_id: tarea.id,
+                tarea_titulo: tarea.titulo,
+                proyecto_id: tarea.proyecto_id
+            });
+
+            // Enviar Notificación
+            if (isStudent) {
+                // Alumno -> Profesor
+                const profIds = await getProfesoresDelProyecto(tarea.proyecto_id);
+                if (profIds.length > 0) {
+                    await crearNotificacionMasiva(profIds, {
+                        proyectoId: tarea.proyecto_id,
+                        tipo: 'comentario_tarea',
+                        titulo: `Misión "${tarea.titulo}": Nuevo mensaje`,
+                        descripcion: `${autor} ha escrito un comentario en la tarea.`,
+                        metadata: { tarea_id: tarea.id, grupo_id: validGid, alumno_id: currentUserId, alumno_nombre: autor }
+                    });
+                }
+            } else {
+                // Profesor -> Alumnos (del grupo o de todo el proyecto si es global)
+                let alumnoIds: string[] = [];
+                if (validGid) {
+                    alumnoIds = await getAlumnosDelGrupo(validGid, tarea.proyecto_id);
+                } else {
+                    alumnoIds = await getAlumnosDelProyecto(tarea.proyecto_id);
+                }
+
+                if (alumnoIds.length > 0) {
+                    await crearNotificacionMasiva(alumnoIds, {
+                        proyectoId: tarea.proyecto_id,
+                        tipo: 'comentario_tarea',
+                        titulo: `Misión "${tarea.titulo}": Mensaje del profesor`,
+                        descripcion: `El profesor ha dejado un nuevo comentario en la misión.`,
+                        metadata: { tarea_id: tarea.id, grupo_id: validGid }
+                    });
+                    toast.success('Notificación enviada a los alumnos');
+                }
+            }
+        } catch (err) {
+            console.error('Error enviando mensaje:', err);
+            toast.error('No se pudo enviar el mensaje');
+        }
+    };
 
     const handleDeleteFile = async (idx: number) => {
         if (!window.confirm('¿Estás seguro de que quieres eliminar este archivo de evidencia?')) return;
@@ -592,6 +658,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                         setGuardando(false);
                                                     }
                                                     onEstadoChange(tarea.id, 'revision');
+                                                    onClose(); // Cerrar modal tras entregar
                                                 }}
                                                 className="px-6 py-2 bg-white text-blue-600 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-50 transition-all active:scale-95 flex items-center gap-2 border-2 border-transparent hover:border-blue-200"
                                             >
@@ -601,7 +668,10 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                         )}
                                         {isStudent && tarea.estado === 'revision' && (
                                             <button
-                                                onClick={() => onEstadoChange(tarea.id, 'pendiente')}
+                                                onClick={() => {
+                                                    onEstadoChange(tarea.id, 'pendiente');
+                                                    onClose(); // Cerrar modal al anular
+                                                }}
                                                 className="px-6 py-2 bg-rose-500/20 backdrop-blur-md border border-rose-500/30 text-rose-100 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-500/40 transition-all active:scale-95"
                                             >
                                                 Anular Entrega
@@ -609,7 +679,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                         )}
                                         
                                         <div className="flex items-center gap-2">
-                                             <span className="text-[10px] font-black text-slate-400 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full uppercase tracking-widest border border-white/30 text-white/90">Versión V5.8.34</span>
+                                             <span className="text-[10px] font-black text-slate-400 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full uppercase tracking-widest border border-white/30 text-white/90">Versión V5.8.85</span>
                                             <button 
                                                 onClick={onClose}
                                                 className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
@@ -839,52 +909,16 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                 <input 
                                                     value={nuevoComentario}
                                                     onChange={(e) => setNuevoComentario(e.target.value)}
-                                                    onKeyDown={async (e) => {
-                                                        if (e.key === 'Enter' && nuevoComentario.trim()) {
-                                                            const autor = currentUserNombre || (isStudent ? 'Alumno' : 'Profesor');
-                                                            const rol = isStudent ? 'alumno' : 'profesor';
-                                                            const msgTexto = nuevoComentario.trim();
-                                                            setNuevoComentario('');
-                                                            const finalGroupId = tarea.grupo_id || targetGrupoId;
-                                                            const gid = finalGroupId ? Number(finalGroupId) : null;
-                                                            
-                                                            await supabase.from('mensajes_chat').insert({
-                                                                grupo_id: gid,
-                                                                usuario_id: currentUserId || (isStudent ? (alumnoUserId || currentUserId) : tarea.creador_id),
-                                                                remitente: autor,
-                                                                contenido: msgTexto,
-                                                                tipo: rol,
-                                                                modo: 'equipo',
-                                                                tarea_id: tarea.id,
-                                                                tarea_titulo: tarea.titulo,
-                                                                proyecto_id: tarea.proyecto_id
-                                                            });
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            handleSendMsg();
                                                         }
                                                     }}
                                                     placeholder="Escribe un comentario..."
                                                     className="flex-1 bg-white border-2 border-slate-100 rounded-2xl px-4 py-3 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all shadow-sm"
                                                 />
                                                 <button 
-                                                    onClick={async () => {
-                                                        const autor = currentUserNombre || (isStudent ? 'Alumno' : 'Profesor');
-                                                        const rol = isStudent ? 'alumno' : 'profesor';
-                                                        const msgTexto = nuevoComentario.trim();
-                                                        setNuevoComentario('');
-                                                        const finalGroupId = tarea.grupo_id || targetGrupoId;
-                                                        const gid = finalGroupId ? Number(finalGroupId) : null;
-                                                        
-                                                        await supabase.from('mensajes_chat').insert({
-                                                            grupo_id: gid,
-                                                            usuario_id: currentUserId || (isStudent ? (alumnoUserId || currentUserId) : tarea.creador_id),
-                                                            remitente: autor,
-                                                            contenido: msgTexto,
-                                                            tipo: rol,
-                                                            modo: 'equipo',
-                                                            tarea_id: tarea.id,
-                                                            tarea_titulo: tarea.titulo,
-                                                            proyecto_id: tarea.proyecto_id
-                                                        });
-                                                    }}
+                                                    onClick={handleSendMsg}
                                                     className="p-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-90"
                                                 >
                                                     <Send className="w-4 h-4" />
@@ -977,11 +1011,14 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                 <div className="flex items-center gap-2">
                                                     <input 
                                                         type="number" 
-                                                        min="1"
+                                                        min="0"
                                                         max="10"
                                                         step="0.1"
                                                         value={calificacion || 0}
-                                                        onChange={(e) => setCalificacion(parseFloat(e.target.value) || 0)}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            setCalificacion(Math.min(10, Math.max(0, val)));
+                                                        }}
                                                         className="flex-1 bg-white border-2 border-slate-100 rounded-xl px-4 py-2.5 text-sm font-black text-indigo-600 outline-none focus:border-indigo-500 transition-all shadow-sm"
                                                     />
                                                     <span className="text-xs font-black text-slate-300">/ 10</span>
@@ -1001,10 +1038,14 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                 <div className="flex items-center justify-center gap-3">
                                                     <input
                                                         type="number"
-                                                        min="1"
+                                                        min="0"
                                                         max="10"
+                                                        step="0.1"
                                                         value={calificacion || 0}
-                                                        onChange={(e) => setCalificacion(Number(e.target.value) || 0)}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            setCalificacion(Math.min(10, Math.max(0, val)));
+                                                        }}
                                                         className="w-20 text-4xl font-black text-indigo-600 bg-slate-50 rounded-2xl p-4 text-center border-2 border-indigo-50 outline-none focus:border-indigo-300 transition-all"
                                                     />
                                                     <span className="text-xl font-black text-slate-300">/ 10</span>

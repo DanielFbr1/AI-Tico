@@ -12,6 +12,7 @@ type TipoNotificacion =
   | 'colaboracion_aceptada'
   | 'hito_aprobado'
   | 'hito_rechazado'
+  | 'comentario_tarea'
   | 'general';
 
 interface CrearNotificacionParams {
@@ -63,6 +64,7 @@ export async function crearNotificacionMasiva(
   if (userIds.length === 0) return;
 
   try {
+    console.log(`📡 Creando notificaciones masivas para ${userIds.length} usuarios. Tipo: ${params.tipo}`);
     const rows = userIds.map(uid => ({
       user_id: uid,
       proyecto_id: params.proyectoId || null,
@@ -76,10 +78,12 @@ export async function crearNotificacionMasiva(
     const { error } = await supabase.from('notificaciones').insert(rows);
 
     if (error) {
-      console.error('Error creando notificaciones masivas:', error);
+      console.error('❌ Error creando notificaciones masivas:', error);
+    } else {
+      console.log('✅ Notificaciones masivas creadas con éxito');
     }
   } catch (err) {
-    console.error('Error inesperado creando notificaciones masivas:', err);
+    console.error('💥 Error inesperado creando notificaciones masivas:', err);
   }
 }
 
@@ -88,12 +92,23 @@ export async function crearNotificacionMasiva(
  */
 export async function getAlumnosDelProyecto(proyectoId: string): Promise<string[]> {
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('proyecto_id', proyectoId)
-      .eq('rol', 'alumno');
+    // 1. Obtener el código de sala del proyecto
+    const { data: proyecto } = await supabase
+      .from('proyectos')
+      .select('codigo_sala')
+      .eq('id', proyectoId)
+      .single();
 
+    let query = supabase.from('profiles').select('id').eq('rol', 'alumno');
+
+    if (proyecto?.codigo_sala) {
+      // Si tenemos código de sala, buscamos por ID de proyecto O por código de sala
+      query = query.or(`proyecto_id.eq.${proyectoId},codigo_sala.eq.${proyecto?.codigo_sala}`);
+    } else {
+      query = query.eq('proyecto_id', proyectoId);
+    }
+
+    const { data, error } = await query;
     if (error || !data) return [];
     return data.map(a => a.id).filter(Boolean);
   } catch {
@@ -106,7 +121,6 @@ export async function getAlumnosDelProyecto(proyectoId: string): Promise<string[
  */
 export async function getAlumnosDelGrupo(grupoId: number | string, proyectoId: string): Promise<string[]> {
   try {
-    // Obtener miembros del grupo
     const { data: grupo, error } = await supabase
       .from('grupos')
       .select('miembros')
@@ -115,16 +129,26 @@ export async function getAlumnosDelGrupo(grupoId: number | string, proyectoId: s
 
     if (error || !grupo?.miembros) return [];
 
-    // Buscar user_ids de esos miembros por nombre
     const miembros = grupo.miembros as string[];
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('proyecto_id', proyectoId)
-      .eq('rol', 'alumno')
-      .in('nombre', miembros);
+    const miembrosLower = miembros.map(m => m.trim().toLowerCase());
 
-    return (profiles || []).map(p => p.id).filter(Boolean);
+    const { data: proyecto } = await supabase.from('proyectos').select('codigo_sala').eq('id', proyectoId).single();
+    const roomCode = proyecto?.codigo_sala;
+
+    let qProfiles = supabase.from('profiles').select('id, nombre').eq('rol', 'alumno');
+    if (proyectoId) {
+      qProfiles = qProfiles.or(`proyecto_id.eq.${proyectoId}${roomCode ? `,codigo_sala.eq.${roomCode}` : ''}`);
+    } else if (roomCode) {
+      qProfiles = qProfiles.eq('codigo_sala', roomCode);
+    }
+
+    const { data: profiles } = await qProfiles;
+    if (!profiles) return [];
+
+    return profiles
+      .filter(p => p.nombre && miembrosLower.includes(p.nombre.trim().toLowerCase()))
+      .map(p => p.id)
+      .filter(Boolean);
   } catch {
     return [];
   }
@@ -162,5 +186,40 @@ export async function getProfesoresDelProyecto(proyectoId: string): Promise<stri
     return ids;
   } catch {
     return [];
+  }
+}
+
+/**
+ * Obtiene el user_id de un alumno por su nombre y proyecto
+ */
+export async function getAlumnoIdByName(nombre: string, proyectoId: string): Promise<string | null> {
+  try {
+    const { data: proyecto } = await supabase
+      .from('proyectos')
+      .select('codigo_sala')
+      .eq('id', proyectoId)
+      .single();
+
+    const roomCode = proyecto?.codigo_sala;
+    const normalizar = (t: string) => (t || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const nombreNorm = normalizar(nombre);
+
+    // Búsqueda flexible por proyecto o sala
+    let query = supabase.from('profiles').select('id, nombre').eq('rol', 'alumno');
+    
+    if (proyectoId) {
+      query = query.or(`proyecto_id.eq.${proyectoId}${roomCode ? `,codigo_sala.eq.${roomCode}` : ''}`);
+    } else if (roomCode) {
+      query = query.eq('codigo_sala', roomCode);
+    }
+
+    const { data: profiles } = await query;
+    
+    if (!profiles) return null;
+
+    const match = profiles.find(p => normalizar(p.nombre) === nombreNorm);
+    return match ? match.id : null;
+  } catch {
+    return null;
   }
 }

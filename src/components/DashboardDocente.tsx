@@ -30,8 +30,8 @@ import { VistaCalendario } from './VistaCalendario';
 import { ModalDetalleTarea } from './ModalDetalleTarea';
 import { ModalSeguimientoGrupos } from './ModalSeguimientoGrupos';
 import { updatePuntosAlumno, addPointsToGroupMembers } from '../lib/puntos';
-import { NotificacionesPanel } from './NotificacionesPanel';
-import { crearNotificacion, crearNotificacionMasiva, getAlumnosDelProyecto, getProfesoresDelProyecto } from '../lib/notificaciones';
+import { NotificacionesPanel, Notificacion } from './NotificacionesPanel';
+import { crearNotificacion, crearNotificacionMasiva, getAlumnosDelProyecto, getProfesoresDelProyecto, getAlumnosDelGrupo } from '../lib/notificaciones';
 
 interface DashboardDocenteProps {
     onSelectGrupo: (grupo: Grupo) => void;
@@ -51,6 +51,7 @@ interface DashboardDocenteProps {
     onUpdateProjectName: (newName: string) => Promise<void>;
     onOpenTicoFull?: () => void;
     hideSidebar?: boolean;
+    onOpenFamilyChat?: () => void;
 }
 
 export function DashboardDocente({
@@ -70,7 +71,8 @@ export function DashboardDocente({
     onClaseChange,
     onUpdateProjectName,
     onOpenTicoFull,
-    hideSidebar = false
+    hideSidebar = false,
+    onOpenFamilyChat
 }: DashboardDocenteProps) {
     const [modalCrearGrupoAbierto, setModalCrearGrupoAbierto] = useState(false);
     const [menuAlumnosAbierto, setMenuAlumnosAbierto] = useState(false); // New state for dropdown
@@ -106,6 +108,7 @@ export function DashboardDocente({
     const [tareaSeleccionadaDetalle, setTareaSeleccionadaDetalle] = useState<TareaDetallada | null>(null);
     const [modalSeguimientoAbierto, setModalSeguimientoAbierto] = useState<TareaDetallada | null>(null);
     const [targetGrupoId, setTargetGrupoId] = useState<string | number | undefined>(undefined);
+    const [modalInitialShowChat, setModalInitialShowChat] = useState(false);
 
     // Filter states
     const [filtroEstado, setFiltroEstado] = useState<string>('todos');
@@ -246,13 +249,42 @@ export function DashboardDocente({
                     fetchSolicitudesPendientes();
                 }).subscribe();
 
+            const notifSub = supabase.channel(`notif_docente_${user.id}`)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notificaciones',
+                    filter: `user_id=eq.${user.id}`
+                }, (payload: any) => {
+                    const n = payload.new;
+                    if (n.tipo === 'comentario_tarea') {
+                        toast(n.titulo, {
+                            description: n.descripcion,
+                            duration: 10000,
+                            action: {
+                                label: 'Ir al chat',
+                                onClick: () => {
+                                    const tId = n.metadata?.tarea_id;
+                                    const tarea = tareasProyecto.find(t => t.id === tId);
+                                    if (tarea) {
+                                        if (n.metadata?.grupo_id) setTargetGrupoId(n.metadata?.grupo_id);
+                                        setModalInitialShowChat(true);
+                                        setTareaSeleccionadaDetalle(tarea);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }).subscribe();
+
             return () => {
                 if (studentSub) supabase.removeChannel(studentSub);
                 if (familySub) supabase.removeChannel(familySub);
                 if (collabSub) supabase.removeChannel(collabSub);
+                if (notifSub) supabase.removeChannel(notifSub);
             };
         }
-    }, [user]);
+    }, [user, proyectoActual?.id, tareasProyecto]);
 
     // Fetch unread notifications count
     useEffect(() => {
@@ -292,7 +324,7 @@ export function DashboardDocente({
             // Fetch entregas para calcular el ratio x/y
             const { data: entregas, error: eError } = await supabase
                 .from('entregas_tareas')
-                .select('tarea_id, grupo_id, estado, calificacion')
+                .select('tarea_id, grupo_id, estado, calificacion, respuesta_texto, archivos_entregados')
                 .in('tarea_id', (tareas || []).map(t => t.id));
 
             if (!eError) setEntregasProyecto(entregas || []);
@@ -329,6 +361,9 @@ export function DashboardDocente({
                         const equipoNombre = grupos.find(g => Number(g.id) === Number(payload.new?.grupo_id))?.nombre || 'Toda la clase';
                         
                         // Crear notificación persistente para el profesor
+                        // NOTA: Se ha eliminado la creación manual de notificación aquí para evitar duplicidad,
+                        // ya que el alumno ya envía una notificación masiva a los profesores mediante DashboardAlumno.
+                        /*
                         if (user) {
                             crearNotificacion({
                                 userId: user.id,
@@ -339,6 +374,7 @@ export function DashboardDocente({
                                 metadata: { tarea_id: payload.new?.id, grupo_id: payload.new?.grupo_id }
                             });
                         }
+                        */
                     }
                     fetchTareasProyecto();
                 }
@@ -351,21 +387,7 @@ export function DashboardDocente({
     const numPendientesHitos = grupos.reduce((acc, g) => acc + (g.hitos || []).filter((h: any) => h.estado === 'revision').length, 0);
     const numPendientes = numPendientesTareas + numPendientesHitos;
 
-    // Alerta sonora/visual cuando numPendientes aumenta
-    const prevNumPendientes = useRef(numPendientes);
-    useEffect(() => {
-        if (numPendientes > prevNumPendientes.current) {
-            toast.info(`📨 ¡Tienes ${numPendientes - prevNumPendientes.current} nueva(s) misión(es) para revisar!`, {
-                duration: 8000,
-                icon: '🔔',
-                className: '!rounded-[2rem] !border-amber-200 !bg-amber-50'
-            });
-            
-            // Si estuviésemos en una app nativa podríamos usar un sonido aquí.
-            // Para web, el toast visual y el parpadeo del botón son la clave.
-        }
-        prevNumPendientes.current = numPendientes;
-    }, [numPendientes]);
+    // Alerta sonora/visual anterior fue eliminada para favorecer NotificacionesPanel.
 
     const handleUpdateMilestone = async (grupoId: string | number, hitoId: string, nuevoEstado: 'aprobado' | 'rechazado') => {
         // Reutilizamos la lógica batch para una sola actualización
@@ -481,6 +503,29 @@ export function DashboardDocente({
                             await addPointsToGroupMembers(proyectoActual?.id || '', nombres, currentTarea.puntos_maximos);
                             toast.success(`¡${currentTarea.puntos_maximos} puntos otorgados a toda la clase!`);
                         }
+                    }
+                }
+            }
+
+            // NOTIFICAR ALUMNO SOBRE EVALUACIÓN
+            if (nuevoEstado === 'aprobado' || nuevoEstado === 'completado' || nuevoEstado === 'evaluada') {
+                const currentTarea = tareaRef || tareasProyecto.find(t => t.id === id);
+                if (currentTarea) {
+                    let destinoIds: string[] = [];
+                    if (currentTarea.grupo_id) {
+                        destinoIds = await getAlumnosDelGrupo(currentTarea.grupo_id, proyectoActual?.id || '');
+                    } else {
+                        destinoIds = await getAlumnosDelProyecto(proyectoActual?.id || '');
+                    }
+
+                    if (destinoIds.length > 0) {
+                        await crearNotificacionMasiva(destinoIds, {
+                            proyectoId: proyectoActual?.id,
+                            tipo: 'notas_actualizadas',
+                            titulo: `¡Misión Evaluada: "${currentTarea.titulo}"!`,
+                            descripcion: `El profesor ha calificado tu entrega. ¡Ven a ver el resultado!`,
+                            metadata: { tarea_id: currentTarea.id }
+                        });
                     }
                 }
             }
@@ -618,9 +663,14 @@ export function DashboardDocente({
                 <ModalRevisionHitos
                     grupos={grupos}
                     tareasGlobales={tareasProyecto}
+                    entregasGlobales={entregasProyecto}
                     onClose={() => setModalRevisionAbierto(false)}
                     onUpdateBatch={handleUpdateBatchMilestones}
-                    onOpenTask={(t) => setTareaSeleccionadaDetalle(t)}
+                    onOpenTask={(t: TareaDetallada, gid: string | number | undefined) => {
+                         // Asignar tarea seleccionada y setear el grupo objetivo actual del ModalRevisionHitos
+                         setTareaSeleccionadaDetalle(t);
+                         setTargetGrupoId(gid);
+                    }}
                     onUpdateTarea={async (tareaId, nuevoEstado) => {
                         try {
                             const { error } = await supabase
@@ -728,7 +778,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.69</span>
+                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.85</span>
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -796,9 +846,15 @@ export function DashboardDocente({
                                     : 'text-gray-600 hover:bg-gray-100 font-medium'
                                     }`}
                             >
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 relative">
                                     <Bell className="w-5 h-5" />
                                     <span>Notificaciones</span>
+                                    {unreadNotifications > 0 && currentSection !== 'notificaciones' && (
+                                        <span className="absolute -top-1 -right-4 flex h-4 w-4">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white shadow-sm"></span>
+                                        </span>
+                                    )}
                                 </div>
                                 {unreadNotifications > 0 && (
                                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${currentSection === 'notificaciones' ? 'bg-white text-blue-600' : 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-200'}`}>
@@ -824,7 +880,7 @@ export function DashboardDocente({
                             <span>Tutorial interactivo</span>
                         </button>
                         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            V5.8.69
+                            V5.8.73
                         </div>
                     </div>
                 </aside>
@@ -974,18 +1030,7 @@ export function DashboardDocente({
 
                         {/* Acciones en Cuadrícula en móvil */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:flex items-center gap-2 w-full md:w-auto">
-                            {numPendientes > 0 && (
-                                <button
-                                    onClick={() => setModalRevisionAbierto(true)}
-                                    className="relative flex items-center justify-center gap-2 px-3 py-2.5 md:py-3 bg-amber-50 text-amber-600 border-2 border-amber-200 rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-tighter"
-                                >
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                                    </span>
-                                    <span>{numPendientes} {numPendientes === 1 ? 'Pendiente' : 'Pendientes'}</span>
-                                </button>
-                            )}
+
 
                             {/* Chat Alumnos Button (MOVED BEFORE IA MENTOR) */}
                             <button
@@ -1463,7 +1508,36 @@ export function DashboardDocente({
                         {currentSection === 'evaluacion' && <EvaluacionRubricas grupos={grupos} rubrica={proyectoActual?.rubrica} proyectoId={proyectoActual?.id} tareasProyecto={tareasProyecto} entregasProyecto={entregasProyecto} />}
 
                         {currentSection === 'notificaciones' && user && (
-                            <NotificacionesPanel userId={user.id} proyectoId={proyectoActual?.id} />
+                            <NotificacionesPanel 
+                                userId={user.id} 
+                                proyectoId={proyectoActual?.id} 
+                                hideHeader={true}
+                                onNotificationClick={(notif: Notificacion) => {
+                                    if (notif.tipo === 'tarea_revision') {
+                                        const tId = notif.metadata?.tarea_id;
+                                        const tarea = tareasProyecto.find(t => t.id === tId);
+                                        if (tarea) {
+                                            if (notif.metadata?.grupo_id) setTargetGrupoId(notif.metadata?.grupo_id);
+                                            setTareaSeleccionadaDetalle(tarea);
+                                        } else {
+                                            setModalRevisionAbierto(true);
+                                        }
+                                    } else if (notif.tipo === 'mano_levantada') {
+                                        onSectionChange('grupos');
+                                    } else if (notif.tipo === 'mensaje_familia') {
+                                        if (onOpenFamilyChat) onOpenFamilyChat();
+                                    } else if (notif.tipo === 'comentario_tarea') {
+                                        const tId = notif.metadata?.tarea_id;
+                                        const gId = notif.metadata?.grupo_id;
+                                        const tarea = tareasProyecto.find(t => t.id === tId);
+                                        if (tarea) {
+                                            if (gId) setTargetGrupoId(gId);
+                                            setModalInitialShowChat(true);
+                                            setTareaSeleccionadaDetalle(tarea);
+                                        }
+                                    }
+                                }}
+                            />
                         )}
                     </div>
                 </div>
@@ -1503,23 +1577,37 @@ export function DashboardDocente({
 
             {tareaSeleccionadaDetalle && (
                 <ModalDetalleTarea
-                    tarea={tareaSeleccionadaDetalle}
+                    tarea={{
+                        ...tareaSeleccionadaDetalle,
+                        contenido_alumno: targetGrupoId 
+                            ? (entregasProyecto.find((e: any) => e.tarea_id === tareaSeleccionadaDetalle.id && Number(e.grupo_id) === Number(targetGrupoId))?.respuesta_texto || '') 
+                            : tareaSeleccionadaDetalle.contenido_alumno,
+                        archivos_alumno: targetGrupoId 
+                            ? (entregasProyecto.find((e: any) => e.tarea_id === tareaSeleccionadaDetalle.id && Number(e.grupo_id) === Number(targetGrupoId))?.archivos_entregados || []) 
+                            : tareaSeleccionadaDetalle.archivos_alumno,
+                        calificacion: targetGrupoId 
+                            ? (entregasProyecto.find((e: any) => e.tarea_id === tareaSeleccionadaDetalle.id && Number(e.grupo_id) === Number(targetGrupoId))?.calificacion ?? tareaSeleccionadaDetalle.calificacion) 
+                            : tareaSeleccionadaDetalle.calificacion
+                    }}
                     grupos={grupos}
-                    onClose={() => { setTareaSeleccionadaDetalle(null); setTargetGrupoId(undefined); }}
+                    onClose={() => { setTareaSeleccionadaDetalle(null); setTargetGrupoId(undefined); setModalInitialShowChat(false); }}
                     onEstadoChange={async (id, nuevoEstado, nota) => {
                         await handleEstadoChangeWithPoints(id, nuevoEstado, tareaSeleccionadaDetalle, nota);
                         setTareaSeleccionadaDetalle(null);
                         setTargetGrupoId(undefined);
+                        setModalInitialShowChat(false);
                     }}
                     onDelete={(id) => {
                         handleEliminarTareaGlobal(id, tareaSeleccionadaDetalle.titulo);
                         setTargetGrupoId(undefined);
+                        setModalInitialShowChat(false);
                     }}
                     onUpdateTarea={handleUpdateTarea}
                     isStudent={false}
                     targetGrupoId={targetGrupoId}
                     currentUserId={user?.id}
                     currentUserNombre={perfil?.nombre || 'Profesor'}
+                    initialShowChat={modalInitialShowChat}
                 />
             )}
 

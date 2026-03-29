@@ -9,10 +9,11 @@ interface ModalRevisionHitosProps {
     onClose: () => void;
     onUpdateBatch: (grupoId: string | number, updates: { hitoId: string, nuevoEstado: 'aprobado' | 'rechazado' | 'pendiente' | 'revision' }[]) => Promise<void>;
     onUpdateTarea?: (tareaId: string, nuevoEstado: 'aprobado' | 'pendiente') => Promise<void>;
-    onOpenTask?: (tarea: TareaDetallada) => void;
+    onOpenTask?: (tarea: TareaDetallada, grupoId: string | number | undefined) => void;
+    entregasGlobales?: any[];
 }
 
-export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpdateBatch, onUpdateTarea, onOpenTask }: ModalRevisionHitosProps) {
+export function ModalRevisionHitos({ grupos, tareasGlobales = [], entregasGlobales = [], onClose, onUpdateBatch, onUpdateTarea, onOpenTask }: ModalRevisionHitosProps) {
     const [selectedGroupId, setSelectedGroupId] = useState<string | number | null>(null);
     const [decisiones, setDecisiones] = useState<Record<string, { accion: 'aprobar' | 'rechazar' | 'pendiente', comentario?: string }>>({});
 
@@ -180,12 +181,15 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
                                 );
                             })}
 
-                            {/* Tareas */}
                             {tareasGlobales.filter(t => 
                                 (selectedGroupId === 'global' ? t.grupo_id === null : t.grupo_id === Number(selectedGroupId)) && 
                                 t.estado === 'revision'
                             ).map((tarea) => {
                                 const decision = decisiones[tarea.id] || { accion: 'pendiente' };
+                                const entregaGrp = selectedGroupId !== 'global' ? entregasGlobales.find(e => e.tarea_id === tarea.id && Number(e.grupo_id) === Number(selectedGroupId)) : null;
+                                const contAlum = (selectedGroupId !== 'global' && entregaGrp) ? (entregaGrp.respuesta_texto || '') : tarea.contenido_alumno;
+                                const archAlum = (selectedGroupId !== 'global' && entregaGrp) ? (entregaGrp.archivos_entregados || []) : tarea.archivos_alumno;
+
                                 return (
                                     <div key={tarea.id} className={`p-5 rounded-2xl border transition-all ${
                                         decision.accion === 'aprobar' ? 'bg-emerald-50 border-emerald-200' :
@@ -193,7 +197,7 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
                                     }`}>
                                         <div className="flex justify-between items-start">
                                                 <div 
-                                                    onClick={() => onOpenTask?.(tarea)}
+                                                    onClick={() => onOpenTask?.(tarea, selectedGroupId !== 'global' && selectedGroupId !== null ? selectedGroupId : undefined)}
                                                     className="flex-1 mr-4 cursor-pointer hover:bg-slate-50 transition-all rounded-xl p-2 -m-2 group/taskitem"
                                                     title="Hacer clic para ver detalles y evaluar"
                                                 >
@@ -202,12 +206,12 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], onClose, onUpd
                                                         {tarea.titulo}
                                                         <ChevronRight className="w-4 h-4 text-slate-300 group-hover/taskitem:translate-x-1 transition-all" />
                                                     </h3>
-                                                    {tarea.contenido_alumno && (
-                                                        <div className="mt-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 italic group-hover/taskitem:bg-white transition-colors">"{tarea.contenido_alumno}"</div>
+                                                    {contAlum && (
+                                                        <div className="mt-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 italic group-hover/taskitem:bg-white transition-colors">"{contAlum}"</div>
                                                     )}
-                                                    {tarea.archivos_alumno && tarea.archivos_alumno.length > 0 && (
+                                                    {archAlum && archAlum.length > 0 && (
                                                         <div className="mt-3 flex flex-wrap gap-2">
-                                                            {tarea.archivos_alumno.map((f, i) => (
+                                                            {archAlum.map((f: any, i: number) => (
                                                                 <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-indigo-50"><FileText className="w-3 h-3 text-indigo-500" /><span className="max-w-[100px] truncate">{f.nombre}</span><Download className="w-3 h-3 text-slate-400" /></a>
                                                             ))}
                                                         </div>

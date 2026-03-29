@@ -1,5 +1,21 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V5.8.71] - 2026-03-29
+### Mejoras de UX y Notificaciones
+- **Dashboard Alumno**: Renombrado "Alertas" a "Notificaciones" en toda la navegación para mayor claridad.
+- **Redirección de Notificaciones**: 
+    - Al hacer clic en una notificación de **"Comentario de Tarea"**, el sistema ahora abre automáticamente el modal de la tarea y sitúa al usuario en el chat de comentarios. Funciona tanto para docentes como para alumnos.
+    - Al hacer clic en una notificación de **"Mensaje de Familia"**, el docente es redirigido automáticamente al chat de familias correspondiente.
+- **Sincronización Realtime**: Corregido un fallo en el chat de comentarios de tareas donde los alumnos no recibían los mensajes del profesor en tareas globales.
+- **Limpieza de Interfaz**: Eliminado el badge flotante de "Revisiones Pendientes" en el Dashboard Docente para evitar redundancia con el sistema de notificaciones centralizado.
+- **Versión**: Actualización global a la **V5.8.71**.
+
+## [V5.8.70] - 2026-03-28
+### Centralización
+- **Sistema de Notificaciones**: Preparación del sistema para tipos específicos de mensajes (familia y comentarios).
+- **Consolidación de Identidad**: Ajustes menores en etiquetas y colores de notificaciones.
+
+
 ## [V5.8.69] - 2026-03-28
 ### Nuevo
 - **Generación Automática de Notificaciones**: Se han integrado disparadores de notificaciones en toda la plataforma:
@@ -8,6 +24,7 @@
     - **Evaluación de Misiones**: Los alumnos reciben una alerta inmediata cuando su trabajo ha sido calificado y aprobado.
     - **Entrega de Tareas**: Los profesores reciben notificaciones cuando un equipo envía una misión para revisión.
     - **Mano Levantada (Dudas)**: Notificación persistente para el profesor cuando un equipo necesita ayuda urgente.
+- **Notificaciones Interactivas**: Las notificaciones ahora te dirigen directamente a la acción (ej. revisar misión, leer chat, ver recursos) con un simple clic, marcándose automáticamente como leídas. Se ha eliminado el recuadro flotante de "Revisiones Pendientes".
 - **Librería de Mensajería Centralizada**: Implementación de `notificaciones.ts` para gestionar el envío masivo y selectivo de alertas.
 - **Sincronización Global de Versión**: Actualizada la plataforma a la V5.8.69 para asegurar la persistencia de las nuevas notificaciones.
 

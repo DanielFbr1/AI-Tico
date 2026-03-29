@@ -65,7 +65,7 @@ import { ModalChatProfesoresAlumno } from './ModalChatProfesoresAlumno';
 import { ModalDetalleTarea } from './ModalDetalleTarea';
 import { VistaCalendario } from './VistaCalendario';
 import { TareaDetallada } from '../types';
-import { NotificacionesPanel } from './NotificacionesPanel';
+import { NotificacionesPanel, Notificacion } from './NotificacionesPanel';
 import { crearNotificacionMasiva, getProfesoresDelProyecto } from '../lib/notificaciones';
 
 interface DashboardAlumnoProps {
@@ -113,6 +113,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [localProjectId, setLocalProjectId] = useState<string | null>(null);
   const [localRoomCode, setLocalRoomCode] = useState<string | null>(null);
   const [tareaSeleccionadaDetalle, setTareaSeleccionadaDetalle] = useState<TareaDetallada | null>(null);
+  const [modalInitialShowChat, setModalInitialShowChat] = useState(false);
 
   // Estado del tutorial para Alumnos
   const [tutorialActivo, setTutorialActivo] = useState(() => {
@@ -128,6 +129,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [historialClases, setHistorialClases] = useState<any[]>([]);
   const [notaGrupal, setNotaGrupal] = useState<number | null>(null);
   const [comentarios, setComentarios] = useState<{ id: string, contenido: string, created_at: string }[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     if (alumno?.id) {
@@ -232,6 +234,29 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [realEvaluacion, setRealEvaluacion] = useState<any[]>([]);
   const [asistenciaStats, setAsistenciaStats] = useState({ present: 0, total: 0, percentage: 0 });
   const [hasNewEvaluation, setHasNewEvaluation] = useState(false);
+
+  // Fetch unread notifications count
+  useEffect(() => {
+    if (!alumno.id) return;
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('notificaciones')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', alumno.id)
+        .eq('leida', false);
+      setUnreadNotifications(count || 0);
+    };
+    fetchUnread();
+    const notifSub = supabase.channel(`notif_count_alumno_${alumno.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notificaciones',
+        filter: `user_id=eq.${alumno.id}`
+      }, () => fetchUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(notifSub); };
+  }, [alumno.id]);
 
   const calculatedProgreso = useMemo(() => {
     if (showExample) return grupoEjemplo.progreso;
@@ -514,6 +539,21 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
             }
           });
         }
+      } else if (nuevoEstado === 'pendiente' && grupoReal?.id) {
+        // Al anular entrega, eliminamos el registro de la entrega para que vuelva al panel de Pendientes
+        const { error: delError } = await supabase
+          .from('entregas_tareas')
+          .delete()
+          .eq('tarea_id', id)
+          .eq('grupo_id', grupoReal.id);
+        
+        if (!delError) {
+          setEntregasTareas(prev => prev.filter(e => e.tarea_id !== id));
+          toast.success('Entrega anulada');
+        } else {
+          console.error("Error al borrar entrega:", delError);
+          toast.success('Estado actualizado');
+        }
       } else {
         toast.success('Estado actualizado');
       }
@@ -542,17 +582,35 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
   const handleSaveAlumnoContent = async (id: string, contenido: string, archivos: any[]) => {
     try {
-      const { error } = await supabase
-        .from('tareas')
-        .update({
-          contenido_alumno: contenido,
-          archivos_alumno: archivos
-        })
-        .eq('id', id);
-
-      if (error) throw error;
+      const entregaExistente = entregasTareas.find(e => e.tarea_id === id);
+      if (entregaExistente) {
+          const { error } = await supabase.from('entregas_tareas').update({
+              respuesta_texto: contenido,
+              archivos_entregados: archivos,
+              updated_at: new Date().toISOString()
+          }).eq('id', entregaExistente.id);
+          if (error) throw error;
+      } else {
+          const { error } = await supabase.from('entregas_tareas').insert({
+              tarea_id: id,
+              grupo_id: grupoReal?.id,
+              respuesta_texto: contenido,
+              archivos_entregados: archivos,
+              estado: 'entregada',
+              fecha_entrega: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+          });
+          if (error) throw error;
+      }
       
-      setTareasAlumno(prev => prev.map(t => t.id === id ? { ...t, contenido_alumno: contenido, archivos_alumno: archivos } : t));
+      setEntregasTareas(prev => {
+          const exists = prev.find(e => e.tarea_id === id);
+          if (exists) {
+              return prev.map(e => e.tarea_id === id ? { ...e, respuesta_texto: contenido, archivos_entregados: archivos } : e);
+          } else {
+              return [...prev, { tarea_id: id, grupo_id: grupoReal?.id, respuesta_texto: contenido, archivos_entregados: archivos, estado: 'entregada' }];
+          }
+      });
       toast.success('Trabajo guardado');
     } catch (err) {
       console.error('Error saving task content:', err);
@@ -577,9 +635,55 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
             fetchTareasAlumno();
           }
         ).subscribe();
-      return () => { supabase.removeChannel(ch); };
+        
+      const obsSub = supabase.channel(`obs_alumno_${alumno.id}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'comentarios_alumno',
+          filter: `proyecto_id=eq.${alumno.proyecto_id}`
+        }, (payload: any) => {
+          // Si el comentario es para este alumno, recargamos
+          if (payload.new && payload.new.alumno_nombre === alumno.nombre) {
+            fetchDatosAlumno(true);
+          }
+        }).subscribe();
+    
+        const notifSub = supabase.channel(`notif_alumno_${alumno.id}`)
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notificaciones',
+            filter: `user_id=eq.${alumno.id}`
+          }, (payload: any) => {
+            const n = payload.new;
+            if (n.tipo === 'comentario_tarea') {
+              toast(n.titulo, {
+                description: n.descripcion,
+                duration: 10000,
+                action: {
+                  label: 'Ir al chat',
+                  onClick: () => {
+                    const tId = n.metadata?.tarea_id;
+                    const tarea = (tareasAlumno || []).find(t => t.id === tId);
+                    if (tarea) {
+                      setModalInitialShowChat(true);
+                      setTareaSeleccionadaDetalle(tarea);
+                      setVistaActiva('tareas');
+                    }
+                  }
+                }
+              });
+            }
+          }).subscribe();
+    
+        return () => {
+          supabase.removeChannel(ch);
+          supabase.removeChannel(notifSub);
+          supabase.removeChannel(obsSub);
+        };
     }
-  }, [grupoReal?.id, alumno.proyecto_id]);
+  }, [alumno.id, alumno.nombre, alumno.proyecto_id, tareasAlumno]);
 
   useEffect(() => {
     // Fetching and subscription for unread messages from professors
@@ -936,7 +1040,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   };
 
   const tareasCategorizadas = React.useMemo(() => {
-    const VERSION = "V5.8.69";
+    const VERSION = "V5.8.85";
     const panels = {
       pendientes: [] as any[],
       revision: [] as any[],
@@ -952,7 +1056,9 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       const tareaConEntrega = {
         ...t,
         calificacion: entrega?.calificacion,
-        estadoEntrega: entrega?.estado
+        estadoEntrega: entrega?.estado,
+        contenido_alumno: entrega ? (entrega.respuesta_texto || '') : t.contenido_alumno,
+        archivos_alumno: entrega ? (entrega.archivos_entregados || []) : t.archivos_alumno
       };
 
       const isCompletada = t.estado === 'aprobado' || t.estado === 'completado' || entrega?.estado === 'evaluada' || entrega?.estado === 'revisado';
@@ -1008,7 +1114,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.69</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.82</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -1263,9 +1369,15 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                 : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
                 }`}
             >
-              <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
-                <Bell className="w-4 h-4" />
-                <span className="truncate">Alertas</span>
+              <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 relative">
+                <Bell className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="truncate">Notificaciones</span>
+                {unreadNotifications > 0 && vistaActiva !== 'notificaciones' && (
+                  <span className="absolute -top-1 -right-1 md:-top-1.5 md:-right-3 flex h-3.5 w-3.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white shadow-md"></span>
+                  </span>
+                )}
               </div>
             </button>
             <button
@@ -1476,6 +1588,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
                            <Award className="w-3.5 h-3.5 text-amber-500" />
+                           <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.85</span>
                            <span className="text-[10px] font-black text-slate-400 uppercase">{t.puntos_maximos} Puntos</span>
                         </div>
                         <button
@@ -1812,7 +1925,35 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         {
           vistaActiva === 'notificaciones' && alumno.id && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <NotificacionesPanel userId={alumno.id} proyectoId={alumno.proyecto_id} />
+              <NotificacionesPanel 
+                userId={alumno.id} 
+                proyectoId={alumno.proyecto_id}
+                hideHeader={true}
+                onNotificationClick={(notif: Notificacion) => {
+                  if (notif.tipo === 'tarea_asignada' || notif.tipo === 'notas_actualizadas' || notif.tipo === 'comentario_tarea') {
+                    const tId = notif.metadata?.tarea_id;
+                    const tarea = tareasAlumno.find(t => t.id === tId);
+                    if (tarea) {
+                      if (notif.tipo === 'comentario_tarea') {
+                        setModalInitialShowChat(true);
+                      }
+                      setTareaSeleccionadaDetalle(tarea);
+                      setVistaActiva('tareas');
+                    } else if (notif.tipo === 'notas_actualizadas') {
+                      setVistaActiva('perfil');
+                    } else {
+                      setVistaActiva('tareas');
+                    }
+                    window.scrollTo(0, 0);
+                  } else if (notif.tipo === 'recurso_subido') {
+                    setVistaActiva('comunidad');
+                    window.scrollTo(0, 0);
+                  } else if (notif.tipo === 'mensaje_familia' || notif.tipo === 'mensaje_grupo') {
+                    setVistaActiva('chat');
+                    window.scrollTo(0, 0);
+                  }
+                }}
+              />
             </div>
           )
         }
@@ -2122,12 +2263,19 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
             <button
               onClick={() => { setVistaActiva('notificaciones'); window.scrollTo(0, 0); }}
-              className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${vistaActiva === 'notificaciones' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
+              className={`flex flex-col items-center gap-1.5 flex-1 transition-all relative ${vistaActiva === 'notificaciones' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
             >
               <div className={`p-2 rounded-2xl transition-all ${vistaActiva === 'notificaciones' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-transparent'}`}>
                 <Bell className={`w-5 h-5 ${vistaActiva === 'notificaciones' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
               </div>
-              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'notificaciones' ? 'opacity-100' : 'opacity-80'}`}>Alertas</span>
+              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'notificaciones' ? 'opacity-100' : 'opacity-80'}`}>Notificaciones</span>
+              
+              {unreadNotifications > 0 && vistaActiva !== 'notificaciones' && (
+                <span className="absolute top-1 right-2 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white shadow-sm"></span>
+                </span>
+              )}
             </button>
 
             <button
@@ -2183,12 +2331,13 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           grupos={todosLosGrupos}
           isStudent={true}
           targetGrupoId={grupoReal?.id}
-          onClose={() => setTareaSeleccionadaDetalle(null)}
+          onClose={() => { setTareaSeleccionadaDetalle(null); setModalInitialShowChat(false); }}
           onEstadoChange={handleUpdateTareaEstado}
           onUpdateTarea={handleUpdateTarea}
           onSaveAlumnoContent={handleSaveAlumnoContent}
           currentUserId={alumno.id}
           currentUserNombre={alumno.nombre}
+          initialShowChat={modalInitialShowChat}
         />
       )}
     </div >

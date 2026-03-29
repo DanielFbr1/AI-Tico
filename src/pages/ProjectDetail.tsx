@@ -5,6 +5,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { PASOS_TUTORIAL, GRUPOS_MOCK } from '../data/mockData';
 import { toast } from 'sonner';
+import { MensajesFamiliasProfesor } from '../components/MensajesFamiliasProfesor';
+import { useAuth } from '../context/AuthContext';
 
 interface ProjectDetailProps {
     proyecto: Proyecto;
@@ -13,9 +15,12 @@ interface ProjectDetailProps {
     onSwitchProject: (proyecto: Proyecto) => void;
     onUpdateProjectValues?: (updatedProject: Proyecto) => void;
     onOpenTicoFull?: () => void;
+    onOpenFamilyChat?: () => void;
 }
 
-export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject, onOpenTicoFull }: ProjectDetailProps) {
+export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject, onOpenTicoFull, onOpenFamilyChat }: ProjectDetailProps) {
+    const { user, perfil } = useAuth();
+    const [showMensajesFamilias, setShowMensajesFamilias] = useState(false);
     const [localGrupos, setLocalGrupos] = useState<Grupo[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentSection, setCurrentSection] = useState<import('../types').DashboardSection>('grupos');
@@ -340,6 +345,16 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
         }
     };
 
+    if (showMensajesFamilias && user && perfil) {
+        return (
+            <MensajesFamiliasProfesor
+                profesorId={user.id}
+                profesorNombre={perfil.nombre || 'Profesor'}
+                onBack={() => setShowMensajesFamilias(false)}
+            />
+        );
+    }
+
     return (
         <div className="relative">
             <DashboardDocente
@@ -371,6 +386,7 @@ export function ProjectDetail({ proyecto, onSelectGrupo, onBack, onSwitchProject
                 }}
                 onUpdateProjectName={handleUpdateProjectName}
                 onOpenTicoFull={onOpenTicoFull}
+                onOpenFamilyChat={onOpenFamilyChat || (() => setShowMensajesFamilias(true))}
             />
 
             {showTutorial && (

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { fetchPuntosProyecto } from '../lib/puntos';
+import { crearNotificacion, getAlumnoIdByName } from '../lib/notificaciones';
 
 interface PerfilAlumnoProps {
   alumno: string;
@@ -88,6 +89,21 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
       toast.success("Comentario añadido");
       setNuevoComentario('');
       fetchComentarios();
+
+      // Enviar Notificación al Alumno
+      if (grupo.proyecto_id) {
+          const alumnoId = await getAlumnoIdByName(alumno, grupo.proyecto_id);
+          if (alumnoId) {
+              await crearNotificacion({
+                  userId: alumnoId,
+                  proyectoId: grupo.proyecto_id,
+                  tipo: 'notas_actualizadas',
+                  titulo: '¡Nueva observación del profesor!',
+                  descripcion: `Tu profesor ha añadido una nota en tu historial.`,
+                  metadata: { view: 'perfil' }
+              });
+          }
+      }
     } catch (e) {
       console.error("Error saving comment:", e);
       toast.error("Error al guardar comentario");
