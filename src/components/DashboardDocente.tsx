@@ -849,12 +849,6 @@ export function DashboardDocente({
                                 <div className="flex items-center gap-3 relative">
                                     <Bell className="w-5 h-5" />
                                     <span>Notificaciones</span>
-                                    {unreadNotifications > 0 && currentSection !== 'notificaciones' && (
-                                        <span className="absolute -top-1 -right-4 flex h-4 w-4">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white shadow-sm"></span>
-                                        </span>
-                                    )}
                                 </div>
                                 {unreadNotifications > 0 && (
                                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${currentSection === 'notificaciones' ? 'bg-white text-blue-600' : 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-200'}`}>
