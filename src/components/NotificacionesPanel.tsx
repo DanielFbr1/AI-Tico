@@ -19,6 +19,7 @@ interface NotificacionesPanelProps {
   proyectoId?: string;
   onNotificationClick?: (notificacion: Notificacion) => void;
   hideHeader?: boolean;
+  onUnreadChange?: (count: number) => void;
 }
 
 const TIPO_CONFIG: Record<string, { icon: any; color: string; bg: string; border: string }> = {
@@ -54,7 +55,7 @@ function formatTimeAgo(dateStr: string): string {
   return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-export function NotificacionesPanel({ userId, proyectoId, onNotificationClick, hideHeader = false }: NotificacionesPanelProps) {
+export function NotificacionesPanel({ userId, proyectoId, onNotificationClick, onUnreadChange, hideHeader = false }: NotificacionesPanelProps) {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'todas' | 'no_leidas'>('todas');
@@ -74,6 +75,9 @@ export function NotificacionesPanel({ userId, proyectoId, onNotificationClick, h
     const { data, error } = await query;
     if (!error && data) {
       setNotificaciones(data);
+      if (onUnreadChange) {
+        onUnreadChange(data.filter((n: any) => !n.leida).length);
+      }
     }
     setLoading(false);
   };
@@ -99,8 +103,14 @@ export function NotificacionesPanel({ userId, proyectoId, onNotificationClick, h
   }, [userId, proyectoId]);
 
   const marcarComoLeida = async (id: string) => {
+    setNotificaciones(prev => {
+      const newState = prev.map(n => n.id === id ? { ...n, leida: true } : n);
+      if (onUnreadChange) {
+        onUnreadChange(newState.filter(n => !n.leida).length);
+      }
+      return newState;
+    });
     await supabase.from('notificaciones').update({ leida: true }).eq('id', id);
-    setNotificaciones(prev => prev.map(n => n.id === id ? { ...n, leida: true } : n));
   };
 
 
@@ -110,8 +120,14 @@ export function NotificacionesPanel({ userId, proyectoId, onNotificationClick, h
   };
 
   const eliminarNotificacion = async (id: string) => {
+    setNotificaciones(prev => {
+      const newState = prev.filter(n => n.id !== id);
+      if (onUnreadChange) {
+        onUnreadChange(newState.filter(n => !n.leida).length);
+      }
+      return newState;
+    });
     await supabase.from('notificaciones').delete().eq('id', id);
-    setNotificaciones(prev => prev.filter(n => n.id !== id));
   };
 
   const limpiarTodas = async () => {
