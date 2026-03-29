@@ -88,6 +88,31 @@ export async function crearNotificacionMasiva(
 }
 
 /**
+ * Elimina las notificaciones de revisión de una tarea específica para un set de usuarios
+ */
+export async function eliminarNotificacionesTareaRevision(
+  userIds: string[],
+  tareaId: string
+) {
+  if (userIds.length === 0) return;
+
+  try {
+    const { error } = await supabase
+      .from('notificaciones')
+      .delete()
+      .in('user_id', userIds)
+      .eq('tipo', 'tarea_revision')
+      .eq('metadata->>tarea_id', tareaId);
+
+    if (error) {
+       console.error('❌ Error eliminando notificaciones de revisión:', error);
+    }
+  } catch (err) {
+    console.error('💥 Error inesperado eliminando notificaciones:', err);
+  }
+}
+
+/**
  * Obtiene los user_ids de los alumnos de un proyecto
  */
 export async function getAlumnosDelProyecto(proyectoId: string): Promise<string[]> {

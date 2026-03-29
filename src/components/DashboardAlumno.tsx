@@ -66,7 +66,7 @@ import { ModalDetalleTarea } from './ModalDetalleTarea';
 import { VistaCalendario } from './VistaCalendario';
 import { TareaDetallada } from '../types';
 import { NotificacionesPanel, Notificacion } from './NotificacionesPanel';
-import { crearNotificacionMasiva, getProfesoresDelProyecto } from '../lib/notificaciones';
+import { crearNotificacionMasiva, getProfesoresDelProyecto, eliminarNotificacionesTareaRevision } from '../lib/notificaciones';
 
 interface DashboardAlumnoProps {
   alumno: {
@@ -540,7 +540,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           });
         }
       } else if (nuevoEstado === 'pendiente' && grupoReal?.id) {
-        // Al anular entrega, eliminamos el registro de la entrega para que vuelva al panel de Pendientes
+        // Al anular entrega, eliminamos el registro de la entrega para que vuelva al panel de Pendientes COMPLETAMENTE
         const { error: delError } = await supabase
           .from('entregas_tareas')
           .delete()
@@ -549,6 +549,16 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         
         if (!delError) {
           setEntregasTareas(prev => prev.filter(e => e.tarea_id !== id));
+          
+          // Eliminar notificaciones de revisión enviadas al profesor anteriormente
+          if (alumno.proyecto_id) {
+            getProfesoresDelProyecto(alumno.proyecto_id).then(profIds => {
+              if (profIds.length > 0) {
+                eliminarNotificacionesTareaRevision(profIds, id);
+              }
+            });
+          }
+          
           toast.success('Entrega anulada');
         } else {
           console.error("Error al borrar entrega:", delError);
@@ -1040,7 +1050,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   };
 
   const tareasCategorizadas = React.useMemo(() => {
-    const VERSION = "V5.8.85";
+    const VERSION = "V5.8.86";
     const panels = {
       pendientes: [] as any[],
       revision: [] as any[],
