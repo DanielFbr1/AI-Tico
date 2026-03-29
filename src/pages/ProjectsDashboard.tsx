@@ -6,6 +6,7 @@ import { PROYECTOS_MOCK } from '../data/mockData';
 import { ModalCrearProyecto } from '../components/ModalCrearProyecto';
 import { ModalUnirseProyectoProfesor } from '../components/ModalUnirseProyectoProfesor';
 import { MensajesFamiliasProfesor } from '../components/MensajesFamiliasProfesor';
+import { ModalChatProfesores } from '../components/ModalChatProfesores';
 import { getAsignaturaStyles } from '../data/asignaturas';
 import { ModalChatAlumnosDocente } from '../components/ModalChatAlumnosDocente';
 import { Grupo } from '../types';
@@ -29,6 +30,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
     const [unreadFamilyMessages, setUnreadFamilyMessages] = useState(0);
     const [showModalChatAlumnos, setShowModalChatAlumnos] = useState(false);
     const [unreadStudentMessages, setUnreadStudentMessages] = useState(0);
+    const [showModalChatProfesores, setShowModalChatProfesores] = useState(false);
 
     const [todosMisGrupos, setTodosMisGrupos] = useState<Grupo[]>([]);
 
@@ -470,6 +472,14 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                     </div>
                     <div className="flex items-center gap-2">
                         <button
+                            onClick={() => setShowModalChatProfesores(true)}
+                            className="relative flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl md:rounded-2xl font-black transition-all border-2 border-blue-200 hover:border-blue-400 shadow-sm"
+                            title="Chat de Profesores"
+                        >
+                            <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
+                            <span className="text-[10px] md:text-xs uppercase tracking-widest hidden md:inline">Docentes</span>
+                        </button>
+                        <button
                             onClick={() => setShowMensajesFamilias(true)}
                             className="relative flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl md:rounded-2xl font-black transition-all border-2 border-emerald-200 hover:border-emerald-400 shadow-sm"
                             title="Mensajes de Familias"
@@ -711,6 +721,14 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                     docenteId={session?.user?.id || 'profesor'}
                     docenteNombre={session?.user?.email?.split('@')[0] || 'Docente'}
                     grupos={todosMisGrupos}
+                />
+            )}
+            {showModalChatProfesores && (
+                <ModalChatProfesores
+                    isOpen={showModalChatProfesores}
+                    onClose={() => setShowModalChatProfesores(false)}
+                    user={session?.user || null}
+                    proyectos={proyectos}
                 />
             )}
         </div>
