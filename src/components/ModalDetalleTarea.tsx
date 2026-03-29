@@ -1,4 +1,6 @@
 import { FileText, Award, Users, Paperclip, Clock, X, Trash2, CheckCircle2, Send, ChevronRight, ChevronDown, AlertCircle, Bookmark, Upload, Calendar, MessageSquare, ArrowLeft } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { TareaDetallada, Grupo } from '../types';
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
@@ -707,17 +709,27 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hoja de Ruta</h3>
                                         </div>
                                         {!isStudent ? (
-                                            <textarea
-                                                value={descripcion}
-                                                onChange={(e) => setDescripcion(e.target.value)}
-                                                className="w-full min-h-[160px] p-6 bg-slate-50 rounded-[2.5rem] border-2 border-slate-100 text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 transition-all resize-none shadow-inner text-sm leading-relaxed"
-                                                placeholder="Escribe aquí las instrucciones de la misión..."
-                                            />
+                                            <div className="rich-text-editor">
+                                                <ReactQuill
+                                                    theme="snow"
+                                                    value={descripcion}
+                                                    onChange={setDescripcion}
+                                                    modules={{
+                                                        toolbar: [
+                                                            [{ 'header': [1, 2, false] }],
+                                                            ['bold', 'italic', 'underline', 'strike'],
+                                                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                                            ['clean']
+                                                        ]
+                                                    }}
+                                                    placeholder="Escribe aquí las instrucciones de la misión..."
+                                                />
+                                            </div>
                                         ) : (
                                             tarea.descripcion && (
-                                                <div className="bg-slate-50/70 p-6 rounded-[2rem] text-slate-700 leading-relaxed whitespace-pre-wrap border border-slate-100 shadow-inner relative overflow-hidden group-hover:bg-slate-50 transition-colors text-sm">
+                                                <div className="bg-slate-50/70 p-6 rounded-[2rem] text-slate-700 leading-relaxed border border-slate-100 shadow-inner relative overflow-hidden group-hover:bg-slate-50 transition-colors prose-tico">
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500/20" />
-                                                    {tarea.descripcion}
+                                                    <div dangerouslySetInnerHTML={{ __html: tarea.descripcion }} />
                                                 </div>
                                             )
                                         )}

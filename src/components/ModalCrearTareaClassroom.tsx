@@ -1,5 +1,7 @@
-import { useState, useRef } from 'react';
-import { X, Upload, Link2, FileText, Calendar, Clock, Users, Award, Paperclip, Trash2, Bold, Italic, Underline, List, Strikethrough } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import { X, Upload, Link2, FileText, Calendar, Clock, Users, Award, Paperclip, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Grupo, TareaDetallada } from '../types';
@@ -32,29 +34,20 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
     const [enlaceUrl, setEnlaceUrl] = useState('');
     const [mostrarEnlace, setMostrarEnlace] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const quillModules = useMemo(() => ({
+        toolbar: [
+            [{ 'header': [1, 2, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            ['clean']
+        ],
+    }), []);
 
-    // Función para insertar formato en el textarea
-    const insertFormatting = (prefix: string, suffix: string = prefix) => {
-        const textarea = textareaRef.current;
-        if (!textarea) return;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = instrucciones;
-        const selectedText = text.substring(start, end);
-        const before = text.substring(0, start);
-        const after = text.substring(end);
-        const newText = `${before}${prefix}${selectedText || 'texto'}${suffix}${after}`;
-        setInstrucciones(newText);
-        // Reposicionar cursor
-        setTimeout(() => {
-            textarea.focus();
-            const newCursorPos = selectedText 
-                ? start + prefix.length + selectedText.length + suffix.length
-                : start + prefix.length;
-            textarea.setSelectionRange(newCursorPos, newCursorPos);
-        }, 0);
-    };
+    const quillFormats = [
+        'header',
+        'bold', 'italic', 'underline', 'strike',
+        'list', 'bullet'
+    ];
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -247,33 +240,19 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                             )}
                         </div>
 
-                        {/* Instrucciones */}
-                        <div className="space-y-0">
-                            <textarea
-                                ref={textareaRef}
-                                value={instrucciones}
-                                onChange={(e) => setInstrucciones(e.target.value)}
-                                placeholder="Instrucciones (opcional)"
-                                rows={6}
-                                className="w-full text-sm text-slate-600 bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all resize-none placeholder:text-slate-400 leading-relaxed"
-                            />
-                            {/* Formatting Toolbar */}
-                            <div className="flex items-center gap-1 px-2 py-2 bg-slate-50 rounded-b-xl border border-t-0 border-slate-200 -mt-3">
-                                <button type="button" onClick={() => insertFormatting('**')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-md transition-colors" title="Negrita">
-                                    <Bold className="w-4 h-4" />
-                                </button>
-                                <button type="button" onClick={() => insertFormatting('*')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-md transition-colors" title="Cursiva">
-                                    <Italic className="w-4 h-4" />
-                                </button>
-                                <button type="button" onClick={() => insertFormatting('<u>', '</u>')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-md transition-colors" title="Subrayado">
-                                    <Underline className="w-4 h-4" />
-                                </button>
-                                <button type="button" onClick={() => insertFormatting('\n- ', '')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-md transition-colors" title="Lista">
-                                    <List className="w-4 h-4" />
-                                </button>
-                                <button type="button" onClick={() => insertFormatting('~~')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-md transition-colors" title="Tachado">
-                                    <Strikethrough className="w-4 h-4" />
-                                </button>
+                        {/* Instrucciones con Rich Text Editor */}
+                        <div className="space-y-0 rich-text-editor">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Instrucciones de la misión</label>
+                            <div className="bg-slate-50/50 rounded-2xl border border-slate-200 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-300 transition-all">
+                                <ReactQuill
+                                    theme="snow"
+                                    value={instrucciones}
+                                    onChange={setInstrucciones}
+                                    modules={quillModules}
+                                    formats={quillFormats}
+                                    placeholder="Escribe aquí los pasos para completar la misión..."
+                                    className="bg-transparent"
+                                />
                             </div>
                         </div>
 

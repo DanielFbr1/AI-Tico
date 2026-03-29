@@ -239,7 +239,7 @@ export default function App() {
         <AppContent />
         <Toaster position="top-right" richColors />
         <div className="fixed bottom-2 right-2 flex flex-col items-end gap-1 opacity-50 z-50 pointer-events-none">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.90</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.9.0</span>
         </div>
       </AuthProvider>
     </ErrorBoundary>

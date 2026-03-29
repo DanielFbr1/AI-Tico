@@ -150,3 +150,85 @@
         }
     }
 }
+
+/* React Quill Custom Styles */
+.rich-text-editor .ql-toolbar.ql-snow {
+    border: none !important;
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 8px 12px !important;
+}
+
+.rich-text-editor .ql-container.ql-snow {
+    border: none !important;
+    font-family: inherit !important;
+    font-size: 0.875rem !important;
+    color: #475569 !important;
+    min-height: 200px;
+}
+
+.rich-text-editor .ql-editor {
+    padding: 16px !important;
+    line-height: 1.6 !important;
+}
+
+.rich-text-editor .ql-editor.ql-blank::before {
+    color: #94a3b8 !important;
+    font-style: normal !important;
+}
+
+/* Typography styles for rendered content */
+.prose-tico h1 {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #2563eb;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #eff6ff;
+    padding-bottom: 0.25rem;
+}
+
+.prose-tico h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #4f46e5;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.prose-tico p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.prose-tico ul, .prose-tico ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.prose-tico ul {
+    list-style-type: disc;
+}
+
+.prose-tico ol {
+    list-style-type: decimal;
+}
+
+.prose-tico strong {
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.prose-tico em {
+    font-style: italic;
+    color: #64748b;
+}
+
+.prose-tico u {
+    text-decoration: underline;
+    text-decoration-color: #cbd5e1;
+}
+
+.prose-tico s {
+    text-decoration: line-through;
+    color: #94a3b8;
+}
