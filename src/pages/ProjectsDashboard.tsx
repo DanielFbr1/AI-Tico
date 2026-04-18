@@ -31,6 +31,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
     const [showModalChatAlumnos, setShowModalChatAlumnos] = useState(false);
     const [unreadStudentMessages, setUnreadStudentMessages] = useState(0);
     const [showModalChatProfesores, setShowModalChatProfesores] = useState(false);
+    const [unreadCollabMessages, setUnreadCollabMessages] = useState(0);
 
     const [todosMisGrupos, setTodosMisGrupos] = useState<Grupo[]>([]);
 
@@ -56,8 +57,17 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
     const clasesExistentes = Array.from(new Set(proyectos.map(p => p.clase).filter(Boolean))) as string[];
 
     useEffect(() => {
+        const shouldOpen = localStorage.getItem('open_collab_chat_on_load');
+        if (shouldOpen === 'true') {
+            setShowModalChatProfesores(true);
+            localStorage.removeItem('open_collab_chat_on_load');
+        }
+    }, []);
+
+    useEffect(() => {
         fetchProyectos();
         fetchUnreadFamilyMessages();
+        fetchUnreadCollabMessages();
     }, []);
 
     const [recentProjects, setRecentProjects] = useState<Record<string, number>>({});
@@ -103,10 +113,30 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
         }
     };
 
+    const fetchUnreadCollabMessages = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data, error } = await supabase
+                .from('mensajes_colaboracion')
+                .select('id')
+                .neq('sender_id', user.id)
+                .eq('leido', false);
+
+            if (!error && data) {
+                setUnreadCollabMessages(data.length);
+            }
+        } catch (err) {
+            console.error('Error fetching unread collab messages:', err);
+        }
+    };
+
     useEffect(() => {
         let subscriptionFamilies: any = null;
         let subscriptionStudents: any = null;
         let subscriptionCollab: any = null;
+        let subscriptionCollabMsgs: any = null;
 
         const setupSubscriptions = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -168,6 +198,24 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                         fetchProyectos();
                     })
                     .subscribe();
+
+                // Mensajes de Colaboración
+                subscriptionCollabMsgs = supabase.channel('public:mensajes_colaboracion_updates')
+                    .on('postgres_changes', {
+                        event: '*',
+                        schema: 'public',
+                        table: 'mensajes_colaboracion'
+                    }, payload => {
+                        const newMsg = payload.new as any;
+                        if (payload.eventType === 'INSERT' && newMsg && !newMsg.leido && newMsg.sender_id !== savedId) {
+                            // Solo contar si el proyecto pertenece a los proyectos del profesor
+                            // Simplificamos por ahora contando todos los no leídos donde no somos el sender
+                            setUnreadCollabMessages(prev => prev + 1);
+                        } else if (payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
+                            fetchUnreadCollabMessages();
+                        }
+                    })
+                    .subscribe();
             }
         };
 
@@ -177,6 +225,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
             if (subscriptionFamilies) supabase.removeChannel(subscriptionFamilies);
             if (subscriptionStudents) supabase.removeChannel(subscriptionStudents);
             if (subscriptionCollab) supabase.removeChannel(subscriptionCollab);
+            if (subscriptionCollabMsgs) supabase.removeChannel(subscriptionCollabMsgs);
         };
     }, [session?.user?.id]);
 
@@ -478,6 +527,11 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                         >
                             <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
                             <span className="text-[10px] md:text-xs uppercase tracking-widest hidden md:inline">Docentes</span>
+                            {unreadCollabMessages > 0 && (
+                                <span className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                                    {unreadCollabMessages}
+                                </span>
+                            )}
                         </button>
                         <button
                             onClick={() => setShowMensajesFamilias(true)}
@@ -729,6 +783,7 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                     onClose={() => setShowModalChatProfesores(false)}
                     user={session?.user || null}
                     proyectos={proyectos}
+                    onMessagesRead={() => setUnreadCollabMessages(0)}
                 />
             )}
         </div>

@@ -43,6 +43,7 @@ import { useAuth } from '../context/AuthContext';
 import { ModalUnirseClase } from './ModalUnirseClase';
 import { RoadmapView } from './RoadmapView';
 import { LivingTree } from './LivingTree';
+import { TemporizadorConcentracion } from './TemporizadorConcentracion';
 import { PROYECTOS_MOCK, getMockEvaluacion, PASOS_TUTORIAL_ALUMNO } from '../data/mockData';
 import { toast } from 'sonner';
 import { fetchPuntosProyecto } from '../lib/puntos';
@@ -114,6 +115,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [localRoomCode, setLocalRoomCode] = useState<string | null>(null);
   const [tareaSeleccionadaDetalle, setTareaSeleccionadaDetalle] = useState<TareaDetallada | null>(null);
   const [modalInitialShowChat, setModalInitialShowChat] = useState(false);
+  const [modalChatEquipoOpen, setModalChatEquipoOpen] = useState(false);
 
   // Estado del tutorial para Alumnos
   const [tutorialActivo, setTutorialActivo] = useState(() => {
@@ -234,6 +236,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   const [realEvaluacion, setRealEvaluacion] = useState<any[]>([]);
   const [asistenciaStats, setAsistenciaStats] = useState({ present: 0, total: 0, percentage: 0 });
   const [hasNewEvaluation, setHasNewEvaluation] = useState(false);
+  const [unreadTeamMessages, setUnreadTeamMessages] = useState(0);
 
   // Fetch unread notifications count
   useEffect(() => {
@@ -268,7 +271,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     
     // Contar las aprobadas/evaluadas
     const evaluadas = tareasRel.filter(t => {
-            // 1. Priorizar estado de entrega (para misiones globales y específicas)
+            // 1. Priorizar estado de entrega (para tareas globales y específicas)
             const gidNum = Number(grupoReal.id);
             const e = (entregasTareas || []).find(ent => ent.tarea_id === t.id && Number(ent.grupo_id) === gidNum);
             if (e && (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado' || e.estado === 'revisado')) {
@@ -522,7 +525,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       setTareasAlumno(prev => prev.map(t => t.id === id ? { ...t, estado: nuevoEstado as any } : t));
       
       if (nuevoEstado === 'revision') {
-        toast.success('Misión enviada a revisión');
+        toast.success('Tarea enviada a revisión');
         
         // Notificar a los profesores
         if (alumno.proyecto_id) {
@@ -532,7 +535,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               crearNotificacionMasiva(profIds, {
                 proyectoId: alumno.proyecto_id,
                 tipo: 'tarea_revision',
-                titulo: `Misión para revisar: "${tarea?.titulo || 'Nueva entrega'}"`,
+                titulo: `Tarea para revisar: "${tarea?.titulo || 'Nueva entrega'}"`,
                 descripcion: `El alumno ${alumno.nombre} ha enviado una tarea para revisión.`,
                 metadata: { tarea_id: id, alumno_id: alumno.id, alumno_nombre: alumno.nombre }
               });
@@ -1003,6 +1006,36 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       )
       .subscribe();
 
+    // SUSCRIPCIÓN PARA MENSAJES DE CHAT DE EQUIPO (Notificaciones parpadeantes)
+    let channelChatEquipo: any = null;
+    if (grupoReal?.id && Number(grupoReal.id) > 0) {
+      channelChatEquipo = supabase.channel(`team_chat_notifications_${grupoReal.id}_${Date.now()}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'mensajes_chat',
+            filter: `grupo_id=eq.${grupoReal.id}`
+          },
+          (payload) => {
+            const newMsg = payload.new as any;
+            // Incrementar si el modal está cerrado y NO lo envié yo
+            // REGLA: Los mensajes de TAREAS (tarea_id !== null) NO deben hacer parpadear el chat de EQUIPO general
+            // REGLA 2: Los mensajes escritos a la IA (modo = 'ia') tampoco deben disparar notificación aquí
+            if (newMsg.modo === 'equipo' && newMsg.remitente !== alumno.nombre && !newMsg.tarea_id) {
+              setModalChatEquipoOpen(isOpen => {
+                if (!isOpen) {
+                  setUnreadTeamMessages(prev => prev + 1);
+                }
+                return isOpen;
+              });
+            }
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
       supabase.removeChannel(channelpresence);
       supabase.removeChannel(channelupdates);
@@ -1010,6 +1043,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       supabase.removeChannel(channelEvaluaciones);
       supabase.removeChannel(channelEvaluacionesGrupales);
       supabase.removeChannel(channelTareasGlobal);
+      if (channelChatEquipo) supabase.removeChannel(channelChatEquipo);
     };
   }, [grupoReal?.proyecto_id, alumno.id, grupoReal?.id]);
 
@@ -1017,11 +1051,11 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     ? evaluacionAlumno.reduce((sum, e) => sum + Number(e.puntos), 0) / evaluacionAlumno.length
     : 0;
 
-  const tareasCompletadasMisiones = showExample ? 7 : tareasAlumno.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length;
-  const totalTareasMisiones = showExample ? 7 : tareasAlumno.length;
+  const tareasCompletadasTareas = showExample ? 7 : tareasAlumno.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length;
+  const totalTareasTareas = showExample ? 7 : tareasAlumno.length;
 
-  const notasMisiones = showExample ? [10, 8, 9, 10, 7, 8, 9] : tareasAlumno.map(t => {
-    // Priorizamos t.calificacion (misiones individuales) sobre entregas (tareas globales)
+  const notasTareas = showExample ? [10, 8, 9, 10, 7, 8, 9] : tareasAlumno.map(t => {
+    // Priorizamos t.calificacion (tareas individuales) sobre entregas (tareas globales)
     if (t.calificacion !== undefined && t.calificacion !== null) {
       return t.calificacion;
     }
@@ -1029,8 +1063,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
     return entrega?.calificacion || 0;
   });
 
-  const notaMediaMisiones = notasMisiones.length > 0 
-    ? notasMisiones.reduce((sum, n) => sum + n, 0) / notasMisiones.length 
+  const notaMediaTareas = notasTareas.length > 0 
+    ? notasTareas.reduce((sum, n) => sum + n, 0) / notasTareas.length 
     : 0;
 
   const getNivelColor = (nivel: string) => {
@@ -1124,7 +1158,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg md:text-xl font-black text-slate-800 tracking-tight">¡Hola, {(alumno.nombre || 'Alumno').split(' ')[0]}!</h1>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V5.8.82</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V6.3.3</span>
                 </div>
                 <p className="text-[10px] md:text-[11px] text-slate-400 font-black uppercase tracking-widest">
                   {nombreProyecto || 'Sin Clase'} • {grupoDisplay?.nombre || 'Sin Equipo'}
@@ -1209,6 +1243,31 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               >
                 <Calendar className="w-4 h-4" />
                 <span className="uppercase tracking-tight">Calendario</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setModalChatEquipoOpen(true);
+                  setUnreadTeamMessages(0);
+                }}
+                className={`relative flex items-center justify-center md:justify-start gap-2 px-3 py-2 rounded-xl transition-all font-bold text-xs border shadow-sm ${
+                  unreadTeamMessages > 0 
+                  ? 'bg-indigo-600 text-white border-indigo-700 animate-in zoom-in duration-300' 
+                  : 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'
+                }`}
+              >
+                <Users className={`w-4 h-4 ${unreadTeamMessages > 0 ? 'animate-bounce' : ''}`} />
+                <span className="uppercase tracking-tight hidden md:inline">Equipo</span>
+                <span className="uppercase tracking-tight md:hidden">Equipo</span>
+                
+                {unreadTeamMessages > 0 && (
+                  <span className="absolute -top-2 -right-2 flex h-5 w-5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-5 w-5 bg-white text-indigo-600 text-[10px] font-black items-center justify-center shadow-lg border border-indigo-100">
+                      {unreadTeamMessages}
+                    </span>
+                  </span>
+                )}
               </button>
 
               <button
@@ -1369,7 +1428,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
                 <MessageSquare className="w-4 h-4" />
-                <span className="truncate">Chat</span>
+                <span className="truncate">Chats</span>
               </div>
             </button>
             <button
@@ -1419,7 +1478,11 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       </div>
 
       {/* Content */}
-      <main className={`max-w-7xl mx-auto px-6 w-full pb-24 md:pb-8 ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden py-4' : 'py-8 flex-none'}`}>
+      <main className={`max-w-7xl mx-auto px-6 w-full pb-24 md:pb-8 ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden py-4' : 'py-8 flex-none'} relative`}>
+        {/* Etiqueta de Versión para el Alumno */}
+        <div className="absolute top-2 right-6 text-[8px] font-bold text-slate-300 uppercase tracking-widest pointer-events-none opacity-40">
+          V6.6.5
+        </div>
         {vistaActiva === 'calendario' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <VistaCalendario 
@@ -1480,6 +1543,12 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                                     </span>
                                   )}
                                 </div>
+
+                                {/* TEMPORIZADOR AL ESTILO CANVA - Horizontal / No solapado */}
+                                <div className="hidden sm:block absolute right-24 top-6 z-20 scale-95 origin-right">
+                                  <TemporizadorConcentracion userId={alumno.id} />
+                                </div>
+
                                 <button
                                   onClick={() => setModalSubirRecursoOpen(true)}
                                   className="bg-slate-900 text-white w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all group"
@@ -1598,14 +1667,14 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
                            <Award className="w-3.5 h-3.5 text-amber-500" />
-                           <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.85</span>
+                           <span className="text-[10px] font-black text-slate-400 leading-none">V6.6.5</span>
                            <span className="text-[10px] font-black text-slate-400 uppercase">{t.puntos_maximos} Puntos</span>
                         </div>
                         <button
                           onClick={(e) => { 
                             e.stopPropagation(); 
                             handleUpdateTareaEstado(t.id, 'revision');
-                            toast.success('¡Misión enviada a revisión!');
+                            toast.success('¡Tarea enviada a revisión!');
                           }}
                           className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-100 flex items-center gap-2"
                         >
@@ -1852,80 +1921,64 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           </div>
         )}
 
-        {/* VISTA MENTOR IA / EQUIPO */}
+        {/* VISTA CHAT INTEGRADA (IA + EQUIPO) */}
         {
           vistaActiva === 'chat' && grupoDisplay && (
             <div className="h-full flex flex-col overflow-hidden">
-              {/* UNIFIED VIEW: Selection Menu or Focused Chat */}
-              <div className="h-full flex flex-col overflow-hidden">
-                {mobileChatTab === 'menu' ? (
-                  <div className="flex-1 flex flex-col justify-center items-center gap-6 p-6 animate-in fade-in zoom-in duration-500 max-w-4xl mx-auto w-full">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                      {/* Botón TICO */}
-                      <button
-                        onClick={() => setMobileChatTab('ia')}
-                        className="group relative h-32 md:h-64 bg-gradient-to-r md:bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-[2.5rem] p-6 md:p-10 shadow-xl shadow-indigo-100 active:scale-95 transition-all overflow-hidden border-4 border-white flex items-center md:flex-col md:justify-center gap-5"
-                      >
-                        <div className="absolute top-0 right-0 w-32 md:w-64 h-32 md:h-64 bg-white/10 rounded-full -mr-16 md:-mr-32 -mt-16 md:-mt-32 group-hover:scale-110 transition-transform"></div>
-                        <div className="w-16 h-16 md:w-28 md:h-28 bg-white/20 backdrop-blur-md rounded-2xl md:rounded-[2rem] flex items-center justify-center text-white border border-white/30 shadow-inner shrink-0 relative z-10">
-                          <Bot className="w-9 h-9 md:w-16 md:h-16 group-hover:rotate-12 transition-transform" />
-                        </div>
-                        <div className="text-left md:text-center relative z-10">
-                          <h3 className="text-xl md:text-3xl font-black text-white uppercase tracking-tight leading-none italic">Hablar con Tico</h3>
-                        </div>
-                      </button>
-
-                      {/* Botón GRUPO */}
-                      <button
-                        onClick={() => setMobileChatTab('equipo')}
-                        className="group relative h-32 md:h-64 bg-gradient-to-r md:bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[2.5rem] p-6 md:p-10 shadow-xl shadow-emerald-100 active:scale-95 transition-all overflow-hidden border-4 border-white flex items-center md:flex-col md:justify-center gap-5"
-                      >
-                        <div className="absolute bottom-0 left-0 w-32 md:w-64 h-32 md:h-64 bg-white/10 rounded-full -ml-16 md:-ml-32 -mb-16 md:-mb-32 group-hover:scale-110 transition-transform"></div>
-                        <div className="w-16 h-16 md:w-28 md:h-28 bg-white/20 backdrop-blur-md rounded-2xl md:rounded-[2rem] flex items-center justify-center text-white border border-white/30 shadow-inner shrink-0 relative z-10 pr-0.5">
-                          <Users className="w-9 h-9 md:w-16 md:h-16 group-hover:-rotate-12 transition-transform" />
-                        </div>
-                        <div className="text-left md:text-center relative z-10">
-                          <h3 className="text-xl md:text-3xl font-black text-white uppercase tracking-tight leading-none italic">Hablar con el grupo</h3>
-                        </div>
-                      </button>
-                    </div>
+              <div className="flex-1 flex flex-col bg-white overflow-hidden md:rounded-[2.5rem] rounded-t-[2.5rem] border border-slate-200 shadow-2xl h-full">
+                
+                {/* Selector de Pestañas de Chat */}
+                <div className="px-4 py-3 md:px-8 md:py-4 border-b border-slate-50 shrink-0 bg-white/80 backdrop-blur-xl z-20">
+                  <div className="flex bg-slate-100/50 p-1.5 rounded-[1.5rem] md:rounded-[2rem] gap-1 shadow-inner border border-slate-200/50">
+                    <button
+                      onClick={() => setChatTab('ia')}
+                      className={`flex-1 py-3 md:py-4 rounded-2xl md:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] md:text-xs transition-all duration-300 flex items-center justify-center gap-3 ${
+                        chatTab === 'ia'
+                          ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100 translate-y-[-1px]'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      <Bot className={`w-4 h-4 md:w-5 md:h-5 ${chatTab === 'ia' ? 'text-indigo-600 animate-pulse' : 'text-slate-400'}`} />
+                      <span className="hidden sm:inline">Hablar con TICO</span>
+                      <span className="sm:hidden">TICO</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setChatTab('equipo')}
+                      className={`flex-1 py-3 md:py-4 rounded-2xl md:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] md:text-xs transition-all duration-300 flex items-center justify-center gap-3 ${
+                        chatTab === 'equipo'
+                          ? 'bg-white text-emerald-600 shadow-xl shadow-emerald-100 translate-y-[-1px]'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      <Users className={`w-4 h-4 md:w-5 md:h-5 ${chatTab === 'equipo' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                      <span className="hidden sm:inline">Hablar con el Grupo</span>
+                      <span className="sm:hidden">EQUIPO</span>
+                    </button>
                   </div>
-                ) : (
-                  <div className="flex-1 flex flex-col bg-white overflow-hidden md:rounded-[2.5rem] rounded-t-[2.5rem] border border-slate-100 shadow-2xl h-full">
-                    {/* Compact Sub-Header */}
-                    <div className="px-6 py-4 md:py-6 flex items-center justify-between border-b border-slate-50 shrink-0 bg-white/50 backdrop-blur-md z-10">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl text-white shadow-lg ${mobileChatTab === 'ia' ? 'bg-indigo-600 shadow-indigo-100' : 'bg-emerald-600 shadow-emerald-100'}`}>
-                          {mobileChatTab === 'ia' ? <Bot size={20} className="md:w-6 md:h-6" /> : <Users size={20} className="md:w-6 md:h-6" />}
-                        </div>
-                        <div>
-                          <h4 className="font-black text-slate-800 uppercase tracking-tight text-sm md:text-lg italic">
-                            {mobileChatTab === 'ia' ? 'Mentor TICO' : 'Chat de Equipo'}
-                          </h4>
-                          <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest hidden md:block">Canal de comunicación activo</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setMobileChatTab('menu')}
-                        className="px-4 md:px-6 py-2 md:py-3 bg-slate-50 rounded-xl md:rounded-2xl text-slate-400 font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-slate-100 hover:text-slate-600 active:scale-90 transition-all border border-slate-100 flex items-center gap-2"
-                      >
-                        <ArrowLeft size={14} className="md:w-4 md:h-4" />
-                        <span>Volver</span>
-                      </button>
-                    </div>
+                </div>
 
-                    <div className="flex-1 min-h-0 relative h-full">
-                      {mobileChatTab === 'ia' ? (
-                        <MentorChat grupo={grupoDisplay} mostrarEjemplo={showExample} proyectoNombre={nombreProyecto} contextoIA={contextoProyecto} />
-                      ) : (
-                        <ChatGrupo
-                          grupoId={String(grupoDisplay.id)}
-                          miembroActual={alumno.nombre || 'Alumno'}
-                        />
-                      )}
+                {/* Contenido Dinámico del Chat */}
+                <div className="flex-1 min-h-0 relative h-full">
+                  {chatTab === 'ia' ? (
+                    <div className="h-full animate-in fade-in zoom-in-95 duration-500">
+                      <MentorChat 
+                        grupo={grupoDisplay} 
+                        mostrarEjemplo={showExample} 
+                        proyectoNombre={nombreProyecto} 
+                        contextoIA={contextoProyecto} 
+                      />
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="h-full animate-in fade-in zoom-in-95 duration-500">
+                      <ChatGrupo 
+                        grupoId={grupoDisplay.id} 
+                        miembroActual={alumno.nombre} 
+                        esProfesor={false} 
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )
@@ -1959,7 +2012,14 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                     setVistaActiva('comunidad');
                     window.scrollTo(0, 0);
                   } else if (notif.tipo === 'mensaje_familia' || notif.tipo === 'mensaje_grupo') {
-                    setVistaActiva('chat');
+                    if (notif.tipo === 'mensaje_grupo' && !notif.metadata?.tarea_id) {
+                      // Es chat de equipo global - Abrir modal directamente
+                      setModalChatEquipoOpen(true);
+                      setUnreadTeamMessages(0);
+                      // Opcionalmente podemos marcarla como leída aquí si no se hace en el panel
+                    } else {
+                      setVistaActiva('chat');
+                    }
                     window.scrollTo(0, 0);
                   }
                 }}
@@ -1999,8 +2059,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                     <Award className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xl md:text-2xl lg:text-3xl font-black text-amber-600 leading-none mb-1">{tareasCompletadasMisiones}/{totalTareasMisiones}</div>
-                    <div className="text-[8px] md:text-[9px] font-bold text-amber-500 uppercase tracking-wider leading-none">Misiones</div>
+                    <div className="text-xl md:text-2xl lg:text-3xl font-black text-amber-600 leading-none mb-1">{tareasCompletadasTareas}/{totalTareasTareas}</div>
+                    <div className="text-[8px] md:text-[9px] font-bold text-amber-500 uppercase tracking-wider leading-none">Tareas</div>
                   </div>
                 </div>
 
@@ -2009,8 +2069,8 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                     <TrendingUp className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xl md:text-2xl lg:text-3xl font-black text-fuchsia-600 leading-none mb-1">{notaMediaMisiones.toFixed(1)}</div>
-                    <div className="text-[8px] md:text-[9px] font-bold text-fuchsia-500 uppercase tracking-wider leading-none">Media Mis.</div>
+                    <div className="text-xl md:text-2xl lg:text-3xl font-black text-fuchsia-600 leading-none mb-1">{notaMediaTareas.toFixed(1)}</div>
+                    <div className="text-[8px] md:text-[9px] font-bold text-fuchsia-500 uppercase tracking-wider leading-none">Media Tareas</div>
                   </div>
                 </div>
 
@@ -2086,7 +2146,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
                 <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                   <FileText className="w-6 h-6 text-indigo-600" />
-                  Calificaciones por Misión
+                  Calificaciones por Tarea
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2095,7 +2155,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                     return (t.calificacion !== undefined && t.calificacion !== null) || (entrega?.calificacion !== undefined && entrega?.calificacion !== null);
                   }).length === 0 ? (
                     <div className="col-span-full py-10 text-center opacity-50">
-                      <p className="text-sm font-bold text-gray-400">Sin misiones evaluadas aún</p>
+                      <p className="text-sm font-bold text-gray-400">Sin tareas evaluadas aún</p>
                     </div>
                   ) : (
                     tareasAlumno.filter(t => {
@@ -2117,7 +2177,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                         <div key={t.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all">
                           <div className="min-w-0 flex-1">
                             <h4 className="font-bold text-slate-700 text-sm truncate uppercase tracking-tight" title={t.titulo}>{t.titulo}</h4>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Misión Evaluada</span>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tarea Evaluada</span>
                           </div>
                           <div className={`ml-4 px-3 py-1.5 rounded-xl font-black text-sm ${styles.bg} ${styles.color} shadow-sm border border-white/50`}>
                             {cal.toFixed(1)}
@@ -2266,9 +2326,9 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
               className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${vistaActiva === 'chat' ? 'text-purple-600 scale-110' : 'text-slate-400 opacity-60'}`}
             >
               <div className={`p-2 rounded-2xl transition-all ${vistaActiva === 'chat' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-transparent'}`}>
-                <MessageSquare className={`w-5 h-5 ${vistaActiva === 'chat' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                <Bot className={`w-5 h-5 ${vistaActiva === 'chat' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
               </div>
-              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'chat' ? 'opacity-100' : 'opacity-80'}`}>Chat</span>
+              <span className={`text-[8px] font-black uppercase tracking-tight ${vistaActiva === 'chat' ? 'opacity-100' : 'opacity-80'}`}>Chat IA</span>
             </button>
 
             <button
@@ -2333,6 +2393,35 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
           alumnoNombre={alumno.nombre}
           historialClases={historialClases}
         />
+      )}
+      {modalChatEquipoOpen && grupoReal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-2xl h-[80vh] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col relative animate-in zoom-in-95 duration-300">
+                <div className="p-6 bg-white border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
+                            <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 className="font-black text-slate-800 text-sm uppercase tracking-tight">Chat de Equipo</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{grupoReal.nombre}</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => setModalChatEquipoOpen(false)}
+                        className="w-10 h-10 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-xl flex items-center justify-center transition-all"
+                    >
+                        <Plus className="w-6 h-6 rotate-45" />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                    <ChatGrupo 
+                        grupoId={String(grupoReal.id)} 
+                        miembroActual={alumno.nombre} 
+                    />
+                </div>
+            </div>
+        </div>
       )}
 
       {tareaSeleccionadaDetalle && (

@@ -27,7 +27,7 @@ interface ProyectoNotas {
     comentarios: { id: string, contenido: string, created_at: string }[];
     puntos: number;
     tareasEvaluadas: { id: string, titulo: string, calificacion: number | null, estado: string }[];
-    notaMediaMisiones: number;
+    notaMediaTareas: number;
     tareasEntregadasCount: number;
     tareasTotalCount: number;
     curso?: string;
@@ -173,7 +173,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     };
                 }).filter(t => t.calificacion !== null); // Show only if evaluated
 
-                const notaMediaMisiones = tareasEvaluadas.length > 0
+                const notaMediaTareas = tareasEvaluadas.length > 0
                     ? tareasEvaluadas.reduce((sum, t) => sum + (t.calificacion ?? 0), 0) / tareasEvaluadas.length
                     : 0;
 
@@ -208,7 +208,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                     puntos,
                     comentarios: commentsData || [],
                     tareasEvaluadas,
-                    notaMediaMisiones,
+                    notaMediaTareas,
                     tareasEntregadasCount,
                     tareasTotalCount,
                     curso: (grupo as any).proyectos?.curso || 'Sin curso',
@@ -408,7 +408,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                 </div>
                                                                 <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
                                                                     <span className="text-[8px] text-amber-500 font-black uppercase tracking-widest block mb-1">MEDIA TAREAS</span>
-                                                                    <div className="text-xl font-black text-amber-600">{proyecto.notaMediaMisiones.toFixed(1)}</div>
+                                                                    <div className="text-xl font-black text-amber-600">{proyecto.notaMediaTareas.toFixed(1)}</div>
                                                                 </div>
                                                                 <div className="bg-orange-50 rounded-xl p-3 border border-orange-100">
                                                                     <span className="text-[8px] text-orange-500 font-black uppercase tracking-widest block mb-1">TAREAS ENTREGADAS</span>
@@ -453,7 +453,7 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                 <div>
                                                                     <div className="flex items-center gap-2 mb-4">
                                                                         <FileText className="w-3.5 h-3.5 text-indigo-500" />
-                                                                        <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Calificaciones por Misión</span>
+                                                                        <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Calificaciones por Tarea</span>
                                                                     </div>
                                                                     {proyecto.tareasEvaluadas.length > 0 ? (
                                                                         <div className="grid grid-cols-1 gap-2">
@@ -480,8 +480,8 @@ export function FamiliaNotasAlumno({ alumno, onBack }: FamiliaNotasAlumnoProps) 
                                                                     ) : (
                                                                         <div className="h-[200px] flex flex-col items-center justify-center p-8 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-100 text-center animate-in fade-in duration-500">
                                                                             <FileText className="w-8 h-8 text-slate-200 mb-2" />
-                                                                            <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Sin misiones evaluadas</p>
-                                                                            <p className="text-[9px] text-slate-300 font-medium mt-1">Cuando el profesor califique una misión individual aparecerá aquí.</p>
+                                                                            <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Sin tareas evaluadas</p>
+                                                                            <p className="text-[9px] text-slate-300 font-medium mt-1">Cuando el profesor califique una tarea individual aparecerá aquí.</p>
                                                                         </div>
                                                                     )}
                                                                 </div>

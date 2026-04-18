@@ -12,11 +12,12 @@ interface GroupDetailProps {
     fases: ProyectoFase[];
     rubrica: Criterio[];
     proyectoId?: string;
+    codigoSala?: string;
     onBack: () => void;
     onViewFeedback?: () => void;
 }
 
-export function GroupDetail({ grupo: initialGrupo, fases, rubrica, proyectoId, onBack, onViewFeedback }: GroupDetailProps) {
+export function GroupDetail({ grupo: initialGrupo, fases, rubrica, proyectoId, codigoSala, onBack, onViewFeedback }: GroupDetailProps) {
     const [grupo, setGrupo] = useState<Grupo>(initialGrupo);
 
     useEffect(() => {
@@ -98,9 +99,19 @@ export function GroupDetail({ grupo: initialGrupo, fases, rubrica, proyectoId, o
         }
     };
 
-    useEffect(() => {
-        setGrupo(initialGrupo);
-    }, [initialGrupo]);
+    const refreshGrupo = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('grupos')
+                .select('*')
+                .eq('id', grupo.id)
+                .single();
+            if (error) throw error;
+            if (data) setGrupo(data);
+        } catch (err) {
+            console.error('Error refreshing group data:', err);
+        }
+    };
 
     return (
         <>
@@ -114,6 +125,7 @@ export function GroupDetail({ grupo: initialGrupo, fases, rubrica, proyectoId, o
                 onAssignTask={handleAsignarTareas}
                 onViewStudent={(alumno) => setAlumnoParaEvaluar({ nombre: alumno, grupo })}
                 onDeleteHito={handleDeleteHito}
+                onUpdateIA={refreshGrupo}
             />
 
             {showModalGrupo && (
@@ -121,6 +133,7 @@ export function GroupDetail({ grupo: initialGrupo, fases, rubrica, proyectoId, o
                     onClose={() => setShowModalGrupo(false)}
                     onCrear={handleCrearOEditarGrupo}
                     proyectoId={String(grupo.proyecto_id || '1')}
+                    codigoSala={codigoSala}
                     grupoEditando={grupo}
                 />
             )}

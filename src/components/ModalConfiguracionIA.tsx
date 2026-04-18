@@ -9,9 +9,10 @@ interface ModalConfiguracionIAProps {
     onClose: () => void;
     grupo?: Grupo; // Si existe, configura solo este grupo
     proyectoId?: string; // Si no hay grupo, usa este ID para actualizar TODOS
+    onUpdate?: () => void; // Callback para notificar cambios
 }
 
-export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfiguracionIAProps) {
+export function ModalConfiguracionIA({ onClose, grupo, proyectoId, onUpdate }: ModalConfiguracionIAProps) {
     // Estados iniciales basados en el grupo (o defaults)
     const [nivelExigencia, setNivelExigencia] = useState<string>(grupo?.configuracion?.nivel_exigencia || 'Medio');
     const [tono, setTono] = useState<string>(grupo?.configuracion?.tono || 'Divertido');
@@ -137,7 +138,10 @@ export function ModalConfiguracionIA({ onClose, grupo, proyectoId }: ModalConfig
             } else {
                 if (!autoGuardado) toast.error('Error: No se pudo identificar el proyecto activo');
             }
-            if (!autoGuardado) onClose();
+            if (!autoGuardado) {
+                if (onUpdate) onUpdate();
+                onClose();
+            }
         } catch (error) {
             console.error('Error saving config:', error);
             if (!autoGuardado) toast.error('Error al guardar configuración');

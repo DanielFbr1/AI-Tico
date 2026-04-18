@@ -315,7 +315,7 @@ export function EvaluacionRubricas({ rubrica, grupos = [], proyectoId, tareasPro
 
       const wb = utils.book_new();
       utils.book_append_sheet(wb, wsGrades, "Calificaciones Rúbrica");
-      utils.book_append_sheet(wb, wsTasks, "Misiones (Tareas)");
+      utils.book_append_sheet(wb, wsTasks, "Tareas");
       utils.book_append_sheet(wb, wsRubric, "Definición Rúbrica");
       writeFile(wb, "Evaluacion_Detallada_TicoAI.xlsx");
     } catch (err) {

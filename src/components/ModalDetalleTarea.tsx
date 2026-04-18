@@ -46,7 +46,10 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
     const [subiendoArchivo, setSubiendoArchivo] = useState(false);
     const [cargandoEntrega, setCargandoEntrega] = useState(!!targetGrupoId);
     const [showChat, setShowChat] = useState(!!initialShowChat);
-    const [lastSeenChatCount, setLastSeenChatCount] = useState<number>(0);
+    const [lastSeenChatCount, setLastSeenChatCount] = useState<number>(() => {
+        const saved = localStorage.getItem(`task_chat_seen_${tarea.id}`);
+        return saved ? parseInt(saved, 10) : 0;
+    });
     const fileInputRef = useRef<HTMLInputElement>(null);
     const adjuntosInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -57,17 +60,19 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
         // Si el chat está abierto, actualizamos el contador de vistos
-        if (showChat) {
+        if (showChat && chatComentarios.length > 0) {
             setLastSeenChatCount(chatComentarios.length);
+            localStorage.setItem(`task_chat_seen_${tarea.id}`, chatComentarios.length.toString());
         }
-    }, [chatComentarios, showChat]);
+    }, [chatComentarios, showChat, tarea.id]);
 
     // Cuando se abre el chat por primera vez, marcar mensajes como vistos
     useEffect(() => {
-        if (showChat) {
+        if (showChat && chatComentarios.length > 0) {
             setLastSeenChatCount(chatComentarios.length);
+            localStorage.setItem(`task_chat_seen_${tarea.id}`, chatComentarios.length.toString());
         }
-    }, [showChat]);
+    }, [showChat, chatComentarios.length, tarea.id]);
 
     const hasChanges = !isStudent && (
         titulo !== tarea.titulo ||
@@ -155,7 +160,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                             await crearNotificacionMasiva(alumnoIds, {
                                 proyectoId: tarea.proyecto_id,
                                 tipo: 'notas_actualizadas',
-                                titulo: `Misión evaluada: "${tarea.titulo}"`,
+                                titulo: `Tarea evaluada: "${tarea.titulo}"`,
                                 descripcion: `El profesor ha evaluado vuestra entrega. Calificación: ${calificacion || 0} puntos.`,
                                 metadata: { tarea_id: tarea.id, calificacion }
                             });
@@ -430,7 +435,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                     await crearNotificacionMasiva(profIds, {
                         proyectoId: tarea.proyecto_id,
                         tipo: 'comentario_tarea',
-                        titulo: `Misión "${tarea.titulo}": Nuevo mensaje`,
+                        titulo: `Tarea "${tarea.titulo}": Nuevo mensaje`,
                         descripcion: `${autor} ha escrito un comentario en la tarea.`,
                         metadata: { tarea_id: tarea.id, grupo_id: validGid, alumno_id: currentUserId, alumno_nombre: autor }
                     });
@@ -448,8 +453,8 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                     await crearNotificacionMasiva(alumnoIds, {
                         proyectoId: tarea.proyecto_id,
                         tipo: 'comentario_tarea',
-                        titulo: `Misión "${tarea.titulo}": Mensaje del profesor`,
-                        descripcion: `El profesor ha dejado un nuevo comentario en la misión.`,
+                        titulo: `Tarea "${tarea.titulo}": Mensaje del profesor`,
+                        descripcion: `El profesor ha dejado un nuevo comentario en la tarea.`,
                         metadata: { tarea_id: tarea.id, grupo_id: validGid }
                     });
                     toast.success('Notificación enviada a los alumnos');
@@ -573,7 +578,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-2 md:p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[98vw] max-h-[98vh] overflow-hidden flex flex-col border border-slate-100">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[98vw] md:max-w-7xl max-h-[98vh] overflow-hidden flex flex-col border border-slate-100">
                 
                 {false ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-20">
@@ -606,7 +611,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                 value={titulo}
                                                 onChange={(e) => setTitulo(e.target.value)}
                                                 className="w-full bg-white/10 hover:bg-white/20 focus:bg-white text-white focus:text-slate-900 text-lg md:text-xl font-black tracking-tight leading-tight rounded-xl px-4 py-1.5 transition-all outline-none border-2 border-transparent focus:border-white shadow-inner placeholder:text-white/40"
-                                                placeholder="Título de la misión..."
+                                                placeholder="Título de la tarea..."
                                             />
                                         ) : (
                                             <h2 className="text-lg md:text-xl font-black tracking-tight leading-tight drop-shadow-sm">{tarea.titulo}</h2>
@@ -641,7 +646,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                 <button
                                                     onClick={() => { if (confirm('¿Eliminar esta tarea definitivamente?')) onDelete(tarea.id); }}
                                                     className="p-1.5 bg-rose-500/20 hover:bg-rose-500/40 text-rose-100 rounded-lg border border-rose-500/30 transition-all active:scale-90"
-                                                    title="Eliminar Misión"
+                                                    title="Eliminar Tarea"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
@@ -665,7 +670,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                 className="px-6 py-2 bg-white text-blue-600 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-blue-50 transition-all active:scale-95 flex items-center gap-2 border-2 border-transparent hover:border-blue-200"
                                             >
                                                 <Send className="w-3.5 h-3.5" />
-                                                Entregar Misión
+                                                Entregar Tarea
                                             </button>
                                         )}
                                         {isStudent && tarea.estado === 'revision' && (
@@ -681,7 +686,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                         )}
                                         
                                         <div className="flex items-center gap-2">
-                                             <span className="text-[10px] font-black text-slate-400 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full uppercase tracking-widest border border-white/30 text-white/90">Versión V5.8.85</span>
+                                             <span className="text-[10px] font-black text-slate-400 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full uppercase tracking-widest border border-white/30 text-white/90">Versión V6.6.5</span>
                                             <button 
                                                 onClick={onClose}
                                                 className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
@@ -722,7 +727,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                             ['clean']
                                                         ]
                                                     }}
-                                                    placeholder="Escribe aquí las instrucciones de la misión..."
+                                                    placeholder="Escribe aquí las instrucciones de la tarea..."
                                                 />
                                             </div>
                                         ) : (
@@ -896,7 +901,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                     <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-white/50 rounded-2xl border border-dashed border-slate-200">
                                                         <MessageSquare className="w-8 h-8 opacity-20 mb-2" />
                                                         <p className="text-[10px] font-black uppercase tracking-widest">No hay comentarios aún</p>
-                                                        <p className="text-[10px] opacity-60">Inicia la conversación sobre esta misión</p>
+                                                        <p className="text-[10px] opacity-60">Inicia la conversación sobre esta tarea</p>
                                                     </div>
                                                 ) : (
                                                     chatComentarios.map((c, idx) => (
@@ -1013,40 +1018,42 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                             )}
                                         </div>
 
-                                        <div className="space-y-1.5 pb-2 border-b border-slate-100/50">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                                    <CheckCircle2 className="w-3.5 h-3.5" /> Calificación
-                                                </label>
+                                        {(!isStudent && (estadoLocal === 'aprobado' || estadoLocal === 'completado')) || isStudent ? (
+                                            <div className="space-y-1.5 pb-2 border-b border-slate-100/50">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                        <CheckCircle2 className="w-3.5 h-3.5" /> Calificación
+                                                    </label>
+                                                </div>
+                                                {!isStudent ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input 
+                                                            type="number" 
+                                                            min="0"
+                                                            max="10"
+                                                            step="0.1"
+                                                            value={calificacion || 0}
+                                                            onChange={(e) => {
+                                                                const val = parseFloat(e.target.value) || 0;
+                                                                setCalificacion(Math.min(10, Math.max(0, val)));
+                                                            }}
+                                                            className="flex-1 bg-white border-2 border-slate-100 rounded-xl px-4 py-2.5 text-sm font-black text-indigo-600 outline-none focus:border-indigo-500 transition-all shadow-sm"
+                                                        />
+                                                        <span className="text-xs font-black text-slate-300">/ 10</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-between px-4 py-2.5 bg-white rounded-xl border border-slate-100 shadow-sm transition-all group-hover:border-indigo-100">
+                                                        <p className="text-sm font-black text-slate-800">{calificacion || 'Sin nota'}</p>
+                                                        <span className="text-[10px] font-black text-slate-300">Puntaje final</span>
+                                                    </div>
+                                                )}
                                             </div>
-                                            {!isStudent ? (
-                                                <div className="flex items-center gap-2">
-                                                    <input 
-                                                        type="number" 
-                                                        min="0"
-                                                        max="10"
-                                                        step="0.1"
-                                                        value={calificacion || 0}
-                                                        onChange={(e) => {
-                                                            const val = parseFloat(e.target.value) || 0;
-                                                            setCalificacion(Math.min(10, Math.max(0, val)));
-                                                        }}
-                                                        className="flex-1 bg-white border-2 border-slate-100 rounded-xl px-4 py-2.5 text-sm font-black text-indigo-600 outline-none focus:border-indigo-500 transition-all shadow-sm"
-                                                    />
-                                                    <span className="text-xs font-black text-slate-300">/ 10</span>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center justify-between px-4 py-2.5 bg-white rounded-xl border border-slate-100 shadow-sm transition-all group-hover:border-indigo-100">
-                                                    <p className="text-sm font-black text-slate-800">{calificacion || 'Sin nota'}</p>
-                                                    <span className="text-[10px] font-black text-slate-300">Puntaje final</span>
-                                                </div>
-                                            )}
-                                        </div>
+                                        ) : null}
                                     </div>
                                     {!isStudent && estadoLocal === 'revision' && (
                                         <div className="pt-4 space-y-3">
                                             <div className="bg-white border-2 border-indigo-100 p-6 rounded-[2.5rem] flex flex-col gap-4 shadow-xl shadow-indigo-500/5">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Evaluación de la Misión</p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Evaluación de la Tarea</p>
                                                 <div className="flex items-center justify-center gap-3">
                                                     <input
                                                         type="number"
@@ -1066,7 +1073,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                     <button
                                                         onClick={() => {
                                                             onEstadoChange(tarea.id, 'completado', calificacion);
-                                                            toast.success('¡Misión completada!');
+                                                            toast.success('¡Tarea completada!');
                                                             onClose();
                                                         }}
                                                         className="flex flex-col items-center gap-2 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-3xl transition-all active:scale-95 shadow-lg shadow-emerald-500/10"
@@ -1077,7 +1084,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                                     <button
                                                         onClick={() => {
                                                             onEstadoChange(tarea.id, 'pendiente', undefined);
-                                                            toast.error('Misión devuelta para corrección (Pendiente)');
+                                                            toast.error('Tarea devuelta para corrección (Pendiente)');
                                                             onClose();
                                                         }}
                                                         className="flex flex-col items-center gap-2 py-4 bg-rose-50 border-2 border-rose-100 text-rose-500 hover:bg-rose-100 rounded-3xl transition-all active:scale-95"

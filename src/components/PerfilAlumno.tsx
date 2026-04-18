@@ -242,10 +242,10 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
     ? evaluacion.reduce((sum, e) => sum + Number(e.puntos || 0), 0) / evaluacion.length
     : 0;
 
-  const tareasCompletadasMisiones = tareasAlumno.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length;
-  const totalTareasMisiones = tareasAlumno.length;
+  const tareasCompletadasTareas = tareasAlumno.filter(t => t.estado === 'aprobado' || t.estado === 'completado').length;
+  const totalTareasTareas = tareasAlumno.length;
 
-  const notasMisiones = tareasAlumno.map(t => {
+  const notasTareas = tareasAlumno.map(t => {
     if (t.grupo_id !== null) {
       return (t.estado === 'aprobado' || t.estado === 'completado') ? t.puntos_maximos : 0;
     } else {
@@ -254,8 +254,8 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
     }
   });
 
-  const notaMediaMisiones = notasMisiones.length > 0 
-    ? notasMisiones.reduce((sum, n) => sum + n, 0) / notasMisiones.length 
+  const notaMediaTareas = notasTareas.length > 0 
+    ? notasTareas.reduce((sum, n) => sum + n, 0) / notasTareas.length 
     : 0;
 
   const getNivelColor = (puntos: number | string) => {
@@ -372,8 +372,8 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                     <Award className="w-5 h-5 md:w-8 md:h-8" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-amber-600 leading-none mb-1">{tareasCompletadasMisiones}/{totalTareasMisiones}</div>
-                    <div className="text-[8px] md:text-xs font-bold text-amber-500 uppercase tracking-wider leading-none">Misiones</div>
+                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-slate-900 leading-none mb-1">{tareasCompletadasTareas}/{totalTareasTareas}</div>
+                    <div className="text-[8px] md:text-xs font-bold text-amber-500 uppercase tracking-wider leading-none">Tareas</div>
                   </div>
                 </div>
 
@@ -382,8 +382,8 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                     <TrendingUp className="w-5 h-5 md:w-8 md:h-8" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-fuchsia-600 leading-none mb-1">{notaMediaMisiones.toFixed(1)}</div>
-                    <div className="text-[8px] md:text-xs font-bold text-fuchsia-500 uppercase tracking-wider leading-none">Media Mis.</div>
+                    <div className="text-xl md:text-3xl lg:text-4xl font-black text-fuchsia-600 leading-none mb-1">{notaMediaTareas.toFixed(1)}</div>
+                    <div className="text-[8px] md:text-xs font-bold text-fuchsia-500 uppercase tracking-wider leading-none">Media Tar.</div>
                   </div>
                 </div>
 
@@ -439,11 +439,11 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                 )}
               </div>
 
-              {/* CALIFICACIONES DE TAREAS (MISIONES) */}
+              {/* CALIFICACIONES DE TAREAS (TAREAS) */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col">
                 <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tight">
                   <Award className="w-6 h-6 text-amber-500" />
-                  Misiones y Notas
+                  Tareas y Notas
                 </h3>
 
                 <div className="space-y-3">
@@ -482,7 +482,7 @@ export function PerfilAlumno({ alumno, grupo, onClose, rubrica }: PerfilAlumnoPr
                   {tareasAlumno.length === 0 && (
                     <div className="text-center py-10 opacity-40">
                       <Plus className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest">Sin misiones asignadas</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest">Sin tareas asignadas</p>
                     </div>
                   )}
                 </div>

@@ -69,7 +69,7 @@ export function NotificacionesPanel({ userId, proyectoId, onNotificationClick, o
       .limit(50);
 
     if (proyectoId) {
-      query = query.or(`proyecto_id.eq.${proyectoId},proyecto_id.is.null`);
+      query = query.or(`proyecto_id.eq.${proyectoId},proyecto_id.is.null,tipo.eq.mensaje_colaboracion`);
     }
 
     const { data, error } = await query;

@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { X, Upload, Link2, FileText, Calendar, Clock, Users, Award, Paperclip, Trash2 } from 'lucide-react';
+import { X, Upload, Link2, FileText, Calendar, Clock, Users, Award, Paperclip, Trash2, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Grupo, TareaDetallada } from '../types';
@@ -28,12 +28,15 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
     const [puntos, setPuntos] = useState(1);
     const [fecha, setFecha] = useState('');
     const [hora, setHora] = useState('23:59');
-    const [grupoSeleccionado, setGrupoSeleccionado] = useState<string>(preselectedGrupoId || 'todos');
+    const [gruposSeleccionados, setGruposSeleccionados] = useState<string[]>(
+        preselectedGrupoId ? [preselectedGrupoId] : ['todos']
+    );
     const [archivos, setArchivos] = useState<ArchivoLocal[]>([]);
     const [guardando, setGuardando] = useState(false);
     const [enlaceUrl, setEnlaceUrl] = useState('');
     const [mostrarEnlace, setMostrarEnlace] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const quillRef = useRef<ReactQuill>(null);
     const quillModules = useMemo(() => ({
         toolbar: [
             [{ 'header': [1, 2, false] }],
@@ -127,10 +130,8 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                 });
             }
 
-            // 2. Insert task into DB
-            const tareaData = {
+            const tareaBase = {
                 proyecto_id: proyectoId,
-                grupo_id: grupoSeleccionado !== 'todos' ? parseInt(grupoSeleccionado) : null,
                 titulo: titulo.trim(),
                 descripcion: instrucciones.trim() || null,
                 fecha_entrega: (() => {
@@ -145,43 +146,58 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                 estado: 'pendiente'
             };
 
-            const { data, error } = await supabase
-                .from('tareas')
-                .insert(tareaData)
-                .select()
-                .single();
+            // 2. Insert task(s) into DB
+            let lastInsertedData = null;
 
-            if (error) throw error;
+            if (gruposSeleccionados.includes('todos')) {
+                // Tarea Global
+                const { data, error } = await supabase
+                    .from('tareas')
+                    .insert({ ...tareaBase, grupo_id: null })
+                    .select()
+                    .single();
+                if (error) throw error;
+                lastInsertedData = data;
 
-            // === NOTIFICACIONES ===
-            // Notificar a los alumnos del grupo o a todos
-            try {
-                const grupoNombre = grupoSeleccionado !== 'todos'
-                    ? grupos.find(g => String(g.id) === grupoSeleccionado)?.nombre || 'tu equipo'
-                    : 'toda la clase';
-
-                let alumnoIds: string[] = [];
-                if (grupoSeleccionado !== 'todos') {
-                    alumnoIds = await getAlumnosDelGrupo(parseInt(grupoSeleccionado), proyectoId);
-                } else {
-                    alumnoIds = await getAlumnosDelProyecto(proyectoId);
-                }
-
+                // Notificar a todos
+                const alumnoIds = await getAlumnosDelProyecto(proyectoId);
                 if (alumnoIds.length > 0) {
                     await crearNotificacionMasiva(alumnoIds, {
                         proyectoId,
                         tipo: 'tarea_asignada',
-                        titulo: `Nueva misión: "${titulo.trim()}"`,
-                        descripcion: `El profesor ha asignado una nueva tarea a ${grupoNombre}. ${puntos > 0 ? `Vale ${puntos} puntos.` : ''}`,
-                        metadata: { tarea_id: data.id, grupo_id: grupoSeleccionado }
+                        titulo: `Nueva tarea: "${titulo.trim()}"`,
+                        descripcion: `El profesor ha asignado una nueva tarea a toda la clase. ${puntos > 0 ? `Vale ${puntos} puntos.` : ''}`,
+                        metadata: { tarea_id: data.id, grupo_id: 'todos' }
                     });
                 }
-            } catch (notifError) {
-                console.error('Error enviando notificaciones:', notifError);
+            } else {
+                // Tareas por grupo individual (Bucle de inserción)
+                for (const gid of gruposSeleccionados) {
+                    const { data, error } = await supabase
+                        .from('tareas')
+                        .insert({ ...tareaBase, grupo_id: parseInt(gid) })
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    lastInsertedData = data;
+
+                    // Notificar por grupo
+                    const gNombre = grupos.find(g => String(g.id) === gid)?.nombre || 'tu equipo';
+                    const alumnoIds = await getAlumnosDelGrupo(parseInt(gid), proyectoId);
+                    if (alumnoIds.length > 0) {
+                        await crearNotificacionMasiva(alumnoIds, {
+                            proyectoId,
+                            tipo: 'tarea_asignada',
+                            titulo: `Nueva tarea: "${titulo.trim()}"`,
+                            descripcion: `El profesor ha asignado una nueva tarea al equipo ${gNombre}. ${puntos > 0 ? `Vale ${puntos} puntos.` : ''}`,
+                            metadata: { tarea_id: data.id, grupo_id: gid }
+                        });
+                    }
+                }
             }
 
-            toast.success('¡Tarea creada con éxito! 🎉');
-            onTareaCreada(data);
+            toast.success('¡Tarea o tareas creadas con éxito! 🎉');
+            if (lastInsertedData) onTareaCreada(lastInsertedData);
             onClose();
         } catch (err) {
             console.error('Error creating task:', err);
@@ -193,7 +209,7 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-[100] p-0 md:p-6 animate-in fade-in duration-200 overflow-y-auto">
-            <div className="bg-white md:rounded-[2rem] shadow-2xl w-full max-w-5xl min-h-screen md:min-h-0 md:my-8 flex flex-col overflow-hidden relative">
+            <div className="bg-white md:rounded-[2rem] shadow-2xl w-full max-w-7xl min-h-screen md:min-h-0 md:my-8 flex flex-col overflow-hidden relative">
 
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-100 sticky top-0 z-10">
@@ -210,7 +226,7 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                     </div>
                     <button
                         onClick={handleGuardar}
-                        disabled={guardando || !titulo.trim()}
+                        disabled={guardando || !titulo.trim() || gruposSeleccionados.length === 0}
                         className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-full font-bold text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-200 active:scale-95"
                     >
                         {guardando ? (
@@ -242,15 +258,16 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
 
                         {/* Instrucciones con Rich Text Editor */}
                         <div className="space-y-0 rich-text-editor">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Instrucciones de la misión</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Instrucciones de la tarea</label>
                             <div className="bg-slate-50/50 rounded-2xl border border-slate-200 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-300 transition-all">
                                 <ReactQuill
+                                    ref={quillRef}
                                     theme="snow"
                                     value={instrucciones}
                                     onChange={setInstrucciones}
                                     modules={quillModules}
                                     formats={quillFormats}
-                                    placeholder="Escribe aquí los pasos para completar la misión..."
+                                    placeholder="Escribe aquí los pasos para completar la tarea..."
                                     className="bg-transparent"
                                 />
                             </div>
@@ -354,20 +371,73 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                             </div>
                         </div>
 
-                        {/* Asignar a */}
-                        <div className="space-y-2">
-                            <label className="text-xs font-black text-slate-500 uppercase tracking-wider">Asignar a</label>
-                            <select
-                                value={grupoSeleccionado}
-                                onChange={(e) => setGrupoSeleccionado(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-white rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all cursor-pointer appearance-none"
-                                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                            >
-                                <option value="todos">👥 Todos los alumnos</option>
-                                {grupos.map(g => (
-                                    <option key={g.id} value={String(g.id)}>📁 {g.nombre}</option>
-                                ))}
-                            </select>
+                        {/* Asignar a - Selección Múltiple Premium */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                    <Users className="w-3.5 h-3.5" />
+                                    Asignar a
+                                </label>
+                                <div className="flex gap-2">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setGruposSeleccionados(['todos'])}
+                                        className={`text-[9px] font-black uppercase px-2 py-1 rounded-md transition-all ${gruposSeleccionados.includes('todos') ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'}`}
+                                    >
+                                        Todos
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setGruposSeleccionados([])}
+                                        className="text-[9px] font-black uppercase px-2 py-1 bg-slate-200 text-slate-500 rounded-md hover:bg-slate-300 transition-all"
+                                    >
+                                        Nada
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-white rounded-2xl border-2 border-slate-100 p-2 space-y-1 max-h-[220px] overflow-y-auto shadow-sm">
+                                {grupos.map(g => {
+                                    const isSelected = gruposSeleccionados.includes(String(g.id)) || (gruposSeleccionados.includes('todos'));
+                                    return (
+                                        <button
+                                            key={g.id}
+                                            type="button"
+                                            onClick={() => {
+                                                if (gruposSeleccionados.includes('todos')) {
+                                                    // Si estaba "todos", al pulsar uno individual, seleccionamos todos menos ese
+                                                    const others = grupos.filter(gr => gr.id !== g.id).map(gr => String(gr.id));
+                                                    setGruposSeleccionados(others);
+                                                    return;
+                                                }
+                                                if (gruposSeleccionados.includes(String(g.id))) {
+                                                    setGruposSeleccionados(prev => prev.filter(id => id !== String(g.id)));
+                                                } else {
+                                                    setGruposSeleccionados(prev => [...prev, String(g.id)]);
+                                                }
+                                            }}
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all border ${
+                                                isSelected 
+                                                ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                                                : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${
+                                                isSelected 
+                                                ? 'bg-blue-600 border-blue-600' 
+                                                : 'bg-white border-slate-300'
+                                            }`}>
+                                                {isSelected && <Check className="w-3 h-3 text-white stroke-[4]" />}
+                                            </div>
+                                            <span className="text-xs font-bold truncate">📁 {g.nombre}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {gruposSeleccionados.length === 0 && (
+                                <p className="text-[10px] text-amber-500 font-bold px-2">Selecciona al menos un equipo</p>
+                            )}
                         </div>
 
                         {/* Puntos de Recompensa */}
@@ -427,11 +497,18 @@ export function ModalCrearTareaClassroom({ proyectoId, grupos, preselectedGrupoI
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-slate-500">
                                     <Users className="w-3.5 h-3.5" />
-                                    <span className="font-bold">{grupoSeleccionado === 'todos' ? 'Todos los alumnos' : grupos.find(g => String(g.id) === grupoSeleccionado)?.nombre || '-'}</span>
+                                    <span className="font-bold">
+                                        {gruposSeleccionados.includes('todos') 
+                                            ? 'Toda la clase' 
+                                            : gruposSeleccionados.length === 0 
+                                                ? 'Nadie seleccionado' 
+                                                : `${gruposSeleccionados.length} equipo${gruposSeleccionados.length !== 1 ? 's' : ''}`
+                                        }
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-slate-500">
                                     <Award className="w-3.5 h-3.5" />
-                                    <span className="font-bold">{puntos} puntos de misión</span>
+                                    <span className="font-bold">{puntos} puntos de tarea</span>
                                 </div>
                                 {fecha && (
                                     <div className="flex items-center gap-2 text-xs text-slate-500">

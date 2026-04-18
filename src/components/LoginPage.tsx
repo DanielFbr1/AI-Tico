@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Brain, User, GraduationCap, ArrowRight, Key, Check, Users, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Brain, User, GraduationCap, ArrowRight, Key, Check, Users, Mail, RefreshCw, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function LoginPage() {
@@ -17,7 +17,10 @@ export function LoginPage() {
     const [foundProject, setFoundProject] = useState<any>(null);
     const [emailSent, setEmailSent] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
-    const [otpCode, setOtpCode] = useState(['', '', '', '', '', '', '', '']);
+    const [confirmed, setConfirmed] = useState(false);
+    const [forgotPassword, setForgotPassword] = useState(false);
+    const [resetEmailSent, setResetEmailSent] = useState(false);
+    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -71,7 +74,9 @@ export function LoginPage() {
                     sessionData = data.session;
                     await refreshPerfil();
                 } else {
-                    // No hay sesión inmediata → se requiere confirmación por email (OTP)
+                    // No hay sesión inmediata → se requiere confirmación por email
+                    // Guardar el rol elegido para que se aplique al confirmar
+                    localStorage.setItem('pendingRole', targetRole);
                     setEmailSent(true);
                     setResendCooldown(60);
                     return;
@@ -175,6 +180,38 @@ export function LoginPage() {
         return () => clearTimeout(timer);
     }, [resendCooldown]);
 
+    // ── Polling: Auto-login tras confirmación de email ──
+    // Cada 4 segundos intentamos iniciar sesión con las credenciales.
+    // Mientras el email no esté confirmado, Supabase rechaza el login.
+    // En cuanto el usuario confirma, el login tiene éxito y entramos.
+    useEffect(() => {
+        if (!emailSent || !email || !password) return;
+
+        pollingRef.current = setInterval(async () => {
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                if (data?.session && !error) {
+                    // ¡Confirmado! Detener polling y entrar
+                    if (pollingRef.current) clearInterval(pollingRef.current);
+                    setConfirmed(true);
+                    // Pequeña pausa visual para mostrar el check
+                    setTimeout(async () => {
+                        await refreshPerfil();
+                    }, 1200);
+                }
+            } catch (e) {
+                // Aún no confirmado, seguimos intentando
+            }
+        }, 4000);
+
+        return () => {
+            if (pollingRef.current) clearInterval(pollingRef.current);
+        };
+    }, [emailSent, email, password]);
+
     const handleResendEmail = async () => {
         if (resendCooldown > 0) return;
         setLoading(true);
@@ -196,59 +233,23 @@ export function LoginPage() {
         }
     };
 
-    const handleOtpChange = (index: number, value: string) => {
-        if (value.length > 1) value = value.slice(-1);
-        if (value && !/^[0-9]$/.test(value)) return;
-        const newOtp = [...otpCode];
-        newOtp[index] = value;
-        setOtpCode(newOtp);
-        // Auto-focus next input
-        if (value && index < 7) {
-            const next = document.getElementById(`otp-${index + 1}`);
-            next?.focus();
-        }
-    };
-
-    const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-        if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
-            const prev = document.getElementById(`otp-${index - 1}`);
-            prev?.focus();
-        }
-    };
-
-    const handleOtpPaste = (e: React.ClipboardEvent) => {
+    // ── Handler: Recuperar contraseña ──
+    const handleForgotPassword = async (e: React.FormEvent) => {
         e.preventDefault();
-        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 8);
-        if (pasted.length === 8) {
-            setOtpCode(pasted.split(''));
-            const last = document.getElementById('otp-7');
-            last?.focus();
-        }
-    };
-
-    const handleVerifyOTP = async () => {
-        const code = otpCode.join('');
-        if (code.length !== 8) {
-            setError('Introduce el código completo de 8 dígitos.');
+        if (!email) {
+            setError('Introduce tu email para recuperar la contraseña.');
             return;
         }
         setLoading(true);
         setError('');
         try {
-            const { data, error } = await supabase.auth.verifyOtp({
-                email: email,
-                token: code,
-                type: 'signup'
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '?type=recovery'
             });
             if (error) throw error;
-            if (data.session) {
-                await refreshPerfil();
-            }
+            setResetEmailSent(true);
         } catch (err: any) {
-            setError(err.message === 'Token has expired or is invalid'
-                ? 'Código expirado o inválido. Solicita uno nuevo.'
-                : (err.message || 'Error al verificar el código.'));
-            setOtpCode(['', '', '', '', '', '', '', '']);
+            setError(err.message || 'Error al enviar el email de recuperación.');
         } finally {
             setLoading(false);
         }
@@ -277,97 +278,194 @@ export function LoginPage() {
         </div>
     );
 
-    // ── Pantalla de Verificación OTP ──
+    // ── Pantalla de Recuperar Contraseña ──
+    if (forgotPassword) {
+        return (
+            <div className="h-[100dvh] w-full bg-[#0A0F1A] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+                <BackgroundDesign />
+                <div className="w-full max-w-sm relative z-10">
+                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl text-center">
+                        <div className="w-20 h-20 mx-auto mb-6 bg-amber-500/20 rounded-2xl flex items-center justify-center border border-amber-400/30 shadow-[0_0_30px_rgba(245,158,11,0.3)]">
+                            {resetEmailSent
+                                ? <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+                                : <Key className="w-10 h-10 text-amber-400" />
+                            }
+                        </div>
+
+                        {resetEmailSent ? (
+                            <>
+                                <h2 className="text-2xl font-bold text-emerald-400 mb-2 tracking-tight">¡Email enviado!</h2>
+                                <p className="text-slate-400 text-sm mb-1">Hemos enviado un enlace para restablecer tu contraseña a:</p>
+                                <p className="text-cyan-400 font-bold text-sm mb-6 break-all">{email}</p>
+                                <div className="bg-white/5 rounded-xl p-4 mb-6 border border-white/10">
+                                    <p className="text-slate-300 text-xs leading-relaxed">
+                                        📧 Abre el correo y pulsa en el enlace para establecer una nueva contraseña. Revisa también la carpeta de spam.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setForgotPassword(false);
+                                        setResetEmailSent(false);
+                                        setError('');
+                                    }}
+                                    className="text-slate-500 hover:text-white text-xs font-medium transition-colors"
+                                >
+                                    ← Volver al inicio de sesión
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Recuperar contraseña</h2>
+                                <p className="text-slate-400 text-sm mb-6">
+                                    Introduce tu email y te enviaremos un enlace para restablecerla.
+                                </p>
+
+                                <form onSubmit={handleForgotPassword} className="space-y-4">
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-white outline-none transition-all text-sm placeholder:text-slate-600"
+                                        placeholder="correo@ejemplo.com"
+                                        required
+                                        autoFocus
+                                    />
+
+                                    {error && (
+                                        <div className="bg-rose-500/10 text-rose-400 p-2.5 rounded-lg text-xs font-medium border border-rose-500/20 flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                            {error}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all bg-amber-600 hover:bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {loading ? (
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            <Mail className="w-4 h-4" />
+                                        )}
+                                        Enviar enlace de recuperación
+                                    </button>
+                                </form>
+
+                                <button
+                                    onClick={() => {
+                                        setForgotPassword(false);
+                                        setError('');
+                                    }}
+                                    className="text-slate-500 hover:text-white text-xs font-medium transition-colors mt-4"
+                                >
+                                    ← Volver al inicio de sesión
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Pantalla de Confirmación de Email (Vía Enlace) ──
     if (emailSent) {
         return (
             <div className="h-[100dvh] w-full bg-[#0A0F1A] flex items-center justify-center p-4 relative overflow-hidden font-sans">
                 <BackgroundDesign />
                 <div className="w-full max-w-sm relative z-10">
                     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl text-center">
-                        {/* Icono */}
-                        <div className="w-20 h-20 mx-auto mb-6 bg-emerald-500/20 rounded-2xl flex items-center justify-center border border-emerald-400/30 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
-                            <ShieldCheck className="w-10 h-10 text-emerald-400" />
-                        </div>
-
-                        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Verifica tu cuenta</h2>
-                        <p className="text-slate-400 text-sm mb-1">
-                            Hemos enviado un código de 8 dígitos a:
-                        </p>
-                        <p className="text-cyan-400 font-bold text-sm mb-6 break-all">
-                            {email}
-                        </p>
-
-                        {/* OTP Input */}
-                        <div className="flex gap-2 justify-center mb-4">
-                            {otpCode.map((digit, i) => (
-                                <input
-                                    key={i}
-                                    id={`otp-${i}`}
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={1}
-                                    value={digit}
-                                    onChange={(e) => handleOtpChange(i, e.target.value)}
-                                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                                    onPaste={i === 0 ? handleOtpPaste : undefined}
-                                    className="w-10 h-12 text-center text-lg font-bold text-white bg-white/10 border border-white/20 rounded-lg focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 outline-none transition-all"
-                                    autoFocus={i === 0}
-                                />
-                            ))}
-                        </div>
-
-                        <div className="bg-white/5 rounded-xl p-3 mb-4 border border-white/10">
-                            <p className="text-slate-300 text-xs leading-relaxed">
-                                💡 Revisa tu bandeja de entrada y <strong>spam</strong>.
-                            </p>
-                        </div>
-
-                        {error && (
-                            <div className="bg-rose-500/10 text-rose-400 p-2.5 rounded-lg text-xs font-medium border border-rose-500/20 flex items-center gap-2 mb-4">
-                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Verificar */}
-                        <button
-                            onClick={handleVerifyOTP}
-                            disabled={loading || otpCode.join('').length !== 8}
-                            className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-3"
-                        >
-                            {loading ? (
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <ShieldCheck className="w-4 h-4" />
-                            )}
-                            Verificar código
-                        </button>
-
-                        {/* Reenviar */}
-                        <button
-                            onClick={handleResendEmail}
-                            disabled={loading || resendCooldown > 0}
-                            className="text-slate-400 hover:text-emerald-400 text-xs font-medium transition-colors mb-2 flex items-center justify-center gap-1 mx-auto"
-                        >
-                            <RefreshCw className="w-3 h-3" />
-                            {resendCooldown > 0
-                                ? `Reenviar en ${resendCooldown}s`
-                                : 'Reenviar código'
+                        {/* Icono — cambia cuando se confirma */}
+                        <div className={`w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center border transition-all duration-700 ${
+                            confirmed
+                                ? 'bg-emerald-500/30 border-emerald-400/50 shadow-[0_0_40px_rgba(16,185,129,0.5)] scale-110'
+                                : 'bg-emerald-500/20 border-emerald-400/30 shadow-[0_0_30px_rgba(16,185,129,0.3)]'
+                        }`}>
+                            {confirmed
+                                ? <CheckCircle2 className="w-10 h-10 text-emerald-400 animate-bounce" />
+                                : <Mail className="w-10 h-10 text-emerald-400" />
                             }
-                        </button>
+                        </div>
 
-                        {/* Volver */}
-                        <button
-                            onClick={() => {
-                                setEmailSent(false);
-                                setIsSignUp(false);
-                                setError('');
-                                setOtpCode(['', '', '', '', '', '', '', '']);
-                            }}
-                            className="text-slate-500 hover:text-white text-xs font-medium transition-colors"
-                        >
-                            ← Volver al inicio de sesión
-                        </button>
+                        {confirmed ? (
+                            // ─── Estado: Confirmado ───
+                            <>
+                                <h2 className="text-2xl font-bold text-emerald-400 mb-2 tracking-tight">¡Cuenta confirmada!</h2>
+                                <p className="text-slate-300 text-sm mb-4">
+                                    Entrando en tu sesión...
+                                </p>
+                                <div className="w-6 h-6 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin mx-auto" />
+                            </>
+                        ) : (
+                            // ─── Estado: Esperando confirmación ───
+                            <>
+                                <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">¡Casi listo!</h2>
+                                <p className="text-slate-400 text-sm mb-1">
+                                    Hemos enviado un enlace de confirmación a:
+                                </p>
+                                <p className="text-cyan-400 font-bold text-sm mb-6 break-all">
+                                    {email}
+                                </p>
+
+                                <div className="bg-white/5 rounded-xl p-4 mb-4 border border-white/10">
+                                    <p className="text-slate-300 text-xs leading-relaxed">
+                                        📧 Abre el correo y pulsa en el botón de <strong>confirmación</strong> para activar tu cuenta. Esta pantalla detectará automáticamente cuando lo hagas.
+                                    </p>
+                                </div>
+
+                                {/* Indicador de polling activo */}
+                                <div className="flex items-center justify-center gap-2 mb-4 text-slate-500 text-[10px] font-medium">
+                                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                                    Esperando confirmación...
+                                </div>
+
+                                {error && (
+                                    <div className="bg-rose-500/10 text-rose-400 p-2.5 rounded-lg text-xs font-medium border border-rose-500/20 flex items-center gap-2 mb-4">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                        {error}
+                                    </div>
+                                )}
+
+                                {/* Reenviar */}
+                                <button
+                                    onClick={handleResendEmail}
+                                    disabled={loading || resendCooldown > 0}
+                                    className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-4"
+                                >
+                                    {loading ? (
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="w-4 h-4" />
+                                    )}
+                                    {resendCooldown > 0
+                                        ? `Reenviar en ${resendCooldown}s`
+                                        : 'Reenviar enlace de confirmación'
+                                    }
+                                </button>
+
+                                {/* Volver */}
+                                <button
+                                    onClick={() => {
+                                        if (pollingRef.current) clearInterval(pollingRef.current);
+                                        localStorage.removeItem('pendingRole');
+                                        setEmailSent(false);
+                                        setIsSignUp(false);
+                                        setError('');
+                                    }}
+                                    className="text-slate-500 hover:text-white text-xs font-medium transition-colors"
+                                >
+                                    ← Volver al inicio de sesión
+                                </button>
+
+                                <div className="mt-8 pt-6 border-t border-white/10">
+                                    <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-1">💡 ¿No lo recibes?</p>
+                                    <p className="text-[10px] text-slate-500 leading-relaxed italic">
+                                        Revisa tu bandeja de spam o promociones.
+                                    </p>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -471,7 +569,7 @@ export function LoginPage() {
                             </div>
 
                             <div className="mt-6 md:mt-8 text-center md:text-right">
-                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase relative z-30">Sistema Unificado V1.4.5</span>
+                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase relative z-30">Sistema Unificado V6.4.9</span>
                             </div>
                         </div>
                     </div>
@@ -606,7 +704,19 @@ export function LoginPage() {
                             {loading ? 'Procesando...' : sessionData ? 'Entrando...' : isSignUp ? 'Crear Cuenta' : 'Entrar'}
                         </button>
 
-                        <div className="text-center pt-2">
+                        <div className="text-center pt-2 space-y-1">
+                            {!isSignUp && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setForgotPassword(true);
+                                        setError('');
+                                    }}
+                                    className="text-amber-400/70 hover:text-amber-400 text-xs font-medium transition-colors block mx-auto"
+                                >
+                                    He olvidado mi contraseña
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => setIsSignUp(!isSignUp)}

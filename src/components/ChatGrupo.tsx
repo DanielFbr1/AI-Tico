@@ -1,38 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Users, Mic, Loader2, Volume2, StopCircle, Play, Pause } from 'lucide-react';
+import { Send, Users, Mic, Loader2, Volume2, StopCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
 interface MensajeChat {
-    id: string;
+    id: string | number; // Support both temp client UUID and server serial ID
     created_at: string;
     grupo_id: string;
     remitente: string;
     contenido: string;
-    audio_url?: string;
+    audio_url?: string | null;
     tipo: 'alumno' | 'profesor';
     modo: 'equipo';
-    tarea_id?: string;
-    tarea_titulo?: string;
+    tarea_id?: string | null;
+    tarea_titulo?: string | null;
+    tempId?: string; // Optional client-side ID for reconciliation
 }
 
 interface ChatGrupoProps {
     grupoId: string;
     miembroActual: string;
     esProfesor?: boolean;
+    tareaId?: string;
+    tareaTitulo?: string;
 }
 
-export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGrupoProps) {
+export function ChatGrupo({ grupoId, miembroActual, esProfesor, tareaId, tareaTitulo }: ChatGrupoProps) {
     const [mensajes, setMensajes] = useState<MensajeChat[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Audio Recording States
     const [isRecording, setIsRecording] = useState(false);
     const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-    const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
 
     const scrollToBottom = () => {
         if (containerRef.current) {
@@ -48,7 +49,7 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
         
         fetchMensajes();
 
-        // Realtime Subscription - Usamos un canal específico por grupo
+        // Realtime Subscription
         const channelName = `chat_grupo_${grupoId}`;
         const channel = supabase
             .channel(channelName)
@@ -62,40 +63,45 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
                 },
                 (payload) => {
                     const newMsg = payload.new as MensajeChat;
-                    if (newMsg.modo === 'equipo') {
+                    const matchesTarea = tareaId ? newMsg.tarea_id === tareaId : !newMsg.tarea_id;
+                    
+                    if (newMsg.modo === 'equipo' && matchesTarea) {
                         setMensajes((prev) => {
-                            // Evitar duplicados (especialmente con updates optimistas)
-                            if (prev.some(m => m.id === newMsg.id)) return prev;
+                            // Prevent duplicates comparing both real ID and tempId
+                            if (prev.some(m => m.id === newMsg.id || (m.tempId && m.tempId === String(newMsg.id)))) return prev;
                             return [...prev, newMsg];
                         });
-                        setTimeout(scrollToBottom, 100);
+                        setTimeout(scrollToBottom, 50);
                     }
                 }
             )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log(`Subscribed to ${channelName}`);
-                }
-            });
+            .subscribe();
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [grupoId]);
+    }, [grupoId, tareaId, miembroActual]);
 
     const fetchMensajes = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
+            let query = supabase
                 .from('mensajes_chat')
                 .select('*')
                 .eq('grupo_id', grupoId)
-                .eq('modo', 'equipo')
-                .order('created_at', { ascending: true });
+                .eq('modo', 'equipo');
+            
+            if (tareaId) {
+                query = query.eq('tarea_id', tareaId);
+            } else {
+                query = query.is('tarea_id', null);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: true });
 
             if (error) throw error;
             setMensajes(data || []);
-            setTimeout(scrollToBottom, 500); // More delay to ensure render
+            setTimeout(scrollToBottom, 500);
         } catch (err) {
             console.error('Error fetching group chat:', err);
         } finally {
@@ -108,11 +114,30 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
 
         const msgContent = input.trim();
         const tempId = crypto.randomUUID();
+        const now = new Date().toISOString();
         
+        // Optimistic Message
+        const optimisticMsg: MensajeChat = {
+            id: tempId,
+            tempId: tempId,
+            created_at: now,
+            grupo_id: grupoId,
+            remitente: miembroActual,
+            contenido: audioUrl ? '🎤 Mensaje de voz' : msgContent,
+            audio_url: audioUrl || null,
+            tipo: esProfesor ? 'profesor' : 'alumno',
+            modo: 'equipo',
+            tarea_id: tareaId || null,
+            tarea_titulo: tareaTitulo || null
+        };
+
+        setMensajes(prev => [...prev, optimisticMsg]);
+        setTimeout(scrollToBottom, 50);
+
         if (!audioUrl) setInput('');
 
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('mensajes_chat')
                 .insert([{
                     grupo_id: grupoId,
@@ -120,118 +145,26 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
                     contenido: audioUrl ? '🎤 Mensaje de voz' : msgContent,
                     audio_url: audioUrl || null,
                     tipo: esProfesor ? 'profesor' : 'alumno',
-                    modo: 'equipo'
-                }]);
+                    modo: 'equipo',
+                    tarea_id: tareaId || null,
+                    tarea_titulo: tareaTitulo || null
+                }])
+                .select()
+                .single();
 
             if (error) throw error;
+
+            if (data) {
+                setMensajes(prev => prev.map(m => m.id === tempId ? { ...data, tempId } : m));
+            }
         } catch (err) {
             console.error('Error sending message:', err);
             toast.error('Error al enviar mensaje');
-            // Revertir cambio optimista si falla
             setMensajes(prev => prev.filter(m => m.id !== tempId));
             if (!audioUrl) setInput(msgContent);
         }
     };
 
-    // --- Audio Logic ---
-    const startRecording = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
-            setMediaRecorder(recorder);
-            setAudioChunks([]);
-
-            recorder.ondataavailable = (e) => {
-                if (e.data.size > 0) setAudioChunks((prev) => [...prev, e.data]);
-            };
-
-            recorder.onstop = async () => {
-                // Create Blob
-                // Note: using 'audioChunks' from state directly might be empty due to closure?
-                // Better logic: inside onstop, we can't fully rely on state update immediately.
-                // We'll rely on a separate effect or a custom way.
-                // Simplified:
-            };
-
-            recorder.start();
-            setIsRecording(true);
-            toast.info("Grabando... pulsa para enviar");
-        } catch (err) {
-            console.error("Error accessing microphone:", err);
-            toast.error("No se pudo acceder al micrófono");
-        }
-    };
-
-    const stopRecording = () => {
-        if (mediaRecorder && isRecording) {
-            mediaRecorder.stop();
-            setIsRecording(false);
-            mediaRecorder.stream.getTracks().forEach(track => track.stop());
-
-            // Hacky but simple: Wait for dataavailable to fire
-            setTimeout(async () => {
-                uploadAudioAndSend();
-            }, 500);
-        }
-    };
-
-    const uploadAudioAndSend = async () => {
-        if (audioChunks.length === 0 && !mediaRecorder) return;
-
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const fileName = `${grupoId}-${Date.now()}.webm`;
-
-        try {
-            const { data, error } = await supabase.storage
-                .from('chat-audio')
-                .upload(fileName, audioBlob);
-
-            if (error) throw error;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('chat-audio')
-                .getPublicUrl(fileName);
-
-            await handleSend(publicUrl);
-        } catch (err) {
-            console.error("Upload error:", err);
-            toast.error("Error al subir el audio");
-        }
-        setAudioChunks([]);
-        setMediaRecorder(null);
-    };
-
-    // Fix for closure issue in upload:
-    // Actually, let's use a specialized hook or specific Ref, but for speed:
-    // We will rebuild 'stopRecording' to just stop, and handle upload in an effect dependent on chunks? 
-    // No, standard way:
-    useEffect(() => {
-        if (!isRecording && audioChunks.length > 0 && mediaRecorder === null) {
-            // It was stopped and cleared, but chunks remain? 
-            // Better: trigger upload manually.
-        }
-    }, [isRecording]);
-
-    // Redefining stop to simple version that relies on event timing
-    // Re-impl below in UI.
-
-    const handleMicClick = () => {
-        if (isRecording) {
-            // Stop & Send
-            if (mediaRecorder) {
-                mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                setIsRecording(false);
-                // We need to wait for the last chunk.
-                // We will create a one-off listener for the blobs.
-                // Refactoring for reliability:
-            }
-        } else {
-            startRecording();
-        }
-    };
-
-    // Better Audio Recorder Implementation
     const startRecordingRobust = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -244,7 +177,6 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
                 const blob = new Blob(chunks, { type: 'audio/webm;codecs=opus' });
                 const fileName = `audio_${Date.now()}.webm`;
 
-                // Upload
                 const { error } = await supabase.storage
                     .from('chat-audio')
                     .upload(fileName, blob);
@@ -284,10 +216,7 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
     };
 
     return (
-        <div className="bg-white flex flex-col h-full">
-
-
-            {/* Messages Area */}
+        <div className="bg-white flex flex-col h-full overflow-hidden">
             <div ref={containerRef} className="flex-1 overflow-y-auto no-scrollbar p-3 md:p-6 space-y-3 md:space-y-4 bg-slate-50/30">
                 {loading && mensajes.length === 0 ? (
                     <div className="flex justify-center p-8">
@@ -306,57 +235,36 @@ export function ChatGrupo({ grupoId, miembroActual, esProfesor = false }: ChatGr
                         return (
                             <div key={msg.id} className={`flex flex-col ${esMio ? 'items-end' : 'items-start'}`}>
                                 <div className={`flex items-end gap-1.5 md:gap-2 max-w-[92%] md:max-w-[85%] ${esMio ? 'flex-row-reverse' : 'flex-row'}`}>
-                                    {/* Avatar */}
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 shadow-sm
-                                        ${esProfe ? 'bg-purple-600 text-white' :
-                                            esMio ? 'bg-indigo-100 text-indigo-600' : 'bg-white border border-slate-200 text-slate-600'}`}>
-                                        {esProfe ? 'P' : msg.remitente.charAt(0).toUpperCase()}
+                                    <div className={`w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center text-[10px] md:text-xs font-black uppercase text-white shrink-0 shadow-sm ${esMio ? 'bg-indigo-600' : esProfe ? 'bg-purple-600' : 'bg-emerald-500'}`}>
+                                        {msg.remitente.substring(0, 1)}
                                     </div>
-
-                                    <div className={`p-3 md:p-4 rounded-2xl text-[13px] md:text-sm shadow-sm leading-relaxed relative group
-                                        ${esMio
-                                            ? 'bg-indigo-600 text-white rounded-br-none shadow-indigo-200'
-                                            : esProfe
-                                                ? 'bg-purple-50 border border-purple-100 text-purple-800 rounded-bl-none'
-                                                : 'bg-white border border-slate-100 text-slate-700 rounded-bl-none'
-                                        }`}>
-                                        {msg.tarea_titulo && (
-                                            <div className={`text-[9px] font-black uppercase tracking-[0.2em] mb-1 py-0.5 px-2 rounded-md ${esMio ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'}`}>
-                                                Misión: {msg.tarea_titulo}
+                                    <div className={`px-3 md:px-5 py-2 md:py-3.5 rounded-2xl md:rounded-[1.5rem] shadow-sm border ${esMio ? 'bg-indigo-600 text-white rounded-br-none border-indigo-500' : 'bg-white text-slate-700 rounded-bl-none border-slate-100'}`}>
+                                        <div className="flex items-center justify-between gap-4 mb-1">
+                                            <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest ${esMio ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                                {msg.remitente} {esProfe && '• PROFESOR'}
+                                            </span>
+                                            <button onClick={() => speakMessage(msg.contenido)} className={`opacity-50 hover:opacity-100 transition-opacity ${esMio ? 'text-white' : 'text-slate-400'}`}>
+                                                <Volume2 size={12} />
+                                            </button>
+                                        </div>
+                                        <p className="text-xs md:text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">{msg.contenido}</p>
+                                        
+                                        {msg.audio_url && (
+                                            <div className="mt-3">
+                                                <audio src={msg.audio_url} controls className="h-8 w-40 md:w-48" />
                                             </div>
-                                        )}
-                                        {!esMio && <p className="text-[9px] font-bold opacity-50 mb-0.5 uppercase tracking-wider">{msg.remitente}</p>}
-
-                                        {msg.audio_url ? (
-                                            <div className="flex items-center gap-2 min-w-[200px]">
-                                                <audio controls src={msg.audio_url} className="h-8 w-full max-w-[250px]" />
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {msg.contenido}
-                                                <button
-                                                    onClick={() => speakMessage(msg.contenido)}
-                                                    className={`absolute -right-8 top-1/2 -translate-y-1/2 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all
-                                                  ${esMio ? 'text-indigo-400 hover:bg-white' : 'text-slate-400 hover:bg-slate-100'}`}
-                                                    title="Leer en voz alta"
-                                                >
-                                                    <Volume2 className="w-4 h-4" />
-                                                </button>
-                                            </>
                                         )}
                                     </div>
                                 </div>
-                                <span className="text-[9px] text-slate-300 font-medium mt-1 mx-11">
+                                <span className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase mt-1.5 mx-2 tracking-tighter">
                                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
                         );
                     })
                 )}
-                <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
             <div className="p-3 md:p-4 bg-white border-t border-slate-100 shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
                 <div className="flex items-center gap-2">
                     <button

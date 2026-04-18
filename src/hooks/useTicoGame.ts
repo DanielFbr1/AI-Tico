@@ -31,6 +31,13 @@ export function useTicoGame(contextId: string = 'default', contextType: 'project
             try {
                 let query;
                 if (contextType === 'class') {
+                    // Safety check: is contextId a valid UUID string?
+                    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contextId);
+                    if (!isUUID) {
+                        console.warn(`⚠️ Invalid UUID for class context: "${contextId}". Skipping fetch from profesor_organizacion.`);
+                        return;
+                    }
+
                     // Fetch from profesor_organizacion
                     query = supabase
                         .from('profesor_organizacion')
@@ -85,6 +92,9 @@ export function useTicoGame(contextId: string = 'default', contextType: 'project
             try {
                 let updateQuery;
                 if (contextType === 'class') {
+                    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contextId);
+                    if (!isUUID) return; 
+
                     updateQuery = supabase
                         .from('profesor_organizacion')
                         .update({ tico_state: state })

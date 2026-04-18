@@ -22,9 +22,10 @@ interface DetalleGrupoProps {
   onViewStudent?: (alumno: string) => void;
   onDeleteHito?: (faseId: string, hitoTitulo: string) => void;
   rubrica?: Criterio[];
+  onUpdateIA?: () => void;
 }
 
-export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, onAssignTask, onEditGroup, onViewStudent, onDeleteHito }: DetalleGrupoProps) {
+export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, onAssignTask, onEditGroup, onViewStudent, onDeleteHito, onUpdateIA }: DetalleGrupoProps) {
   const [vistaActiva, setVistaActiva] = useState<'detalle' | 'compartir' | 'chat' | 'tareas' | 'evaluacion'>('detalle');
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [chatMode, setChatMode] = useState<'menu' | 'mentor' | 'group'>('menu');
@@ -105,10 +106,10 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
         .update({ progreso: nuevoProgreso })
         .eq('id', grupo.id);
 
-      toast.success(nuevoEstado === 'aprobado' ? 'Misión aprobada' : 'Misión rechazada');
+      toast.success(nuevoEstado === 'aprobado' ? 'Tarea aprobada' : 'Tarea rechazada');
     } catch (err) {
       console.error('Error updating task status or progress:', err);
-      toast.error('No se pudo actualizar la misión');
+      toast.error('No se pudo actualizar la tarea');
     }
   };
 
@@ -135,7 +136,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
     const total = tareasGrupo.length;
     if (total === 0) return 0;
     const aprobadas = tareasGrupo.filter(t => {
-      // 1. Priorizar estado de entrega (para misiones globales y específicas)
+      // 1. Priorizar estado de entrega (para tareas globales y específicas)
       const e = (entregasGrupo || []).find(ent => ent.tarea_id === t.id);
       if (e && (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado')) {
         return true;
@@ -325,7 +326,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Misiones del Equipo</h2>
+                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Tareas del Equipo</h2>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Hitos y objetivos a completar</p>
                 </div>
                 {onAssignTask && (
@@ -592,6 +593,7 @@ export function DetalleGrupo({ grupo, fases, rubrica, onBack, onViewFeedback, on
         <ModalConfiguracionIA
           onClose={() => setShowConfigModal(false)}
           grupo={grupo}
+          onUpdate={onUpdateIA}
         />
       )}
 
@@ -698,7 +700,7 @@ function TaskCardTeacher({ tarea, onClick, actions }: { tarea: TareaDetallada, o
 function EmptyTaskState() {
   return (
     <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl py-8 px-4 text-center">
-      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Sin misiones en este sector</p>
+      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Sin tareas en este sector</p>
     </div>
   );
 }

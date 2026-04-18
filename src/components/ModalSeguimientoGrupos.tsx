@@ -175,8 +175,8 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Hub de Misión</h2>
-                                <span className="px-5 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">Versión V5.8.6</span>
+                                <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Hub de Tarea</h2>
+                                <span className="px-5 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">Versión V6.6.5</span>
                             </div>
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{tarea.titulo} (Máx: 10 pts)</p>
                         </div>
@@ -193,7 +193,7 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
                     <div className="bg-indigo-50/50 border-b border-indigo-100 p-8 animate-in slide-in-from-top-10 duration-500">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-4">
-                                <h4 className="flex items-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">Instrucciones de la Misión</h4>
+                                <h4 className="flex items-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">Instrucciones de la Tarea</h4>
                                 <div className="bg-white p-6 rounded-[2rem] border border-indigo-100 shadow-sm text-sm text-slate-600 leading-relaxed italic">
                                     {tarea.descripcion || "Sin descripción proporcionada."}
                                 </div>
@@ -252,7 +252,7 @@ export function ModalSeguimientoGrupos({ tarea, grupos, onClose, onUpdate, onSel
                         <div className="bg-indigo-50 rounded-[1.5rem] p-4 border border-indigo-100/50 flex items-center gap-4">
                             <div className="p-3 bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-100"><BarChart3 className="w-5 h-5" /></div>
                             <div>
-                                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest block">Éxito Misión</span>
+                                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest block">Éxito Tarea</span>
                                 <span className="text-xl font-black text-indigo-700">{Math.round((stats.numEvaluadas / Math.max(1, stats.total)) * 100)}%</span>
                             </div>
                         </div>

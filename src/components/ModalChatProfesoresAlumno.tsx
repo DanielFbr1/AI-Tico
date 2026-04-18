@@ -429,7 +429,7 @@ export function ModalChatProfesoresAlumno({ isOpen, onClose, alumnoId, alumnoNom
                                                 <div className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-5 py-3 shadow-sm ${isMe ? 'bg-fuchsia-600 text-white rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'}`}>
                                                     {msg.tarea_titulo && (
                                                         <div className={`text-[9px] font-black uppercase tracking-[0.2em] mb-1 py-0.5 px-2 rounded-md ${isMe ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'}`}>
-                                                            Misión: {msg.tarea_titulo}
+                                                            Tarea: {msg.tarea_titulo}
                                                         </div>
                                                     )}
                                                     <p className="text-[13px] leading-relaxed break-words">{msg.mensaje}</p>

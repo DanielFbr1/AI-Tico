@@ -21,7 +21,7 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], entregasGlobal
     const tieneTareasGlobales = tareasGlobales.some(t => t.grupo_id === null && t.estado === 'revision');
 
     const gruposConRevision = [
-        ...(tieneTareasGlobales ? [{ id: 'global', nombre: 'Misiones Globales', miembros: [] }] : []),
+        ...(tieneTareasGlobales ? [{ id: 'global', nombre: 'Tareas Globales', miembros: [] }] : []),
         ...grupos.filter(g => {
             const tieneHitos = (g.hitos || []).some(h => h.estado === 'revision');
             const tieneTareas = tareasGlobales.some(t => t.grupo_id === Number(g.id) && t.estado === 'revision');
@@ -30,7 +30,7 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], entregasGlobal
     ];
 
     const selectedGrupo = selectedGroupId === 'global' 
-        ? { id: 'global', nombre: 'Misiones Globales', miembros: [], hitos: [] } as any
+        ? { id: 'global', nombre: 'Tareas Globales', miembros: [], hitos: [] } as any
         : grupos.find(g => g.id === selectedGroupId);
 
     const handleDecision = (id: string, accion: 'aprobar' | 'rechazar') => {
@@ -201,7 +201,7 @@ export function ModalRevisionHitos({ grupos, tareasGlobales = [], entregasGlobal
                                                     className="flex-1 mr-4 cursor-pointer hover:bg-slate-50 transition-all rounded-xl p-2 -m-2 group/taskitem"
                                                     title="Hacer clic para ver detalles y evaluar"
                                                 >
-                                                    <span className="text-[9px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full uppercase tracking-tighter mb-2 inline-block group-hover/taskitem:bg-blue-600 group-hover/taskitem:text-white transition-colors">Misión Global</span>
+                                                    <span className="text-[9px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full uppercase tracking-tighter mb-2 inline-block group-hover/taskitem:bg-blue-600 group-hover/taskitem:text-white transition-colors">Tarea Global</span>
                                                     <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
                                                         {tarea.titulo}
                                                         <ChevronRight className="w-4 h-4 text-slate-300 group-hover/taskitem:translate-x-1 transition-all" />

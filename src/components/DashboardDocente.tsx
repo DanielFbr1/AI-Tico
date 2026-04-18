@@ -29,6 +29,7 @@ import { SolicitudesColaboracion } from './ModalSolicitudesColaboracion';
 import { VistaCalendario } from './VistaCalendario';
 import { ModalDetalleTarea } from './ModalDetalleTarea';
 import { ModalSeguimientoGrupos } from './ModalSeguimientoGrupos';
+import { ModalChatProfesores } from './ModalChatProfesores';
 import { updatePuntosAlumno, addPointsToGroupMembers } from '../lib/puntos';
 import { NotificacionesPanel, Notificacion } from './NotificacionesPanel';
 import { crearNotificacion, crearNotificacionMasiva, getAlumnosDelProyecto, getProfesoresDelProyecto, getAlumnosDelGrupo } from '../lib/notificaciones';
@@ -97,6 +98,8 @@ export function DashboardDocente({
     const [solicitudesPendientes, setSolicitudesPendientes] = useState(0);
     const [solicitudEmergente, setSolicitudEmergente] = useState<any | null>(null);
     const [unreadNotifications, setUnreadNotifications] = useState(0);
+    const [unreadCollabMessages, setUnreadCollabMessages] = useState(0);
+    const [modalChatProfesoresAbierto, setModalChatProfesoresAbierto] = useState(false);
 
     // Project Renaming State
     const [isEditingProjectName, setIsEditingProjectName] = useState(false);
@@ -155,6 +158,22 @@ export function DashboardDocente({
                 }
             };
 
+            const fetchUnreadCollabMessages = async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('mensajes_colaboracion')
+                        .select('id')
+                        .neq('sender_id', user.id)
+                        .eq('leido', false);
+
+                    if (!error && data) {
+                        setUnreadCollabMessages(data.length);
+                    }
+                } catch (err) {
+                    console.error('Error fetching unread collab messages:', err);
+                }
+            };
+
             const fetchSolicitudesPendientes = async () => {
                 try {
                     console.log("🔍 Fetching solicitudes for user:", user.id);
@@ -209,6 +228,7 @@ export function DashboardDocente({
             const refreshData = () => {
                 fetchUnreadStudentMessages();
                 fetchUnreadFamilyMessages();
+                fetchUnreadCollabMessages();
                 fetchSolicitudesPendientes();
             };
 
@@ -232,6 +252,15 @@ export function DashboardDocente({
                     filter: `profesor_user_id=eq.${user.id}`
                 }, payload => {
                     fetchUnreadFamilyMessages();
+                }).subscribe();
+
+            const collabMsgsSub = supabase.channel(`collab_msgs_docente_${user.id}`)
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'mensajes_colaboracion'
+                }, payload => {
+                    fetchUnreadCollabMessages();
                 }).subscribe();
             
             const collabSub = supabase.channel(`collab_requests_docente_${user.id}`)
@@ -274,12 +303,24 @@ export function DashboardDocente({
                                 }
                             }
                         });
+                    } else if (n.tipo === 'mensaje_colaboracion') {
+                        toast(n.titulo, {
+                            description: n.descripcion,
+                            duration: 10000,
+                            action: {
+                                label: 'Abrir Chat',
+                                onClick: () => {
+                                    setModalChatProfesoresAbierto(true);
+                                }
+                            }
+                        });
                     }
                 }).subscribe();
 
             return () => {
                 if (studentSub) supabase.removeChannel(studentSub);
                 if (familySub) supabase.removeChannel(familySub);
+                if (collabMsgsSub) supabase.removeChannel(collabMsgsSub);
                 if (collabSub) supabase.removeChannel(collabSub);
                 if (notifSub) supabase.removeChannel(notifSub);
             };
@@ -369,7 +410,7 @@ export function DashboardDocente({
                                 userId: user.id,
                                 proyectoId: proyectoActual?.id,
                                 tipo: 'tarea_revision',
-                                titulo: `Misión para revisar: "${payload.new?.titulo}"`,
+                                titulo: `Tarea para revisar: "${payload.new?.titulo}"`,
                                 descripcion: `El equipo ${equipoNombre} ha enviado una entrega para revisión.`,
                                 metadata: { tarea_id: payload.new?.id, grupo_id: payload.new?.grupo_id }
                             });
@@ -522,7 +563,7 @@ export function DashboardDocente({
                         await crearNotificacionMasiva(destinoIds, {
                             proyectoId: proyectoActual?.id,
                             tipo: 'notas_actualizadas',
-                            titulo: `¡Misión Evaluada: "${currentTarea.titulo}"!`,
+                            titulo: `¡Tarea Evaluada: "${currentTarea.titulo}"!`,
                             descripcion: `El profesor ha calificado tu entrega. ¡Ven a ver el resultado!`,
                             metadata: { tarea_id: currentTarea.id }
                         });
@@ -563,7 +604,7 @@ export function DashboardDocente({
         if (tareasDelGrupo.length === 0) return 0;
 
         const completadasCount = tareasDelGrupo.filter(t => {
-            // 1. Priorizar estado de entrega (para misiones globales y específicas)
+            // 1. Priorizar estado de entrega (para tareas globales y específicas)
             const e = (entregasProyecto || []).find(ent => ent.tarea_id === t.id && Number(ent.grupo_id) === gidNum);
             if (e && (e.estado === 'evaluada' || e.estado === 'aprobado' || e.estado === 'completado' || e.estado === 'revisado')) {
                 return true;
@@ -645,10 +686,14 @@ export function DashboardDocente({
             {/* Modal crear grupo */}
             {modalCrearGrupoAbierto && (
                 <ModalCrearGrupo
-                    onClose={() => setModalCrearGrupoAbierto(false)}
+                    onClose={() => {
+                        setModalCrearGrupoAbierto(false);
+                        setGrupoEditando(null);
+                    }}
                     onCrear={(grupoData) => {
                         if (grupoEditando) {
                             onEditarGrupo(grupoEditando.id, grupoData);
+                            setGrupoEditando(null);
                         } else {
                             onCrearGrupo(grupoData);
                         }
@@ -778,7 +823,7 @@ export function DashboardDocente({
           `}>
                     <div className="p-6 border-b border-gray-200 flex flex-col justify-center items-center gap-2 relative">
                         <h2 className="text-xl font-black text-blue-600 uppercase tracking-widest">Ai Tico</h2>
-                        <span className="text-[10px] font-black text-slate-400 leading-none">V5.8.89</span>
+
                         <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-gray-400 absolute right-6">
                             <LayoutDashboard className="w-6 h-6 rotate-45" /> {/* Reuse icon as Close for speed */}
                         </button>
@@ -828,6 +873,8 @@ export function DashboardDocente({
 
 
 
+
+
                             <button
                                 onClick={() => { onSectionChange('evaluacion'); setMobileMenuOpen(false); }}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all ${currentSection === 'evaluacion'
@@ -873,8 +920,9 @@ export function DashboardDocente({
                             <CircleHelp className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
                             <span>Tutorial interactivo</span>
                         </button>
-                        <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-                            V5.8.73
+                        
+                        <div className="mt-2 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center opacity-60">
+                            V5.8.79
                         </div>
                     </div>
                 </aside>
@@ -1131,7 +1179,7 @@ export function DashboardDocente({
                         {currentSection === 'resumen' && (
                             <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 items-start">
 
-                                {/* COLUMNA IZQUIERDA: TABLERO DE MISIONES (MAIN) */}
+                                {/* COLUMNA IZQUIERDA: TABLERO DE TAREAS (MAIN) */}
                                 <div className="xl:col-span-3 space-y-8 order-2 xl:order-1">
 
                                     {/* TABLERO GLOBAL DE TAREAS (Sustituido por Lista Estilo Calendario) */}
@@ -1165,7 +1213,7 @@ export function DashboardDocente({
                                                     className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-2xl font-bold text-[11px] uppercase tracking-wider hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95 shrink-0"
                                                 >
                                                     <Plus className="w-4 h-4" />
-                                                    Nueva Misión
+                                                    Nueva Tarea
                                                 </button>
                                             </div>
                                         </div>
@@ -1382,7 +1430,7 @@ export function DashboardDocente({
 
                                         <div className="mt-12 text-center relative z-10 w-full">
                                             <div className="text-4xl font-black text-indigo-600 mb-1">{progresoGlobal}%</div>
-                                            <div className="text-[10px] font-bold text-indigo-800 uppercase tracking-widest bg-indigo-50 py-1.5 px-3 rounded-full box-border border border-indigo-100 inline-block">Misión Espacial</div>
+                                            <div className="text-[10px] font-bold text-indigo-800 uppercase tracking-widest bg-indigo-50 py-1.5 px-3 rounded-full box-border border border-indigo-100 inline-block">Tarea Espacial</div>
                                         </div>
                                     </div>
 
@@ -1410,7 +1458,10 @@ export function DashboardDocente({
                             <div className="space-y-6">
                                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                                     <h2 className="text-2xl font-black text-gray-900 hidden md:block">Gestión de Equipos</h2>
-                                    <button onClick={() => setModalCrearGrupoAbierto(true)} className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-4 md:py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg active:scale-95">
+                                    <button onClick={() => {
+                                        setModalCrearGrupoAbierto(true);
+                                        setGrupoEditando(null);
+                                    }} className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-4 md:py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg active:scale-95">
                                         <Plus className="w-5 h-5" />
                                         Crear nuevo grupo
                                     </button>
@@ -1530,6 +1581,10 @@ export function DashboardDocente({
                                             setModalInitialShowChat(true);
                                             setTareaSeleccionadaDetalle(tarea);
                                         }
+                                    } else if (notif.tipo === 'mensaje_colaboracion') {
+                                        // Redirigir al panel de proyectos y abrir el chat allí
+                                        localStorage.setItem('open_collab_chat_on_load', 'true');
+                                        if (onCambiarProyecto) onCambiarProyecto();
                                     }
                                 }}
                             />
@@ -1634,7 +1689,7 @@ export function DashboardDocente({
             )}
 
             {/* Bottom Navigation (Mobile Only) - Hidden if any main modal is open to avoid overlapping */}
-            {!modalCrearGrupoAbierto && !modalAsignarAbierto && !modalRevisionAbierto && !modalAsistenciaOpen && !modalAjustesIAAbierto && !alumnoParaEvaluar && (
+            {!modalCrearGrupoAbierto && !modalAsignarAbierto && !modalRevisionAbierto && !modalAsistenciaOpen && !modalAjustesIAAbierto && !alumnoParaEvaluar && !modalChatProfesoresAbierto && (
                 <nav className="md:hidden fixed bottom-1 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 px-2 py-3 flex items-center justify-around z-[100] shadow-[0_10px_40px_rgb(0,0,0,0.1)] rounded-[2.5rem] animate-in slide-in-from-bottom-5 duration-300">
                     <button
                         onClick={() => onSectionChange('grupos')}
@@ -1657,13 +1712,13 @@ export function DashboardDocente({
                     </button>
 
                     <button
-                        onClick={() => onSectionChange('calendario')}
-                        className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'calendario' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                        onClick={() => onSectionChange('trabajo-compartido')}
+                        className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'trabajo-compartido' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
                     >
-                        <div className={`p-2 rounded-2xl transition-all ${currentSection === 'calendario' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
-                            <CalendarDays className={`w-5 h-5 ${currentSection === 'calendario' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                        <div className={`p-2 rounded-2xl transition-all ${currentSection === 'trabajo-compartido' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                            <FolderOpen className={`w-5 h-5 ${currentSection === 'trabajo-compartido' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
                         </div>
-                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'calendario' ? 'opacity-100' : 'opacity-80'}`}>Calendario</span>
+                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'trabajo-compartido' ? 'opacity-100' : 'opacity-80'}`}>Compartido</span>
                     </button>
 
                     <button
@@ -1675,6 +1730,23 @@ export function DashboardDocente({
                         </div>
                         <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'evaluacion' ? 'opacity-100' : 'opacity-80'}`}>Evaluación</span>
                     </button>
+
+                    <button
+                        onClick={() => onSectionChange('notificaciones')}
+                        className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${currentSection === 'notificaciones' ? 'text-blue-600 scale-110' : 'text-slate-400 opacity-60'}`}
+                    >
+                        <div className={`p-2 rounded-2xl transition-all ${currentSection === 'notificaciones' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-transparent'}`}>
+                            <div className="relative">
+                                <Bell className={`w-5 h-5 ${currentSection === 'notificaciones' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                                {unreadNotifications > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                        {unreadNotifications}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <span className={`text-[9px] font-black uppercase tracking-tight ${currentSection === 'notificaciones' ? 'opacity-100' : 'opacity-80'}`}>Avisos</span>
+                    </button>
                 </nav>
             )}
 
@@ -1683,6 +1755,16 @@ export function DashboardDocente({
                     isOpen={modalHorarioAbierto}
                     onClose={() => setModalHorarioAbierto(false)}
                     alumnoId={user.id}
+                />
+            )}
+
+            {modalChatProfesoresAbierto && (
+                <ModalChatProfesores
+                    isOpen={modalChatProfesoresAbierto}
+                    onClose={() => setModalChatProfesoresAbierto(false)}
+                    user={user}
+                    proyectos={proyectoActual ? [proyectoActual as any] : []}
+                    onMessagesRead={() => setUnreadCollabMessages(0)}
                 />
             )}
         </div>

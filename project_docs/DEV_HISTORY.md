@@ -4,6 +4,52 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 5.8.79: Optimización de Navegación Móvil (Docente)
+*   **Rediseño de Menú Inferior:** Se ha actualizado la barra de navegación móvil para el docente, sustituyendo 'Calendario' por 'Trabajo Compartido' e incorporando un acceso directo a 'Notificaciones'.
+*   **Contador de Avisos:** El nuevo botón de notificaciones en el móvil incluye un contador dinámico de mensajes no leídos para mayor agilidad.
+
+### Versión 5.8.78: Contador de Notificaciones en Tareas Optimizado
+*   **Fix Contador Total vs No Leídos:** Se ha corregido el comportamiento del globo de notificaciones dentro de la "Sala de Comentarios" en las Tareas. Antes mostraba el total histórico de mensajes escritos.
+*   **Memoria de Lectura Local:** Ahora, cuando el alumno ingresa al chat, ese número desaparece indicando que todo está leído, gestionando la cuenta de los "no leídos" a través del almacenamiento local.
+*   **Actualización de Versión:** Proyecto actualizado a la versión **V5.8.78**.
+
+### Versión 5.8.77: Notificaciones de Chat Independientes
+*   **Fix Notificaciones Cruzadas:** Se ha corregido un error visual donde las interacciones de los alumnos con el Mentor IA disparaban erróneamente la campana de notificaciones (burbuja numérica) en el Chat de Equipo.
+*   **Filtro por Modo:** Implementada una verificación estricta (`newMsg.modo === 'equipo'`) en el canal de suscripción en tiempo real de `DashboardAlumno` para asegurar que las notificaciones del chat de equipo sean exclusivamente humanas y pertinentes a la comunicación grupal.
+*   **Actualización de Versión:** Proyecto actualizado a la versión **V5.8.77**.
+
+### Versión 5.8.76: Corrección Módulo Creación de Equipos
+*   **Fix "Falsa Edición":** Se solucionó un problema crítico en el `DashboardDocente` por el cual el botón "Crear nuevo grupo" modificaba un equipo existente (típicamente el último editado) en lugar de crear uno nuevo.
+*   **Limpieza de Estados:** Ahora, el estado `grupoEditando` se restablece activamente a `null` al abrir el modal de creación y al cerrarlo tras guardar, evitando fugas de estado entre ediciones y creaciones.
+*   **Actualización de Versión:** Proyecto actualizado a la versión **V5.8.76**.
+
+### Versión 5.8.73: Temporizador de Concentración Estilo Canva
+*   **Nuevo Componente:** Implementado un temporizador circular de alta gama inspirado en el diseño de Canva para fomentar la concentración de los alumnos.
+*   **Persistencia Individual:** Cada alumno tiene un temporizador personal e independiente. El estado (tiempo restante e inicial) se guarda en su `localStorage` privado usando su `alumno.id`, lo que evita conflictos entre miembros de un mismo equipo.
+*   **Diseño Premium:** Estética oscura, barra de progreso circular dinámica, controles rápidos de +/- 1 minuto, y micro-animaciones suaves para una experiencia de usuario superior.
+*   **Integración en Mi Equipo:** Ubicado estratégicamente en la cabecera de la sección "Mi Equipo" del Dashboard Alumno.
+
+### Versión 5.8.72: Estandarización de Versiones y Limpieza de UI
+*   **Centralización de Etiquetas:** Se han eliminado múltiples etiquetas de versión obsoletas (V6.0.2, V6.4.7, V5.8.85) que estaban dispersas y hardcodeadas en los Dashboards de Docente y Alumno.
+*   **Sitio Fijo de Versión:** Se ha establecido un lugar único y sutil para la versión en el sidebar del Dashboard Docente (parte inferior del menú de navegación) para evitar redundancias visuales.
+*   **Sincronización Global:** La versión **V5.8.72** se ha establecido como la versión oficial y única visible en `package.json`, `DashboardDocente.tsx`, `DashboardAlumno.tsx`, `DashboardFamilia.tsx` y `ModalSeguimientoGrupos.tsx`.
+*   **Corrección de Error UUID:** Integrada la corrección del error 400 en las peticiones a Supabase para el juego de Tico, validando correctamente los identificadores de clase.
+
+### Versión 5.8.72: Corrección de Error UUID y Fallback de Clase (Anteriores cambios)
+*   **Error 400 Solucionado:** Eliminación del fallback incorrecto a `selectedProject.clase` en `App.tsx`. Ahora se utiliza únicamente el UUID de `organizacion_clase_id`, evitando que nombres de texto (como "5º") provoquen errores de sintaxis en las peticiones a Supabase.
+*   **Validación de UUID en Hook:** El hook `useTicoGame.ts` ahora incluye una validación de formato UUID mediante expresión regular. Esto garantiza que cualquier ID que no cumpla con el estándar de UUID sea ignorado silenciosamente, evitando errores de red.
+*   **Sincronización Global:** Actualizada la versión del proyecto a V5.8.72 en todos los componentes y archivos de configuración.
+
+### Versión 5.8.71: Sincronización en Tiempo Real del Mentor IA
+*   **Actualización Post-Guardado:** Se ha implementado un sistema de comunicación entre el modal de configuración y la pantalla de detalle de grupo. Ahora, al pulsar "Aplicar Cambios", se fuerza un refresco de los datos del grupo.
+*   **Corrección de "Instrucciones Fantasma":** Solucionado el problema donde Tico (el Mentor) no obedecía las instrucciones manuales recién escritas hasta que se recargaba la página manualmente.
+*   **Flujo de Datos Unidireccional:** Asegurada la consistencia de los datos entre la base de datos de Supabase y el estado local de React inmediatamente después de cada guardado manual.
+
+### Versión 5.8.70: Prioridad de Configuración del Mentor IA
+*   **Prioridad Absoluta de Grupo:** Se ha modificado el motor de IA (`src/services/ai.ts`) para garantizar que las instrucciones de comportamiento personalizadas para un grupo específico tengan precedencia absoluta sobre el contexto global del proyecto.
+*   **Refuerzo de Prompt:** Se ha reestructurado el "System Prompt" de Tico para incluir una sección de "REGLA PERSONALIZADA DE ESTE GRUPO (PRIORIDAD MÁXIMA)", asegurando que la IA no se confunda cuando existan ajustes globales y específicos simultáneamente.
+*   **Sincronización de Versión:** Actualización global a V5.8.70 en `package.json`, Dashboard Familia y Modales de Seguimiento.
+
 ### Versión 1.6.11: Rediseño Elegante del Ganador en la Ruleta
 *   **Modal de ¡Ha salido elegido! (Sorteo Mágico):**
     *   Se ha rediseñado completamente el panel modal para la ruleta. Ahora muestra rayos giratorios animados en el fondo, un contenedor con degradados premium azules y sombras profundas, y un elemento central pulsante con la medalla/icono de estrella brillante.

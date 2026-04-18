@@ -3,6 +3,7 @@ import { X, Send, User, MessageCircle, Search, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { Proyecto } from '../types';
+import { crearNotificacionMasiva, getProfesoresDelProyecto } from '../lib/notificaciones';
 
 interface MensajeColaboracion {
     id: string;
@@ -10,6 +11,7 @@ interface MensajeColaboracion {
     sender_id: string;
     sender_nombre: string;
     mensaje: string;
+    leido: boolean;
     created_at: string;
 }
 
@@ -18,9 +20,10 @@ interface ModalChatProfesoresProps {
     onClose: () => void;
     user: { id: string; email?: string } | null;
     proyectos: Proyecto[];
+    onMessagesRead?: () => void;
 }
 
-export function ModalChatProfesores({ isOpen, onClose, user, proyectos }: ModalChatProfesoresProps) {
+export function ModalChatProfesores({ isOpen, onClose, user, proyectos, onMessagesRead }: ModalChatProfesoresProps) {
     const [proyectoSeleccionado, setProyectoSeleccionado] = useState<string | null>(null);
     const [mensajes, setMensajes] = useState<MensajeColaboracion[]>([]);
     const [nuevoMensaje, setNuevoMensaje] = useState('');
@@ -59,6 +62,7 @@ export function ModalChatProfesores({ isOpen, onClose, user, proyectos }: ModalC
         };
 
         fetchMensajes();
+        marcarComoLeido();
 
         // Suscripción Realtime
         const channel = supabase.channel(`chat_colab_${proyectoSeleccionado}`)
@@ -69,8 +73,11 @@ export function ModalChatProfesores({ isOpen, onClose, user, proyectos }: ModalC
                 filter: `proyecto_id=eq.${proyectoSeleccionado}`
             }, payload => {
                 const nuevo = payload.new as MensajeColaboracion;
-                setMensajes(prev => {
-                    if (prev.some(m => m.id === nuevo.id)) return prev;
+                setMensajes((prev: MensajeColaboracion[]) => {
+                    if (prev.some((m: MensajeColaboracion) => m.id === nuevo.id)) return prev;
+                    if (nuevo.sender_id !== user?.id) {
+                        marcarComoLeido();
+                    }
                     return [...prev, nuevo];
                 });
             })
@@ -80,6 +87,22 @@ export function ModalChatProfesores({ isOpen, onClose, user, proyectos }: ModalC
             supabase.removeChannel(channel);
         };
     }, [isOpen, proyectoSeleccionado]);
+
+    const marcarComoLeido = async () => {
+        if (!user || !proyectoSeleccionado) return;
+        try {
+            await supabase
+                .from('mensajes_colaboracion')
+                .update({ leido: true } as any) // Se asume que existe la columna 'leido'
+                .eq('proyecto_id', proyectoSeleccionado)
+                .neq('sender_id', user.id)
+                .eq('leido', false);
+            
+            if (onMessagesRead) onMessagesRead();
+        } catch (err) {
+            console.error('Error marking collab messages as read:', err);
+        }
+    };
 
     // Scroll al final
     useEffect(() => {
@@ -92,21 +115,68 @@ export function ModalChatProfesores({ isOpen, onClose, user, proyectos }: ModalC
 
         const texto = nuevoMensaje.trim();
         const nombre = user.email?.split('@')[0] || 'Profesor';
+        const tempId = `temp-${Date.now()}`;
         setNuevoMensaje('');
 
+        // 1. Actualización Optimista (Local)
+        const mensajeOptimista: MensajeColaboracion = {
+            id: tempId,
+            proyecto_id: proyectoSeleccionado,
+            sender_id: user.id,
+            sender_nombre: nombre,
+            mensaje: texto,
+            leido: true,
+            created_at: new Date().toISOString()
+        };
+        setMensajes((prev: MensajeColaboracion[]) => [...prev, mensajeOptimista]);
+
         try {
-            const { error } = await supabase
+            // 2. Insertar en la base de datos
+            const { data, error } = await supabase
                 .from('mensajes_colaboracion')
                 .insert([{
                     proyecto_id: proyectoSeleccionado,
                     sender_id: user.id,
                     sender_nombre: nombre,
                     mensaje: texto
-                }]);
+                }])
+                .select()
+                .single();
 
             if (error) throw error;
+
+            // 3. Reemplazar el mensaje optimista con el real del servidor
+            if (data) {
+                setMensajes((prev: MensajeColaboracion[]) => prev.map((m: MensajeColaboracion) => m.id === tempId ? data : m));
+            }
+
+            // 4. Enviar notificaciones a los demás colaboradores
+            try {
+                const todosLosProfesIds = await getProfesoresDelProyecto(proyectoSeleccionado);
+                const otrosProfesIds = todosLosProfesIds.filter(id => id !== user.id);
+                
+                if (otrosProfesIds.length > 0) {
+                    await crearNotificacionMasiva(otrosProfesIds, {
+                        proyectoId: proyectoSeleccionado,
+                        tipo: 'mensaje_colaboracion',
+                        titulo: `Nuevo mensaje de ${nombre}`,
+                        descripcion: texto.length > 60 ? texto.substring(0, 57) + '...' : texto,
+                        metadata: {
+                            proyecto_id: proyectoSeleccionado,
+                            sender_id: user.id,
+                            sender_nombre: nombre,
+                            tipo_chat: 'colaboracion'
+                        }
+                    });
+                }
+            } catch (notifErr) {
+                console.error('Error al enviar notificaciones de colaboración:', notifErr);
+            }
+
         } catch (err) {
             console.error('Error enviando mensaje:', err);
+            // Revertir el mensaje optimista en caso de error
+            setMensajes((prev: MensajeColaboracion[]) => prev.filter((m: MensajeColaboracion) => m.id !== tempId));
             toast.error('Error al enviar el mensaje');
         }
     };
@@ -201,7 +271,7 @@ export function ModalChatProfesores({ isOpen, onClose, user, proyectos }: ModalC
                                         <p className="text-xs max-w-[200px] text-center uppercase tracking-widest leading-loose">Di hola a tus compañeros colaboradores</p>
                                     </div>
                                 ) : (
-                                    mensajes.map((msg) => {
+                                    mensajes.map((msg: MensajeColaboracion) => {
                                         const isMe = msg.sender_id === user?.id;
                                         return (
                                             <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1 animate-in slide-in-from-bottom-2`}>

@@ -13,6 +13,7 @@ type TipoNotificacion =
   | 'hito_aprobado'
   | 'hito_rechazado'
   | 'comentario_tarea'
+  | 'mensaje_colaboracion'
   | 'general';
 
 interface CrearNotificacionParams {
@@ -181,20 +182,20 @@ export async function getAlumnosDelGrupo(grupoId: number | string, proyectoId: s
 
 /**
  * Obtiene los user_ids de los profesores de un proyecto (propietario + colaboradores)
+ * Se asegura de que solo se devuelvan usuarios con rol 'profesor'
  */
 export async function getProfesoresDelProyecto(proyectoId: string): Promise<string[]> {
   try {
-    // Propietario
+    // 1. Obtener IDs candidatos (propietario y colaboradores)
     const { data: proyecto } = await supabase
       .from('proyectos')
       .select('created_by')
       .eq('id', proyectoId)
       .single();
 
-    const ids: string[] = [];
-    if (proyecto?.created_by) ids.push(proyecto.created_by);
+    const candidateIds: string[] = [];
+    if (proyecto?.created_by) candidateIds.push(proyecto.created_by);
 
-    // Colaboradores
     const { data: colabs } = await supabase
       .from('proyecto_colaboradores')
       .select('profesor_id')
@@ -202,14 +203,32 @@ export async function getProfesoresDelProyecto(proyectoId: string): Promise<stri
 
     if (colabs) {
       colabs.forEach(c => {
-        if (c.profesor_id && !ids.includes(c.profesor_id)) {
-          ids.push(c.profesor_id);
+        if (c.profesor_id && !candidateIds.includes(c.profesor_id)) {
+          candidateIds.push(c.profesor_id);
         }
       });
     }
 
-    return ids;
-  } catch {
+    if (candidateIds.length === 0) return [];
+
+    // 2. FILTRADO DE SEGURIDAD: Verificar en la tabla profiles que realmente tienen rol 'profesor'
+    // Esto evita que si por error un alumno es owner o colaborador, reciba notificaciones de profesor (como "Tarea por revisar")
+    const { data: validTeachers, error: filterError } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('id', candidateIds)
+      .eq('rol', 'profesor');
+
+    if (filterError || !validTeachers) {
+      console.warn('⚠️ Error al validar roles de profesores:', filterError);
+      // Como medida de seguridad, si hay error devolvemos vacío o el primer candidato si estamos seguros, 
+      // pero mejor ser restrictivos.
+      return [];
+    }
+
+    return validTeachers.map(t => t.id);
+  } catch (err) {
+    console.error('💥 Error en getProfesoresDelProyecto:', err);
     return [];
   }
 }
