@@ -1,7 +1,7 @@
 
-  # Dashboard Docente y Feedback
+  # AI-Tico
 
-  This is a code bundle for Dashboard Docente y Feedback. The original project is available at https://www.figma.com/design/qAPFLMpyAWcNM1EkK4jgF3/Dashboard-Docente-y-Feedback.
+  Proyecto educativo basado en IA centrado en optimizar procesos docentes y acompañar al alumno mediante gamificación ecosistémica.
 
   ## Running the code
 

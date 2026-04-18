@@ -6,7 +6,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/DanielFbr1/Dashboard-Docente-y-Feedback.git"
+        "url": "https://github.com/DanielFbr1/ai-tico.git"
     },
     "engines": {
         "node": ">=20.0.0"
