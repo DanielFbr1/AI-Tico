@@ -1,6 +1,6 @@
-# Funcionalidades de Ai-Tico
+# Funcionalidades de AI-Tico
 
-A continuación se detalla brevemente el conjunto de características y funcionalidades que integran la plataforma educativa Ai-Tico, divididas por el perfil al que van dirigidas:
+A continuación se detalla brevemente el conjunto de características y funcionalidades que integran la plataforma educativa AI-Tico, divididas por el perfil al que van dirigidas:
 
 ## 1. Para Docentes (Labor y Gestión)
 1. **Generación Asistida de Proyectos (ABP):** Asistente IA para estructurar, idear y planificar itinerarios de proyectos enteros.

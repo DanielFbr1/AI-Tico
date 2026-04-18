@@ -1,6 +1,6 @@
-# Registro de Actualizaciones - Tico.AI (Anteriormente Dashboard Docente y Feedback)
+# Registro de Actualizaciones - AI-Tico (Anteriormente Dashboard Docente y Feedback)
 
-Este es el registro oficial de cambios y mejoras del proyecto Tico.AI.
+Este es el registro oficial de cambios y mejoras del proyecto AI-Tico.
 
 ## [V6.6.5] - 2026-04-18
 ### Seguridad y Simplificación de Interfaz
@@ -23,7 +23,7 @@ Este es el registro oficial de cambios y mejoras del proyecto Tico.AI.
 - **Package Config**: Cambio de nombre interno en `package.json` de `dashboard-docente-feedback` a `ai-tico`.
 
 ## [V6.6.2] - 2026-04-18
-### Tico.AI es oficialmente Open Source
+### AI-Tico es oficialmente Open Source
 - **Licencia añadida**: Se ha insertado el archivo `LICENSE` con la Licencia MIT.
 - **Configuración de Paquete**: Actualizado `package.json` para eliminar la restricción privada, añadiendo la descripción, licencia y URL del repositorio de GitHub oficial.
 - **Auditoría superada**: Validada la arquitectura de variables de entorno y confirmada la seguridad del repositorio ante bots automatizados.

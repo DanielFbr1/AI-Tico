@@ -1,5 +1,4 @@
-
-  # AI-Tico
+# AI-Tico
 
   Proyecto educativo basado en IA centrado en optimizar procesos docentes y acompañar al alumno mediante gamificación ecosistémica.
 
