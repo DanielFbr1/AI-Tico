@@ -1,12 +1,12 @@
-# Registro de Actualizaciones - Tico.AI
+# Registro de Actualizaciones - Tico.AI (Anteriormente Dashboard Docente y Feedback)
 
 Este es el registro oficial de cambios y mejoras del proyecto Tico.AI.
 
 ## [V6.6.5] - 2026-04-18
-### Seguridad y Restauración de Interfaz
+### Seguridad y Simplificación de Interfaz
 - **Corrección de Leak de Notificaciones**: Se ha implementado un filtro de roles riguroso en `getProfesoresDelProyecto`. Ahora las notificaciones destinadas a docentes (como alertas de revisión) ya no se filtran por error a las sesiones de los alumnos.
 - **Sincronización Total de Versión**: Unificada la versión a **V6.6.5** en todos los puntos del sistema (`App.tsx`, `DashboardAlumno`, `ModalDetalleTarea`, `ModalSeguimientoGrupos`).
-- **Visibilidad de Funciones (Chats)**: Renombrado el menú "Chat IA" a "Chats" para reflejar la funcionalidad dual (TICO + Chat de Equipo) y asegurar que el alumno encuentre la opción de hablar con el grupo que se había reportado como "desaparecida".
+- **Simplificación del Chat**: Se ha revertido el sistema de pestañas duales en el chat del alumno, manteniendo un enfoque único y claro en **TICO (Chat IA)** para mejorar la usabilidad.
 - **Auditoría de Terminología**: Barrido completo de residuos del término "misión" por "tarea".
 - **Consolidación de Logs**: Unificado el historial de cambios en este documento central.
 

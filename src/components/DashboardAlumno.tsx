@@ -1422,545 +1422,390 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
             <button
               onClick={() => { setVistaActiva('chat'); window.scrollTo(0, 0); }}
               className={`px-2 md:px-8 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'chat'
-                ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
-                : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
-                }`}
-            >
-              <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
-                <MessageSquare className="w-4 h-4" />
-                <span className="truncate">Chats</span>
-              </div>
-            </button>
-            <button
-              onClick={() => { setVistaActiva('notificaciones'); window.scrollTo(0, 0); }}
-              className={`px-2 md:px-8 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] ${vistaActiva === 'notificaciones'
-                ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
-                : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
-                }`}
-            >
-              <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 relative">
-                <Bell className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="truncate">Notificaciones</span>
-                {unreadNotifications > 0 && vistaActiva !== 'notificaciones' && (
-                  <span className="absolute -top-1 -right-1 md:-top-1.5 md:-right-3 flex h-3.5 w-3.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white shadow-md"></span>
-                  </span>
-                )}
-              </div>
-            </button>
-            <button
-              onClick={() => {
-                setVistaActiva('perfil');
-                setHasNewEvaluation(false); // Limpiar aviso al entrar
-                window.scrollTo(0, 0);
-              }}
-              className={`px-2 md:px-8 py-3 md:py-5 font-bold text-[9px] md:text-xs uppercase tracking-tight md:tracking-widest transition-all rounded-xl md:rounded-none md:border-b-[3px] relative ${vistaActiva === 'perfil'
-                ? 'bg-purple-600 text-white md:bg-purple-50/50 md:text-purple-600 md:border-purple-600 shadow-lg shadow-purple-100 md:shadow-none'
-                : 'bg-slate-50 md:bg-transparent text-slate-400 md:border-transparent'
-                }`}
-            >
-              <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
-                <Award className="w-4 h-4" />
-                <span className="truncate">Mis Notas</span>
-              </div>
 
-              {/* INDICADOR DE EVALUACIÓN DISPONIBLE */}
-              {hasNewEvaluation && vistaActiva !== 'perfil' && (
-                <span className="absolute top-2 right-2 md:top-4 md:right-4 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-pink-500 border-2 border-white shadow-sm"></span>
-                </span>
-              )}
-            </button>
-          </nav>
-        </div>
-      </div>
+                                  {/* TEMPORIZADOR AL ESTILO CANVA - Horizontal / No solapado */}
+                                  <div className="hidden sm:block absolute right-24 top-6 z-20 scale-95 origin-right">
+                                    <TemporizadorConcentracion userId={alumno.id} />
+                                  </div>
 
-      {/* Content */}
-      <main className={`max-w-7xl mx-auto px-6 w-full pb-24 md:pb-8 ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden py-4' : 'py-8 flex-none'} relative`}>
-        {/* Etiqueta de Versión para el Alumno */}
-        <div className="absolute top-2 right-6 text-[8px] font-bold text-slate-300 uppercase tracking-widest pointer-events-none opacity-40">
-          V6.6.5
-        </div>
-        {vistaActiva === 'calendario' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <VistaCalendario 
-              proyectoId={alumno.proyecto_id || ''} 
-              grupos={todosLosGrupos} 
-              grupoId={grupoReal?.id}
-            />
-          </div>
-        )}
-        {showExample && (
-          <div className="bg-indigo-600 rounded-3xl p-6 mb-8 text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
-            {/* ... Demo Banner styles ... */}
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4 text-center md:text-left">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/30"><Sparkles className="w-6 h-6" /></div>
-                <div><h3 className="text-xl font-black uppercase tracking-tight">Modo Demostración</h3><p className="text-indigo-100 text-sm font-medium">Visualiza cómo sería trabajar en equipo real.</p></div>
-              </div>
-              <button onClick={() => setModalUnirseOpen(true)} className="px-8 py-3 bg-white text-indigo-600 rounded-xl font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-lg">Unirse a clase</button>
-            </div>
-          </div>
-        )}
-
-        {/* VISTA MI GRUPO (Split 50/50 + Roadmap Vertical completo abajo) */}
-        {vistaActiva === 'grupo' && grupoDisplay && (
-          <div className="space-y-6">
-            {grupoDisplay.id === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[3rem] shadow-sm border border-slate-200 text-center px-6">
-                <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                  <Users className="w-10 h-10 text-slate-300" />
-                </div>
-                <h2 className="text-3xl font-black text-slate-800 tracking-tight mb-2">¡Bienvenido a la clase!</h2>
-                <p className="text-slate-500 font-medium max-w-md mx-auto mb-8">
-                  Todavía no tienes un equipo asignado. Espera a que tu profesor te incluya en uno para comenzar.
-                </p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-sm">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Esperando asignación...
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* COLUMNAS IZQUIERDAS: INFO & RECURSOS */}
-                  <div className="lg:col-span-2 space-y-6">
-                    {(() => {
-                      const asigStyles = getAsignaturaStyles(asignaturaProyecto);
-                      return (
-                        <div className={`bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border-2 ${asigStyles.borderClass} relative overflow-hidden`}>
-                          <div className={`absolute top-0 right-0 w-64 h-64 ${asigStyles.lightBgClass} rounded-full -translate-y-1/2 translate-x-1/2 -z-0 opacity-50`}></div>
-                          <div className="relative z-10 flex flex-col h-full justify-between">
-                            <div>
-                              <div className="flex items-start justify-between mb-6">
-                                <div>
-                                  <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase leading-none mb-2">{grupoDisplay.nombre}</h2>
-                                  {asignaturaProyecto && (
-                                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${asigStyles.textClass} px-3 py-1 ${asigStyles.lightBgClass} rounded-full border ${asigStyles.borderClass} opacity-80 inline-block mt-1`}>
-                                      {asignaturaProyecto}
-                                    </span>
-                                  )}
+                                  <button
+                                    onClick={() => setModalSubirRecursoOpen(true)}
+                                    className="bg-slate-900 text-white w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all group"
+                                    title="Subir aportación"
+                                  >
+                                    <Upload className="w-6 h-6 group-hover:text-purple-400 transition-colors" />
+                                  </button>
                                 </div>
 
-                                {/* TEMPORIZADOR AL ESTILO CANVA - Horizontal / No solapado */}
-                                <div className="hidden sm:block absolute right-24 top-6 z-20 scale-95 origin-right">
-                                  <TemporizadorConcentracion userId={alumno.id} />
-                                </div>
-
-                                <button
-                                  onClick={() => setModalSubirRecursoOpen(true)}
-                                  className="bg-slate-900 text-white w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all group"
-                                  title="Subir aportación"
-                                >
-                                  <Upload className="w-6 h-6 group-hover:text-purple-400 transition-colors" />
-                                </button>
-                              </div>
-
-                              {/* Members */}
-                              <div className="mb-6">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Compañeros</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                                  {(grupoDisplay.miembros || []).map((miembro: string, index: number) => (
-                                    <div key={index} className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                      <div className={`w-8 h-8 bg-white border ${asigStyles.borderClass} rounded-lg flex items-center justify-center ${asigStyles.textClass} font-bold text-xs`}>
-                                        {miembro.charAt(0).toUpperCase()}
+                                {/* Members */}
+                                <div className="mb-6">
+                                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Compañeros</h3>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                    {(grupoDisplay.miembros || []).map((miembro: string, index: number) => (
+                                      <div key={index} className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <div className={`w-8 h-8 bg-white border ${asigStyles.borderClass} rounded-lg flex items-center justify-center ${asigStyles.textClass} font-bold text-xs`}>
+                                          {miembro.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span className="font-bold text-slate-700 text-xs tracking-tight truncate">{miembro}</span>
                                       </div>
-                                      <span className="font-bold text-slate-700 text-xs tracking-tight truncate">{miembro}</span>
-                                    </div>
-                                  ))}
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
                             </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Sección de Recursos del Grupo */}
+                      <div className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200">
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                              <FolderOpen className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos del Equipo</h3>
+                          </div>
+                        </div>
+                        <RepositorioColaborativo
+                          grupo={grupoDisplay}
+                          todosLosGrupos={todosLosGrupos}
+                          proyectoId={alumno.proyecto_id}
+                          filterByGroupId={grupoDisplay.id}
+                          className="!gap-4"
+                          hideTitle={true}
+                        />
+                      </div>
+                    </div>
+
+                    {/* COLUMNA DERECHA: BATERÍA (RESTAURADA) */}
+                    <div className="lg:col-span-1">
+                      <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm sticky top-24 flex flex-col items-center justify-center min-h-[450px] overflow-hidden relative">
+                        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-indigo-50/50 to-transparent pointer-events-none"></div>
+                        <h3 className="absolute top-6 left-6 text-[10px] font-black text-slate-400 uppercase tracking-widest z-10">Energía del Equipo</h3>
+
+                        <div className="relative z-10 transform hover:scale-105 transition-transform duration-500">
+                          <LivingTree
+                            progress={calculatedProgreso}
+                            health={100}
+                            size={260}
+                            showLabels={false}
+                            variant="satellite"
+                          />
+                        </div>
+
+                        <div className="mt-8 text-center relative z-10 w-full">
+                          <div className="text-4xl font-black text-indigo-600 mb-1">{calculatedProgreso.toFixed(0)}%</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-indigo-50 py-1.5 px-4 rounded-full inline-flex border border-indigo-100">Batería recolectada</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* VISTA TAREAS (Issue 4) */}
+          {vistaActiva === 'tareas' && grupoDisplay && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-full mx-auto w-full pb-20 px-4 md:px-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                {/* PANEL PENDIENTES */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between px-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                      <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Pendientes</h4>
+                    </div>
+                    <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-indigo-100">
+                      {tareasCategorizadas.pendientes.length}
+                    </span>
+                  </div>
+                  <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
+                    {tareasCategorizadas.pendientes.map(t => (
+                      <div
+                        key={t.id}
+                        onClick={() => setTareaSeleccionadaDetalle(t)}
+                        className="group bg-white p-5 rounded-3xl border border-slate-200 hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-50/50 transition-all cursor-pointer relative overflow-hidden"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          {t.fecha_entrega && (
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                               {new Date(t.fecha_entrega).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                            </span>
+                          )}
+                        </div>
+                        <h5 className="font-black text-slate-800 text-sm leading-tight mb-4 group-hover:text-indigo-600 transition-colors">{t.titulo}</h5>
+                        
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                             <Award className="w-3.5 h-3.5 text-amber-500" />
+                             <span className="text-[10px] font-black text-slate-400 leading-none">V6.6.5</span>
+                             <span className="text-[10px] font-black text-slate-400 uppercase">{t.puntos_maximos} Puntos</span>
+                          </div>
+                          <button
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              handleUpdateTareaEstado(t.id, 'revision');
+                              toast.success('¡Tarea enviada a revisión!');
+                            }}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-100 flex items-center gap-2"
+                          >
+                            <Send className="w-3 h-3" />
+                            Enviar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {tareasCategorizadas.pendientes.length === 0 && (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
+                        <Sparkles className="w-8 h-8 text-slate-400 mb-2" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Todo al día</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* PANEL EN REVISIÓN */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between px-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                      <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">En Revisión</h4>
+                    </div>
+                    <span className="bg-amber-50 text-amber-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-100">
+                      {tareasCategorizadas.revision.length}
+                    </span>
+                  </div>
+                  <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
+                    {tareasCategorizadas.revision.map(t => (
+                      <div
+                        key={t.id}
+                        onClick={() => setTareaSeleccionadaDetalle(t)}
+                        className="group bg-white p-5 rounded-3xl border-2 border-amber-100 hover:border-amber-300 hover:shadow-xl hover:shadow-amber-50/50 transition-all cursor-pointer relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 right-0 p-2">
+                          <Clock className="w-4 h-4 text-amber-400 animate-spin-slow" />
+                        </div>
+                        <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 mb-3">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <h5 className="font-black text-slate-800 text-sm leading-tight mb-4">{t.titulo}</h5>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 w-full text-center">Esperando respuesta...</span>
+                        </div>
+                      </div>
+                    ))}
+                    {tareasCategorizadas.revision.length === 0 && (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
+                        <Clock className="w-8 h-8 text-slate-400 mb-2" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Nada pendiente</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* PANEL COMPLETADO */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between px-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                      <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Completado</h4>
+                    </div>
+                    <span className="bg-emerald-50 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-100">
+                      {tareasCategorizadas.completado.length}
+                    </span>
+                  </div>
+                  <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
+                    {tareasCategorizadas.completado.map(t => (
+                      <div
+                        key={t.id}
+                        onClick={() => setTareaSeleccionadaDetalle(t)}
+                        className="group bg-emerald-50/30 p-5 rounded-3xl border border-emerald-100 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-50/50 transition-all cursor-pointer relative overflow-hidden opacity-80 hover:opacity-100"
+                      >
+                        <div className="absolute top-2 right-2">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        </div>
+                        <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 mb-3">
+                          <Trophy className="w-5 h-5" />
+                        </div>
+                        <h5 className="font-black text-slate-800 text-sm leading-tight mb-2 line-through decoration-emerald-500/30">{t.titulo}</h5>
+                        <div className="flex items-center justify-between mt-auto">
+                           <div className="flex items-center gap-1.5">
+                              <Trophy className="w-3.5 h-3.5 text-emerald-500" />
+                              <span className="text-[10px] font-black text-emerald-600">+{t.puntos_maximos} Puntos</span>
+                           </div>
+                           <div className="flex flex-col items-end">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Puntuación Final</span>
+                              <span className="text-sm font-black text-indigo-600">{t.calificacion !== undefined && t.calificacion !== null ? `${t.calificacion}/10` : 'S/N'}</span>
+                           </div>
+                        </div>
+                      </div>
+                    ))}
+                    {tareasCategorizadas.completado.length === 0 && (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
+                        <Trophy className="w-8 h-8 text-slate-400 mb-2" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">¿Primer objetivo?</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* PANEL EXPIRADO */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between px-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+                      <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Expirado</h4>
+                    </div>
+                    <span className="bg-rose-50 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-rose-100">
+                      {tareasCategorizadas.expirado.length}
+                    </span>
+                  </div>
+                  <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
+                    {tareasCategorizadas.expirado.map(t => (
+                      <div
+                        key={t.id}
+                        onClick={() => setTareaSeleccionadaDetalle(t)}
+                        className="group bg-rose-50/30 p-5 rounded-3xl border border-rose-100 hover:border-rose-300 hover:shadow-xl hover:shadow-rose-50/50 transition-all cursor-pointer relative overflow-hidden"
+                      >
+                        <div className="absolute top-2 right-2">
+                          <AlertCircle className="w-5 h-5 text-rose-400" />
+                        </div>
+                        <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-400 mb-3">
+                          <History className="w-5 h-5" />
+                        </div>
+                        <h5 className="font-black text-slate-700 text-sm leading-tight mb-2 opacity-60">{t.titulo}</h5>
+                        <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Plazo vencido</p>
+                      </div>
+                    ))}
+                    {tareasCategorizadas.expirado.length === 0 && (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
+                        <CheckCircle2 className="w-8 h-8 text-slate-400 mb-2" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">¡Ningún retraso!</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VISTA TODOS LOS GRUPOS (NUEVA: Comunidad con detalles) */}
+          {vistaActiva === 'comunidad' && (
+            <div className="space-y-6 animate-in fade-in duration-500">
+              {/* Grid Unificado: Árbol + Equipos + Recursos */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* 1. Árbol Global (Simple) */}
+                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[400px]">
+                  <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-400 to-purple-500"></div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100 mb-6 relative z-10">
+                    <Globe className="w-3 h-3 text-indigo-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Progreso Global</span>
+                  </div>
+
+                  <div className="relative z-10 transform hover:-translate-y-2 transition-transform duration-500 w-full flex justify-center">
+                    <LivingTree
+                      progress={todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)}
+                      health={100}
+                      size={280}
+                      variant="nexus"
+                    />
+                  </div>
+
+                  <div className="mt-8 text-center relative z-10">
+                    <div className="text-4xl font-black text-indigo-600 mb-2">
+                      {(todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)).toFixed(0)}%
+                    </div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-indigo-50 py-1.5 px-4 rounded-full border border-indigo-100 inline-block shadow-sm">Energía Planetaria</div>
+                  </div>
+                </div>
+
+                {/* 2. Lista de Equipos Compacta */}
+                <div className="lg:col-span-1 space-y-4 overflow-y-auto max-h-[500px] lg:max-h-full pr-2 custom-scrollbar">
+                  <div className="grid grid-cols-1 gap-4">
+                    {todosLosGrupos.map((g, idx) => {
+                      const asigStyles = getAsignaturaStyles(asignaturaProyecto);
+
+                      return (
+                        <div key={idx} className={`p-4 bg-slate-50 rounded-2xl border-2 ${asigStyles.borderClass} group hover:border-indigo-400 transition-all shadow-sm`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className={`font-bold ${asigStyles.textClass} text-sm truncate max-w-[120px]`} title={g.nombre}>{g.nombre}</div>
+                            <div className={`w-7 h-7 rounded-full bg-white border ${asigStyles.borderClass} flex items-center justify-center text-[9px] font-black ${asigStyles.textClass} shadow-sm`}>
+                              {g.progreso}%
+                            </div>
+                          </div>
+
+                          <div className="flex -space-x-2 mb-3 overflow-hidden py-1 pl-1">
+                            {g.miembros?.slice(0, 4).map((m, i) => (
+                              <div key={i} title={m} className={`w-5 h-5 rounded-full ${asigStyles.lightBgClass} border-2 border-white flex items-center justify-center text-[7px] font-bold ${asigStyles.textClass} uppercase ring-1 ring-slate-100`}>
+                                {m.charAt(0)}
+                              </div>
+                            ))}
+                            {(g.miembros?.length || 0) > 4 && (
+                              <div className="w-5 h-5 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[7px] font-bold text-slate-500 ring-1 ring-slate-100">
+                                +{g.miembros!.length - 4}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            {g.tareas && g.tareas.length > 0 ? (
+                              g.tareas.map((t, i) => {
+                                const completado = t.estado === 'aprobado' || t.estado === 'completado';
+                                return (
+                                  <div key={i} className={`flex items-center gap-1.5 ${completado ? 'opacity-50' : 'opacity-80'}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${completado ? 'bg-slate-300' : asigStyles.bgClass}`}></div>
+                                    <span className={`text-[10px] font-medium truncate max-w-full block ${completado ? 'text-slate-400 line-through' : 'text-slate-600'}`} title={t.titulo}>
+                                      {t.titulo}
+                                    </span>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <span className="text-[9px] text-slate-400 italic">Sin tareas documentadas</span>
+                            )}
                           </div>
                         </div>
                       );
-                    })()}
-
-                    {/* Sección de Recursos del Grupo */}
-                    <div className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-200">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                            <FolderOpen className="w-6 h-6" />
-                          </div>
-                          <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos del Equipo</h3>
-                        </div>
-                      </div>
-                      <RepositorioColaborativo
-                        grupo={grupoDisplay}
-                        todosLosGrupos={todosLosGrupos}
-                        proyectoId={alumno.proyecto_id}
-                        filterByGroupId={grupoDisplay.id}
-                        className="!gap-4"
-                        hideTitle={true}
-                      />
-                    </div>
-                  </div>
-
-                  {/* COLUMNA DERECHA: BATERÍA (RESTAURADA) */}
-                  <div className="lg:col-span-1">
-                    <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm sticky top-24 flex flex-col items-center justify-center min-h-[450px] overflow-hidden relative">
-                      <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-indigo-50/50 to-transparent pointer-events-none"></div>
-                      <h3 className="absolute top-6 left-6 text-[10px] font-black text-slate-400 uppercase tracking-widest z-10">Energía del Equipo</h3>
-
-                      <div className="relative z-10 transform hover:scale-105 transition-transform duration-500">
-                        <LivingTree
-                          progress={calculatedProgreso}
-                          health={100}
-                          size={260}
-                          showLabels={false}
-                          variant="satellite"
-                        />
-                      </div>
-
-                      <div className="mt-8 text-center relative z-10 w-full">
-                        <div className="text-4xl font-black text-indigo-600 mb-1">{calculatedProgreso.toFixed(0)}%</div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-indigo-50 py-1.5 px-4 rounded-full inline-flex border border-indigo-100">Batería recolectada</div>
-                      </div>
-                    </div>
+                    })}
                   </div>
                 </div>
-              </>
-            )}
-          </div>
-        )}
 
-        {/* VISTA TAREAS (Issue 4) */}
-        {vistaActiva === 'tareas' && grupoDisplay && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-full mx-auto w-full pb-20 px-4 md:px-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-              {/* PANEL PENDIENTES */}
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Pendientes</h4>
+                {/* 3. Repositorio Compartido */}
+                <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-0 shadow-sm border border-slate-200 h-full overflow-hidden flex flex-col">
+                  <div className="p-8 pb-4">
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos</h3>
                   </div>
-                  <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-indigo-100">
-                    {tareasCategorizadas.pendientes.length}
-                  </span>
-                </div>
-                <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
-                  {tareasCategorizadas.pendientes.map(t => (
-                    <div
-                      key={t.id}
-                      onClick={() => setTareaSeleccionadaDetalle(t)}
-                      className="group bg-white p-5 rounded-3xl border border-slate-200 hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-50/50 transition-all cursor-pointer relative overflow-hidden"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                          <FileText className="w-5 h-5" />
-                        </div>
-                        {t.fecha_entrega && (
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                             {new Date(t.fecha_entrega).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                          </span>
-                        )}
-                      </div>
-                      <h5 className="font-black text-slate-800 text-sm leading-tight mb-4 group-hover:text-indigo-600 transition-colors">{t.titulo}</h5>
-                      
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5">
-                           <Award className="w-3.5 h-3.5 text-amber-500" />
-                           <span className="text-[10px] font-black text-slate-400 leading-none">V6.6.5</span>
-                           <span className="text-[10px] font-black text-slate-400 uppercase">{t.puntos_maximos} Puntos</span>
-                        </div>
-                        <button
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            handleUpdateTareaEstado(t.id, 'revision');
-                            toast.success('¡Tarea enviada a revisión!');
-                          }}
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-100 flex items-center gap-2"
-                        >
-                          <Send className="w-3 h-3" />
-                          Enviar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  {tareasCategorizadas.pendientes.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
-                      <Sparkles className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Todo al día</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* PANEL EN REVISIÓN */}
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">En Revisión</h4>
+                  <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
+                    <RepositorioColaborativo
+                      grupo={grupoReal || grupoEjemplo}
+                      todosLosGrupos={todosLosGrupos}
+                      proyectoId={alumno.proyecto_id}
+                      mostrarEjemplo={showExample}
+                      className="!gap-4 !grid-cols-1"
+                      hideTitle={true}
+                      refreshTrigger={refreshRecursos}
+                    />
                   </div>
-                  <span className="bg-amber-50 text-amber-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-100">
-                    {tareasCategorizadas.revision.length}
-                  </span>
-                </div>
-                <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
-                  {tareasCategorizadas.revision.map(t => (
-                    <div
-                      key={t.id}
-                      onClick={() => setTareaSeleccionadaDetalle(t)}
-                      className="group bg-white p-5 rounded-3xl border-2 border-amber-100 hover:border-amber-300 hover:shadow-xl hover:shadow-amber-50/50 transition-all cursor-pointer relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 p-2">
-                        <Clock className="w-4 h-4 text-amber-400 animate-spin-slow" />
-                      </div>
-                      <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 mb-3">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <h5 className="font-black text-slate-800 text-sm leading-tight mb-4">{t.titulo}</h5>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 w-full text-center">Esperando respuesta...</span>
-                      </div>
-                    </div>
-                  ))}
-                  {tareasCategorizadas.revision.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
-                      <Clock className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Nada pendiente</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* PANEL COMPLETADO */}
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Completado</h4>
-                  </div>
-                  <span className="bg-emerald-50 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-100">
-                    {tareasCategorizadas.completado.length}
-                  </span>
-                </div>
-                <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
-                  {tareasCategorizadas.completado.map(t => (
-                    <div
-                      key={t.id}
-                      onClick={() => setTareaSeleccionadaDetalle(t)}
-                      className="group bg-emerald-50/30 p-5 rounded-3xl border border-emerald-100 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-50/50 transition-all cursor-pointer relative overflow-hidden opacity-80 hover:opacity-100"
-                    >
-                      <div className="absolute top-2 right-2">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      </div>
-                      <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 mb-3">
-                        <Trophy className="w-5 h-5" />
-                      </div>
-                      <h5 className="font-black text-slate-800 text-sm leading-tight mb-2 line-through decoration-emerald-500/30">{t.titulo}</h5>
-                      <div className="flex items-center justify-between mt-auto">
-                         <div className="flex items-center gap-1.5">
-                            <Trophy className="w-3.5 h-3.5 text-emerald-500" />
-                            <span className="text-[10px] font-black text-emerald-600">+{t.puntos_maximos} Puntos</span>
-                         </div>
-                         <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Puntuación Final</span>
-                            <span className="text-sm font-black text-indigo-600">{t.calificacion !== undefined && t.calificacion !== null ? `${t.calificacion}/10` : 'S/N'}</span>
-                         </div>
-                      </div>
-                    </div>
-                  ))}
-                  {tareasCategorizadas.completado.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
-                      <Trophy className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">¿Primer objetivo?</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* PANEL EXPIRADO */}
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-rose-500"></div>
-                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Expirado</h4>
-                  </div>
-                  <span className="bg-rose-50 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded-full border border-rose-100">
-                    {tareasCategorizadas.expirado.length}
-                  </span>
-                </div>
-                <div className="flex-1 space-y-4 bg-slate-100/50 p-4 rounded-[2.5rem] min-h-[400px]">
-                  {tareasCategorizadas.expirado.map(t => (
-                    <div
-                      key={t.id}
-                      onClick={() => setTareaSeleccionadaDetalle(t)}
-                      className="group bg-rose-50/30 p-5 rounded-3xl border border-rose-100 hover:border-rose-300 hover:shadow-xl hover:shadow-rose-50/50 transition-all cursor-pointer relative overflow-hidden"
-                    >
-                      <div className="absolute top-2 right-2">
-                        <AlertCircle className="w-5 h-5 text-rose-400" />
-                      </div>
-                      <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-400 mb-3">
-                        <History className="w-5 h-5" />
-                      </div>
-                      <h5 className="font-black text-slate-700 text-sm leading-tight mb-2 opacity-60">{t.titulo}</h5>
-                      <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Plazo vencido</p>
-                    </div>
-                  ))}
-                  {tareasCategorizadas.expirado.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
-                      <CheckCircle2 className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">¡Ningún retraso!</p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* VISTA TODOS LOS GRUPOS (NUEVA: Comunidad con detalles) */}
-        {vistaActiva === 'comunidad' && (
-          <div className="space-y-6 animate-in fade-in duration-500">
-            {/* Grid Unificado: Árbol + Equipos + Recursos */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-              {/* 1. Árbol Global (Simple) */}
-              <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[400px]">
-                <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-400 to-purple-500"></div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100 mb-6 relative z-10">
-                  <Globe className="w-3 h-3 text-indigo-500" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Progreso Global</span>
-                </div>
-
-                <div className="relative z-10 transform hover:-translate-y-2 transition-transform duration-500 w-full flex justify-center">
-                  <LivingTree
-                    progress={todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)}
-                    health={100}
-                    size={280}
-                    variant="nexus"
-                  />
-                </div>
-
-                <div className="mt-8 text-center relative z-10">
-                  <div className="text-4xl font-black text-indigo-600 mb-2">
-                    {(todosLosGrupos.reduce((acc, g) => acc + g.progreso, 0) / (todosLosGrupos.length || 1)).toFixed(0)}%
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-indigo-50 py-1.5 px-4 rounded-full border border-indigo-100 inline-block shadow-sm">Energía Planetaria</div>
-                </div>
-              </div>
-
-              {/* 2. Lista de Equipos Compacta */}
-              <div className="lg:col-span-1 space-y-4 overflow-y-auto max-h-[500px] lg:max-h-full pr-2 custom-scrollbar">
-                <div className="grid grid-cols-1 gap-4">
-                  {todosLosGrupos.map((g, idx) => {
-                    const asigStyles = getAsignaturaStyles(asignaturaProyecto);
-
-                    return (
-                      <div key={idx} className={`p-4 bg-slate-50 rounded-2xl border-2 ${asigStyles.borderClass} group hover:border-indigo-400 transition-all shadow-sm`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className={`font-bold ${asigStyles.textClass} text-sm truncate max-w-[120px]`} title={g.nombre}>{g.nombre}</div>
-                          <div className={`w-7 h-7 rounded-full bg-white border ${asigStyles.borderClass} flex items-center justify-center text-[9px] font-black ${asigStyles.textClass} shadow-sm`}>
-                            {g.progreso}%
-                          </div>
-                        </div>
-
-                        <div className="flex -space-x-2 mb-3 overflow-hidden py-1 pl-1">
-                          {g.miembros?.slice(0, 4).map((m, i) => (
-                            <div key={i} title={m} className={`w-5 h-5 rounded-full ${asigStyles.lightBgClass} border-2 border-white flex items-center justify-center text-[7px] font-bold ${asigStyles.textClass} uppercase ring-1 ring-slate-100`}>
-                              {m.charAt(0)}
-                            </div>
-                          ))}
-                          {(g.miembros?.length || 0) > 4 && (
-                            <div className="w-5 h-5 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[7px] font-bold text-slate-500 ring-1 ring-slate-100">
-                              +{g.miembros!.length - 4}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-1">
-                          {g.tareas && g.tareas.length > 0 ? (
-                            g.tareas.map((t, i) => {
-                              const completado = t.estado === 'aprobado' || t.estado === 'completado';
-                              return (
-                                <div key={i} className={`flex items-center gap-1.5 ${completado ? 'opacity-50' : 'opacity-80'}`}>
-                                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${completado ? 'bg-slate-300' : asigStyles.bgClass}`}></div>
-                                  <span className={`text-[10px] font-medium truncate max-w-full block ${completado ? 'text-slate-400 line-through' : 'text-slate-600'}`} title={t.titulo}>
-                                    {t.titulo}
-                                  </span>
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <span className="text-[9px] text-slate-400 italic">Sin tareas documentadas</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 3. Repositorio Compartido */}
-              <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-0 shadow-sm border border-slate-200 h-full overflow-hidden flex flex-col">
-                <div className="p-8 pb-4">
-                  <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Recursos</h3>
-                </div>
-                <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
-                  <RepositorioColaborativo
-                    grupo={grupoReal || grupoEjemplo}
-                    todosLosGrupos={todosLosGrupos}
-                    proyectoId={alumno.proyecto_id}
-                    mostrarEjemplo={showExample}
-                    className="!gap-4 !grid-cols-1"
-                    hideTitle={true}
-                    refreshTrigger={refreshRecursos}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* VISTA CHAT INTEGRADA (IA + EQUIPO) */}
-        {
-          vistaActiva === 'chat' && grupoDisplay && (
-            <div className="h-full flex flex-col overflow-hidden">
-              <div className="flex-1 flex flex-col bg-white overflow-hidden md:rounded-[2.5rem] rounded-t-[2.5rem] border border-slate-200 shadow-2xl h-full">
-                
-                {/* Selector de Pestañas de Chat */}
-                <div className="px-4 py-3 md:px-8 md:py-4 border-b border-slate-50 shrink-0 bg-white/80 backdrop-blur-xl z-20">
-                  <div className="flex bg-slate-100/50 p-1.5 rounded-[1.5rem] md:rounded-[2rem] gap-1 shadow-inner border border-slate-200/50">
-                    <button
-                      onClick={() => setChatTab('ia')}
-                      className={`flex-1 py-3 md:py-4 rounded-2xl md:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] md:text-xs transition-all duration-300 flex items-center justify-center gap-3 ${
-                        chatTab === 'ia'
-                          ? 'bg-white text-indigo-600 shadow-xl shadow-indigo-100 translate-y-[-1px]'
-                          : 'text-slate-400 hover:text-slate-600'
-                      }`}
-                    >
-                      <Bot className={`w-4 h-4 md:w-5 md:h-5 ${chatTab === 'ia' ? 'text-indigo-600 animate-pulse' : 'text-slate-400'}`} />
-                      <span className="hidden sm:inline">Hablar con TICO</span>
-                      <span className="sm:hidden">TICO</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => setChatTab('equipo')}
-                      className={`flex-1 py-3 md:py-4 rounded-2xl md:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] md:text-xs transition-all duration-300 flex items-center justify-center gap-3 ${
-                        chatTab === 'equipo'
-                          ? 'bg-white text-emerald-600 shadow-xl shadow-emerald-100 translate-y-[-1px]'
-                          : 'text-slate-400 hover:text-slate-600'
-                      }`}
-                    >
-                      <Users className={`w-4 h-4 md:w-5 md:h-5 ${chatTab === 'equipo' ? 'text-emerald-600' : 'text-slate-400'}`} />
-                      <span className="hidden sm:inline">Hablar con el Grupo</span>
-                      <span className="sm:hidden">EQUIPO</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Contenido Dinámico del Chat */}
-                <div className="flex-1 min-h-0 relative h-full">
-                  {chatTab === 'ia' ? (
+          {/* VISTA CHAT INTEGRADA (IA + EQUIPO) */}
+          {
+            vistaActiva === 'chat' && grupoDisplay && (
+              <div className="h-full flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col bg-white overflow-hidden md:rounded-[2.5rem] rounded-t-[2.5rem] border border-slate-200 shadow-2xl h-full">
+                  <div className="flex-1 min-h-0 relative h-full">
                     <div className="h-full animate-in fade-in zoom-in-95 duration-500">
                       <MentorChat 
                         grupo={grupoDisplay} 
@@ -1969,20 +1814,11 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                         contextoIA={contextoProyecto} 
                       />
                     </div>
-                  ) : (
-                    <div className="h-full animate-in fade-in zoom-in-95 duration-500">
-                      <ChatGrupo 
-                        grupoId={grupoDisplay.id} 
-                        miembroActual={alumno.nombre} 
-                        esProfesor={false} 
-                      />
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )
-        }
+            )
+          }
 
         {/* VISTA NOTIFICACIONES */}
         {
