@@ -1,8 +1,13 @@
 {
     "name": "dashboard-docente-feedback",
-    "version": "5.8.69",
+    "version": "6.6.2",
     "type": "module",
-    "private": true,
+    "description": "Tico.AI - Plataforma educativa impulsada por IA",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DanielFbr1/Dashboard-Docente-y-Feedback.git"
+    },
     "engines": {
         "node": ">=20.0.0"
     },

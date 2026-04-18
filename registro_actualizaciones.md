@@ -1,111 +1,80 @@
 # Registro de Actualizaciones - Tico.AI
 
-## [V5.8.71] - 2026-03-29
-### Mejoras de UX y Notificaciones
-- **Dashboard Alumno**: Renombrado "Alertas" a "Notificaciones" en toda la navegación para mayor claridad.
-- **Redirección de Notificaciones**: 
-    - Al hacer clic en una notificación de **"Comentario de Tarea"**, el sistema ahora abre automáticamente el modal de la tarea y sitúa al usuario en el chat de comentarios. Funciona tanto para docentes como para alumnos.
-    - Al hacer clic en una notificación de **"Mensaje de Familia"**, el docente es redirigido automáticamente al chat de familias correspondiente.
-- **Sincronización Realtime**: Corregido un fallo en el chat de comentarios de tareas donde los alumnos no recibían los mensajes del profesor en tareas globales.
-- **Limpieza de Interfaz**: Eliminado el badge flotante de "Revisiones Pendientes" en el Dashboard Docente para evitar redundancia con el sistema de notificaciones centralizado.
-- **Versión**: Actualización global a la **V5.8.71**.
+## [V6.6.2] - 2026-04-18
+### Tico.AI es oficialmente Open Source
+- **Licencia añadida**: Se ha insertado el archivo `LICENSE` con la Licencia MIT.
+- **Configuración de Paquete**: Actualizado `package.json` para eliminar la restricción privada, añadiendo la descripción, licencia y URL del repositorio de GitHub oficial.
+- **Auditoría superada**: Validada la arquitectura de variables de entorno y confirmada la seguridad del repositorio ante bots automatizados.
 
-## [V5.8.70] - 2026-03-28
-### Centralización
-- **Sistema de Notificaciones**: Preparación del sistema para tipos específicos de mensajes (familia y comentarios).
-- **Consolidación de Identidad**: Ajustes menores en etiquetas y colores de notificaciones.
+### Estado del Proyecto
+- **Consulta de Código Abierto**: Verificación del estado de la licencia y configuración de `package.json`.
+- **Sincronización de Versión**: Actualizada la versión en `package.json` a 6.6.1 para coincidir con el historial.
 
 
-## [V5.8.69] - 2026-03-28
-### Nuevo
-- **Generación Automática de Notificaciones**: Se han integrado disparadores de notificaciones en toda la plataforma:
-    - **Creación de Tareas**: Notifica automáticamente a todos los alumnos implicados (grupo o clase completa).
-    - **Subida de Recursos**: Notifica a los alumnos cuando el profesor publica nuevo material.
-    - **Evaluación de Misiones**: Los alumnos reciben una alerta inmediata cuando su trabajo ha sido calificado y aprobado.
-    - **Entrega de Tareas**: Los profesores reciben notificaciones cuando un equipo envía una misión para revisión.
-    - **Mano Levantada (Dudas)**: Notificación persistente para el profesor cuando un equipo necesita ayuda urgente.
-- **Notificaciones Interactivas**: Las notificaciones ahora te dirigen directamente a la acción (ej. revisar misión, leer chat, ver recursos) con un simple clic, marcándose automáticamente como leídas. Se ha eliminado el recuadro flotante de "Revisiones Pendientes".
-- **Librería de Mensajería Centralizada**: Implementación de `notificaciones.ts` para gestionar el envío masivo y selectivo de alertas.
-- **Sincronización Global de Versión**: Actualizada la plataforma a la V5.8.69 para asegurar la persistencia de las nuevas notificaciones.
+## [V6.6.0] - 2026-04-15
+### Documentación Beca Santander X
+- **Refactorización Global**: Todas las respuestas actualizadas a primera persona (creador único).
+- **Alineación Europea**: Integración del enfoque ético y estratégico de la Unión Europea en la propuesta.
+- **Simplificación Terminológica**: Eliminación de términos específicos como "Mentor Socrático" a petición del usuario.
 
-## [V5.8.68] - 2026-03-28
-### Nuevo
-- **Sistema de Notificaciones**: Nuevo apartado de notificaciones en tiempo real tanto para profesores como para alumnos.
-- **Profesor**: Las notificaciones aparecen debajo de Evaluación en el sidebar. Incluye tipos como: tarea enviada a revisión, mensajes de familias, mano levantada, etc.
-- **Alumno**: Las notificaciones aparecen entre Chat y Mis Notas en la navegación. Incluye tipos como: nueva tarea asignada, nuevo mensaje de grupo, recurso subido, notas actualizadas, etc.
-- **Base de Datos**: Creada tabla `notificaciones` con políticas RLS y suscripción en tiempo real.
-- **Sincronización Global de Versión**: Actualizada la plataforma a la V5.8.68.
+## [V6.4.9] - 2026-04-14
+### Recuperación de Contraseña
+- **Botón "He olvidado mi contraseña"**: Añadido enlace visible en el formulario de login (solo en modo inicio de sesión, no en registro).
+- **Flujo de Recuperación Completo**: Pantalla dedicada para introducir el email, envío del enlace de recuperación vía Supabase, y pantalla de confirmación con instrucciones claras.
+- **Formulario de Nueva Contraseña**: Al hacer clic en el enlace del correo, la app detecta el evento `PASSWORD_RECOVERY` y muestra un formulario premium con campos de nueva contraseña y confirmación, con validaciones.
+- **Actualización de Versión**: Sistema actualizado a V6.4.9.
 
-## [V5.8.67] - 2026-03-28
-### Corregido
-- **Subida de Archivos para Colaboradores**: Se ha corregido un error que impedía a los profesores colaboradores subir archivos como borradores en proyectos compartidos. Ahora el modal de subida reconoce correctamente su rol de docente independientemente de quién sea el dueño del proyecto.
-- **Sincronización Global de Versión**: Actualizada la plataforma a la V5.8.67 en todos los dashboards y archivos de configuración para mantener la consistencia.
+## [V6.4.8] - 2026-04-14
+### Corrección de Rol y Auto-Login tras Confirmación
+- **Persistencia de Rol al Registrarse**: Se guarda el rol elegido (alumno/profesor/familia) en `localStorage` al registrarse por email, evitando que se asigne un rol incorrecto al confirmar la cuenta.
+- **Auto-Login por Polling**: La pantalla de "esperando confirmación" ahora detecta automáticamente cuando el usuario confirma desde el correo. Cada 4 segundos intenta iniciar sesión; en cuanto el email es confirmado, entra directamente sin necesidad de recargar la página.
+- **Animación de Confirmación**: Nueva animación visual con icono de check y texto "¡Cuenta confirmada!" al detectar la verificación exitosa.
+- **Limpieza de Código OTP**: Eliminado todo el código residual del antiguo flujo de códigos numéricos (handleOtpChange, handleOtpPaste, etc.).
+- **Actualización de Versión**: Sistema actualizado a V6.4.8.
 
-## [V5.8.66] - 2026-03-23
-### Corregido
-- **Tutorial Docente**: Ahora el tutorial interactivo solo se activa automáticamente cuando el profesor crea su **primer proyecto**. Se ha eliminado el trigger automático al registrarse para evitar que aparezca al unirse a proyectos existentes como colaborador.
-- **Sincronización de Versiones**: Actualizada la versión visual en todos los paneles (Docente, Alumno, App) para reflejar la V5.8.66.
+## [V6.4.7] - 2026-04-14
+### Simplificación de Registro (Magic Link)
+- **Eliminación de OTP**: Se ha eliminado la pantalla de introducción de códigos numéricos de 8 dígitos al registrarse.
+- **Flujo Directo**: Ahora, al registrarse, el usuario recibe un enlace de confirmación en su correo. Al pulsar el botón "Confirmar" del email, la cuenta se activa automáticamente y redirige a la aplicación.
+- **UI de Espera Refactorizada**: Se ha diseñado una nueva pantalla de espera con icono de sobre (Mail) que instruye claramente al usuario sobre los pasos a seguir en su bandeja de entrada.
+- **Actualización de Versión**: Sistema actualizado a V6.4.7.
 
-## [V5.8.65] - 2026-03-23
-### Mensajería
-- **Sincronización Profesor-Alumno:** Se ha corregido un fallo donde los profesores no aparecían automáticamente en el chat del alumno al unirse a un proyecto. Ahora, el profesor propietario aparece de inmediato.
-- **Soporte Multi-Profesor:** El sistema ahora detecta y muestra a todos los profesores colaboradores de un proyecto en la lista de contactos del alumno, permitiendo una comunicación directa con todo el equipo docente.
-- **Historial Dinámico:** Se ha optimizado la carga del historial de clases para incluir el proyecto activo actual, incluso antes de que el alumno sea asignado a un grupo específico.
+## [V6.4.6] - 2026-04-08
+### Optimización y Limpieza de Datos (Crisis de Cuotas)
+- **Vaciado de Mensajería**: Se han eliminado todos los registros de las tablas `mensajes_chat`, `mensajes_profesor_alumno`, `mensajes_familia_profesor`, `mensajes_colaboracion` y `notificaciones` para reducir el tamaño de la base de datos.
+- **Auditoría de Storage**: Identificados los 15 archivos más pesados en el bucket `recursos` que suman el mayor impacto en la cuota de Egress.
+- **Acción Pendiente**: Dado que Supabase protege la eliminación de archivos físicos vía SQL, se ha proporcionado al usuario la lista y el procedimiento para el borrado manual en el dashboard.
 
 
-## [V5.8.64] - 2026-03-22
-### TFG / Documentación
-- **Metodología (4.1):** Redacción completa de las fases de diseño (Figma a código) y arquitectura técnica accesible (Frontend/Backend/IA).
-- **Guía Didáctica (4.2.1):** Desarrollo del perfil docente: gestión de proyectos con IA, rúbricas y monitoreo en tiempo real.
-- **Experiencia del Alumno (4.2.2):** Explicación del Mentor Socrático (DUA), economía de fichas y progreso visual del avatar/cohete.
-- **Herramientas Transversales (4.2.3):** Inclusión de ruletas, dados y generadores de equipos para la gestión de aula.
+## [V6.4.4] - 2026-03-31
+### Mejoras de Espacio y Corrección de Notificaciones
+- **Modales Expandidos**: Se ha aumentado el ancho máximo de los modales de creación (`ModalCrearTareaClassroom`) y detalle de tareas (`ModalDetalleTarea`) a `max-w-7xl` para aprovechar mejor las pantallas grandes.
+- **Corrección de Fuga de Notificaciones**: Los mensajes enviados como comentarios en una tarea ya no activan el aviso parpadeante del botón de "Equipo" en el dashboard del alumno. Ahora cada notificación se queda en el canal correcto.
+- **Layout Optimizado**: Se aprovecha mejor el espacio lateral en resoluciones de escritorio.
+- **Actualización de Versión**: Sistema actualizado a V6.4.4.
 
-## [V5.8.63] - 2026-03-21
-### Estilizado
-- **Ampliación Perfil Alumno (Vista Docente):** Se ha maximizado el tamaño de la ventana de perfil (98vw) y se ha rediseñado a 3 columnas para mostrar simultáneamente la Evaluación Rúbrica, el detalle de Misiones con sus notas y las Observaciones privadas.
-- **Sincronización Total de Versión:** Actualización global a la **V5.8.63** para asegurar coherencia en todos los dispositivos.
+## [V6.4.2] - 2026-03-31
+### Refinamiento y Corrección de Errores
+- **Limpieza de UI**: Se ha eliminado la opción redundante de "Toda la clase" dentro de la lista de grupos, unificando el control en los botones superiores ("Todos" / "Nada").
+- **Corrección de Warning ReactQuill**: Se ha implementado una referencia directa (`useRef`) en el componente `ReactQuill` para mitigar el aviso de deprecación de `findDOMNode`.
+- **Mejora en UX**: Al pulsar un grupo individual cuando "Todos" está activo, el sistema ahora selecciona inteligentemente a todo el resto excepto a ese grupo.
+- **Actualización de Versión**: Sistema actualizado a V6.4.2.
 
-## [V5.8.62] - 2026-03-21
-### Estilizado
-- **Finalización Perfil Alumno (Vista Docente):** Se ha corregido definitivamente el "Rendimiento Clave" en el perfil del alumno visto por el profesor. Se eliminaron las métricas de IA y se ajustó la rejilla a 5 columnas alineadas en una sola fila.
-- **Sincronización Total de Versión:** Actualización global a la **V5.8.62** para validación del despliegue en todos los dashboards.
+## [V6.4.0] - 2026-03-31
+### Mejoras en Asignación de Tareas
+- **Selección Múltiple Premium**: Se ha sustituido el selector simple de grupos por un panel visual avanzado en `ModalCrearTareaClassroom.tsx`.
+- **Lógica de Asignación Flexible**: Ahora el profesor puede asignar una misión a varios grupos específicos a la vez, o a toda la clase con un solo clic, facilitando excluir grupos si es necesario.
+- **Inserción Masiva**: El sistema genera automáticamente las tareas y notificaciones correspondientes para cada equipo seleccionado.
+- **Actualización de Versión**: Sistema actualizado a V6.4.0.
 
-## [V5.8.61] - 2026-03-21
-### Mantenimiento
-- **Sincronización de Versión:** Se ha unificado la versión en todos los componentes del sistema (Dashboard Docente, Alumno, Familia y Modales) para evitar confusiones y asegurar que todos los usuarios visualicen la versión más reciente.
+## [V6.3.3] - 2026-03-31
+### Solución de Error 400 y Mensajes Duplicados
+- **Corrección de Tipos en ID**: Se ha eliminado el envío manual de IDs UUID a columnas de tipo BigInt, eliminando el error 400 (Bad Request) al enviar mensajes.
+- **Reconciliación Inteligente**: Ahora los mensajes utilizan un `tempId` local que se reconcilia automáticamente con el `id` real devuelto por la base de datos tras la inserción, garantizando una UI optimista sin duplicidades visuales.
+- **Limpieza de Código**: Refactorización del componente `ChatGrupo.tsx` para mejorar la estabilidad y legibilidad.
 
-## [V5.8.60] - 2026-03-21
-### Estilizado
-- **Simplificación de Estadísticas:** Se han eliminado las métricas de "Preguntas a la IA" de los perfiles de los alumnos y del panel de "Mis Notas" para centrar la atención en el rendimiento académico directo.
-- **Optimización de Layout (5 Paneles):** Los indicadores de rendimiento se han reorganizado en una cuadrícula de 5 columnas en una sola línea, mejorando la coherencia visual y eliminando espacios vacíos en pantallas grandes.
-
-## [V5.8.59] - 2026-03-21
-### Mantenimiento
-- **Actualización de Versión:** Preparación de la infraestructura para el despliegue de las mejoras de diseño y persistencia de sesión.
-
-## [V5.8.58] - 2026-03-21
-### Funcionalidad
-- **Persistencia de Sesión (Alumno):** Se ha implementado el auto-seleccionado de la última clase visitada al iniciar sesión. Esto evita que el dashboard aparezca vacío inicialmente.
-- **Cálculo de Progreso en Tiempo Real:** Se ha mejorado el cálculo de progreso para que sea dinámico tanto en el dashboard del alumno como en el del docente, incluyendo ahora el estado "revisado" para que la batería de energía muestre el avance correcto.
-
-## [V5.8.57] - 2026-03-21
-### Estilizado
-- **Colorización de Paneles (Familia):** Se han asignado colores armónicos (Azul, Cian, Esmeralda, Ámbar y Naranja) a cada panel de estadísticas para una mejor distinción visual.
-- **Barras de Progreso en Misiones:** Las calificaciones individuales de cada tarea ahora incluyen una mini barra de progreso visual, idéntica a la utilizada en los criterios de rúbrica.
-
-## [V5.8.56] - 2026-03-21
-
-### Estilizado
-- **Reordenación de Estadísticas (Familia):** Se han reordenado los paneles de resumen para una mejor jerarquía visual: 1º Media Criterios, 2º Asistencia, 3º Puntos, 4º Media Tareas y 5º Tareas Entregadas.
-- **Renombrado de Etiquetas:** Los indicadores ahora utilizan nombres más claros: "MEDIA CRITERIOS" (antes Media Proyecto) y "MEDIA TAREAS" (antes Media Misiones).
-
-## [V5.8.55] - 2026-03-21
-
-### Mejorado
-- **Interfaz de Notas (Familia):** Se ha rediseñado la disposición de las calificaciones. Ahora las notas por rúbrica se muestran a la izquierda y las notas por misión/tarea a la derecha en pantallas grandes, optimizando el espacio y facilitando la comparación.
-
-## [V5.8.54] - 2026-03-21
-
-### Mejorado
-- **Vinculación de Alumnos (Familia):** Se ha corregido el sistema de vinculación de alumnos. Ahora se permite vincular usando el correo electrónico y contraseña del alumno, adaptándose al nuevo flujo de inicio de sesión simplificado.
-- **Vista de Familia mejorada:** Ahora se muestran las tareas entregadas y la media de las tareas directamente en el panel de la familia para un seguimiento más rápido.
+## [V6.3.6] - 2026-03-30 (Tutorial Técnico)
+- **Dominando el Entorno**: Explicación de comandos de navegación (`cd`).
+- **Casos de Uso**: Definición de tareas para Gemini CLI vs OpenCode.
+- **Prompts de Ahorro**: Introducción de 3 prompts estratégicos para evitar consumo de créditos innecesario.
+- Tutorial en su fase final (BLOQUE 4).
