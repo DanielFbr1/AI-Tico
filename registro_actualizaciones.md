@@ -1,5 +1,12 @@
 # Registro de Actualizaciones - Tico.AI
 
+## [V6.6.3] - 2026-04-18
+### Renombramiento de Marca (Rebranding)
+- **Repositorio GitHub**: Sincronizado localmente con el nuevo nombre `ai-tico`.
+- **Identidad**: Actualizado el título en `index.html` y la descripción en `README.md`.
+- **Package Config**: Cambio de nombre interno en `package.json` de `dashboard-docente-feedback` a `ai-tico`.
+
+
 ## [V6.6.2] - 2026-04-18
 ### Tico.AI es oficialmente Open Source
 - **Licencia añadida**: Se ha insertado el archivo `LICENSE` con la Licencia MIT.
