@@ -4,6 +4,47 @@ Este documento registra los hitos principales del desarrollo reciente, los error
 
 ## Hitos Recientes
 
+### Versión 6.6.15: Revisión del Resumen (Abstract)
+*   **Actualización de Memoria TFG:** Se ha modificado el resumen global de `TFG_Ai-Tico.md` para eliminar menciones específicas al tutor socrático y a la investigación temprana. En su lugar, se ha dotado de un enfoque mucho más sólido hacia el uso responsable de la IA, el control y supervisión del docente sobre los chats de grupo, y el alineamiento con la normativa europea.
+*   **Actualización de Versión:** Proyecto documentado actualizado a la versión **V6.6.15**.
+
+### Versión 6.6.14: Redacción del Resumen (Abstract)
+*   **Actualización de Memoria TFG:** Se ha redactado el "Resumen" global al inicio de `TFG_Ai-Tico.md` (menos de 200 palabras), sintetizando el objetivo principal del proyecto, la metodología (*Full-Stack* asistido por IA y validación en el aula) y las conclusiones clave sobre la soberanía tecnológica docente y el impacto en el alumnado.
+*   **Actualización de Versión:** Proyecto documentado actualizado a la versión **V6.6.14**.
+
+### Versión 6.6.13: Inclusión de Enlaces a Proyectos Complementarios
+*   **Actualización de Memoria TFG:** Se han añadido los enlaces de acceso directo (URLs de Vercel) a las descripciones de las imágenes 35 y 36 en `TFG_Ai-Tico.md`.
+*   **Actualización de Versión:** Proyecto documentado actualizado a la versión **V6.6.13**.
+
+### Versión 6.6.12: Inserción de Aplicaciones Complementarias
+*   **Actualización de Memoria TFG:** Se ha añadido al final del apartado 6.1 de `TFG_Ai-Tico.md` la explicación y los pies de foto (Imagen 35 e Imagen 36) correspondientes a las dos aplicaciones *side-projects* construidas en una tarde (claves dicotómicas y construcción de oraciones).
+*   **Actualización de Versión:** Proyecto documentado actualizado a la versión **V6.6.12**.
+
+### Versión 6.6.11: Reflexión Personal sobre el Proceso de Desarrollo
+*   **Actualización de Memoria TFG:** Se ha incluido en el apartado 6.1 de `TFG_Ai-Tico.md` una profunda reflexión personal sobre la no-linealidad del proceso de desarrollo, reconociendo las frustraciones, el *burnout* y los picos de productividad extrema, concluyendo con el descubrimiento de una auténtica vocación por el desarrollo educativo tecnológico.
+*   **Actualización de Versión:** Proyecto documentado actualizado a la versión **V6.6.11**.
+
+### Versión 6.6.10: Ampliación de Conclusiones sobre Investigación y Supervisión
+*   **Actualización de Memoria TFG:** Se ha ampliado el apartado 6.1 en `TFG_Ai-Tico.md` para destacar la capacidad de la plataforma de introducir la investigación a edades más tempranas y la vital función del docente en la supervisión de los chats (tanto con la IA como entre los grupos).
+*   **Actualización de Versión:** Proyecto documentado actualizado a la versión **V6.6.10**.
+
+### Versión 6.6.9: Redacción de Conclusiones y Prospectiva
+*   **Actualización de Memoria TFG:** Se ha redactado y estructurado el capítulo "6. Conclusiones y Prospectiva" en `TFG_Ai-Tico.md`. Se integraron reflexiones sobre la experiencia de desarrollo asistido por IA, la alineación con normativas de la UE y UNESCO, y los futuros desarrollos de "IA contextualizada por colegio" y el "Álbum de Tico" para el alumnado.
+*   **Limpieza de Documento:** Eliminación de los apuntes y notas residuales en la plantilla.
+*   **Actualización de Versión:** Proyecto documentado actualizado a la versión **V6.6.9**.
+
+### Versión 6.6.8: Corrección Tecnológica y OpenRouter
+*   **Ajuste del Documento y Corrección:** Explicación correcta de la funcionalidad de *Stitch* (conversión técnica de prototipos de Google) e inclusión de la plataforma multi-API *OpenRouter* en la recolección estricta de documentos.
+*   **Actualización de Versión:** Proyecto actualizado a la versión **V6.6.8**.
+
+### Versión 6.6.7: Ampliación de Stack Tecnológico
+*   **Ampliación del Documento:** Añadidos OpenCode, Minimax y Stitch en `project_docs/HERRAMIENTAS_Y_TECNOLOGIAS.md` cubriendo la lista completa de infraestructuras externas, asistentes y enrutadores de emails empleados en la arquitectura del sistema.
+*   **Actualización de Versión:** Proyecto actualizado a la versión **V6.6.7**.
+
+### Versión 6.6.6: Documentación de Stack Tecnológico
+*   **Nuevo Documento:** Creado el archivo `project_docs/HERRAMIENTAS_Y_TECNOLOGIAS.md` que consolida el registro de todas las tecnologías, herramientas visuales y modelos de Inteligencia Artificial empleados en la arquitectura y de Ai-Tico para la memoria del proyecto TFG.
+*   **Actualización de Versión:** Proyecto actualizado a la versión **V6.6.6**.
+
 ### Versión 5.8.79: Optimización de Navegación Móvil (Docente)
 *   **Rediseño de Menú Inferior:** Se ha actualizado la barra de navegación móvil para el docente, sustituyendo 'Calendario' por 'Trabajo Compartido' e incorporando un acceso directo a 'Notificaciones'.
 *   **Contador de Avisos:** El nuevo botón de notificaciones en el móvil incluye un contador dinámico de mensajes no leídos para mayor agilidad.

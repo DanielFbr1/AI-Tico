@@ -686,7 +686,7 @@ export function ModalDetalleTarea({ tarea, grupos, onClose, onDelete, onEstadoCh
                                         )}
                                         
                                         <div className="flex items-center gap-2">
-                                             <span className="text-[10px] font-black text-slate-400 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full uppercase tracking-widest border border-white/30 text-white/90">Versión V6.6.5</span>
+                                             <span className="text-[10px] font-black text-slate-400 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full uppercase tracking-widest border border-white/30 text-white/90">Versión V6.7.0</span>
                                             <button 
                                                 onClick={onClose}
                                                 className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"

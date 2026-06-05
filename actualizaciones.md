@@ -2,6 +2,12 @@
 
 Este es el registro oficial de cambios y mejoras del proyecto AI-Tico.
 
+## [V6.7.0] - 2026-06-05
+### Separación de Aplicaciones en Repositorios Propios
+- **Repositorios Propios**: Separadas las aplicaciones "Formar Oraciones" (Juego_Oraciones_Standalone) y "Claves Dicotómicas" (Juego_Ciencias_Milagros) en sus propios repositorios Git locales independientes y preparados para GitHub.
+- **Limpieza de Código**: Eliminados los subproyectos del árbol de directorios de `ai-tico` para evitar redundancia y mantener el repositorio principal limpio.
+- **Sincronización de Versión**: Unificada la versión de la aplicación principal a la **V6.7.0** en `package.json`, `App.tsx`, `DashboardAlumno.tsx`, `ModalDetalleTarea.tsx`, y `ModalSeguimientoGrupos.tsx`.
+
 ## [V6.6.5] - 2026-04-18
 ### Seguridad y Simplificación de Interfaz
 - **Corrección de Leak de Notificaciones**: Se ha implementado un filtro de roles riguroso en `getProfesoresDelProyecto`. Ahora las notificaciones destinadas a docentes (como alertas de revisión) ya no se filtran por error a las sesiones de los alumnos.

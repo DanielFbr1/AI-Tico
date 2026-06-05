@@ -1,7 +1,7 @@
 # TÍTULO DEL TRABAJO: AI-Tico: Diseño y desarrollo de una plataforma educativa basada en Inteligencia Artificial para la gestión del Aprendizaje Basado en Proyectos (ABP) en Educación Primaria.
 
 ## RESUMEN (Abstract)
-(Máximo 200 palabras) [Escribe aquí un resumen global que incluya: el objetivo principal, la metodología empleada y la conclusión más relevante. Debe ser una síntesis, no una introducción.]
+Este Trabajo de Fin de Grado (TFG) presenta el diseño y desarrollo de *AI-Tico*, una plataforma educativa integral basada en Inteligencia Artificial (IA) orientada a la gestión del Aprendizaje Basado en Proyectos (ABP) en Educación Primaria. El objetivo principal es proporcionar un "copiloto metodológico" que reduzca la sobrecarga administrativa del docente y fomente la autonomía, el pensamiento crítico y la motivación del alumnado mediante un entorno gamificado. La metodología empleada ha consistido en un desarrollo *Full-Stack* asistido por IA, validando la herramienta en el entorno real y multigrado del CRA Valle del Riaza, siempre bajo los principios del Diseño Universal para el Aprendizaje (DUA). Como conclusión más relevante, el proyecto demuestra que la integración tecnológica posee un enorme potencial transformador cuando prioriza un uso ético y responsable. La plataforma garantiza un entorno seguro proporcionando herramientas de supervisión activa docente sobre los chats y dinámicas de los grupos, alineándose firmemente con la normativa de la Unión Europea sobre IA. Asimismo, certifica cómo el profesorado puede recuperar su soberanía tecnológica desarrollando soluciones metodológicas ágiles y "bajo demanda".
 
 **Palabras clave:** Inteligencia Artificial, Aprendizaje Basado en Proyectos (ABP), Educación Primaria, Gamificación, Inclusión Educativa, Pensamiento Crítico.
 
@@ -230,10 +230,75 @@ Para completar el ecosistema y reducir la fragmentación de aplicaciones externa
 *(Muestra aquí lo que has construido: capturas de pantalla, flujos de usuario, cómo funciona Tico, el panel del profesor, pruebas realizadas, etc.).*
 
 ## 6. Conclusiones y Prospectiva
-*(Resume los logros obtenidos frente a los objetivos planteados y propone futuras mejoras o líneas de investigación).*
+#### 6.1. Conclusiones sobre el Desarrollo y la Implementación Práctica
+La materialización de *AI-Tico* ha demostrado con creces que la Inteligencia Artificial, cuando se diseña con un propósito pedagógico claro, posee un inmenso potencial transformador. A lo largo de este proyecto, se ha logrado validar la plataforma en un entorno real y metodológicamente exigente: el CRA Valle del Riaza (Milagros, Burgos). En este ecosistema, la herramienta ha funcionado exitosamente como un verdadero "copiloto metodológico", mitigando de forma directa uno de los mayores retos de la innovación educativa actual: la extenuante sobrecarga administrativa que asume el docente al diseñar el Aprendizaje Basado en Proyectos (ABP) desde cero, y proporcionándole un panel de control integral que posibilita la supervisión ética y en tiempo real de los chats, tanto de las interacciones de los alumnos con la IA como de las conversaciones dentro de los propios equipos de trabajo.
 
-## 7. Referencias Bibliográficas
-*(Añade aquí los libros, artículos, webs o normativas legales que has consultado, en formato APA).*
+Por parte del alumnado, el impacto ha sido sumamente positivo, evidenciando que esta plataforma mejora de manera plausible la autonomía, la motivación y la inclusión en el aula. Al ofrecer un entorno guiado y adaptado, *AI-Tico* permite que los estudiantes puedan iniciar la investigación y búsqueda autónoma de información a edades mucho más tempranas de lo habitual. Todo ello respetando siempre las pautas del Diseño Universal para el Aprendizaje (DUA) para garantizar el acceso a todos los estudiantes independientemente de sus capacidades.
 
+A nivel personal y técnico, este Trabajo de Fin de Grado ha supuesto una auténtica revelación. Más allá del hito de crear *AI-Tico*, el proceso ha demostrado cómo la IA está democratizando el desarrollo de software. A lo largo de estos meses he aprendido programación e integración de arquitecturas de IA de forma autodidacta y sobre la marcha, utilizando los propios LLMs como asistentes. Cabe destacar que el desarrollo de la aplicación no ha sido, en absoluto, una evolución lineal. Al contar inicialmente con escasa experiencia, el proceso ha supuesto una verdadera montaña rusa de emociones: había jornadas en las que se avanzaba vertiginosamente, seguidas de días en los que un pequeño cambio desconfiguraba el trabajo previo, obligando a deshacer y volver a empezar. Esta curva de aprendizaje generó momentos de *burnout* o fatiga extrema en los que parecía imposible continuar, contrastados radicalmente con días de productividad suprema donde las ideas fluían más rápido de lo que las manos podían implementar. Sin embargo, tras superar la frustración de los errores y dar a luz este TFG, la conclusión más profunda y valiosa a nivel personal ha sido descubrir una genuina vocación: crear soluciones tecnológicas para la educación es, de hecho, lo que más me emociona.
+
+Esto certifica que, hoy en día, es accesible para un educador sin perfil de informático construir soluciones digitales "bajo demanda" orientadas a resolver los problemas reales de sus alumnos. Como prueba de esta recién adquirida agilidad tecnológica, y gracias al flujo de trabajo establecido con la IA, fui capaz de diseñar y programar desde cero otras dos aplicaciones educativas funcionales en tan solo una tarde. Por ello, este trabajo se erige también como una guía metodológica que demuestra cómo el profesorado puede recuperar la soberanía tecnológica de sus herramientas.
+
+Imagen 35. Aplicación interactiva de claves dicotómicas, desarrollada como recurso específico para facilitar al alumnado la clasificación de elementos naturales en el aula mediante decisiones lógicas y binarias. Elaboración propia. Disponible en: [https://juego-ciencias-milagros.vercel.app](https://juego-ciencias-milagros.vercel.app)
+
+Imagen 36. Aplicación digital interactiva para la construcción de oraciones, diseñada para trabajar la estructuración morfosintáctica y gramatical de manera puramente visual y manipulativa en el área de Lengua. Elaboración propia. Disponible en: [https://juego-oraciones-standalone.vercel.app](https://juego-oraciones-standalone.vercel.app)
+
+#### 6.2. Reflexión Ética, Social y Educativa frente al Reto Tecnológico
+El desarrollo de *AI-Tico* no ha sido ajeno a los intensos debates sociológicos sobre el impacto de las pantallas en la infancia. Recientemente, el panorama pedagógico se ha visto interpelado por el caso de países referentes como Suecia, que ha decidido "volver al lápiz y papel" frenando su plan de digitalización. Este repliegue evidencia un hecho fundamental: una hiperdigitalización desprovista de andamiaje pedagógico, orientada exclusivamente al consumo pasivo de información, resulta contraproducente. 
+
+Frente a esta coyuntura, *AI-Tico* propone una digitalización **segura, activa y reflexiva**. La plataforma se alinea estrictamente con el *Plan de Acción de Educación Digital (2021-2027)* de la Comisión Europea y con las normativas vigentes sobre protección de datos, acatando los principios de la reciente *Ley de Inteligencia Artificial de la UE*. En lugar de dejar al menor a la deriva ante la inmensidad de internet y sus sesgos, el sistema dota al maestro de un panel de monitorización ética, devolviéndole el control y la supervisión directa de las interacciones.
+
+De igual modo, la arquitectura de la plataforma se hace eco de las directrices de la UNESCO ("Guía para el uso de IA generativa en educación e investigación" y "La IA generativa y el futuro de la educación", 2023), instando a utilizar estas herramientas para potenciar el pensamiento humano, no para sustituirlo. 
+
+En sintonía con esta responsabilidad ética, la plataforma nace con una inquebrantable **filosofía Open Source** (bajo licencia MIT). El propósito último es democratizar el acceso a una IA educativa de calidad, permitiendo que cualquier docente, colegio o desarrollador del mundo pueda auditar, utilizar y mejorar este código de forma libre. Constituye una firme propuesta alineada con los valores de la Unión Europea: entender la innovación educativa como un bien común colaborativo.
+
+#### 6.3. Prospectiva y Trabajos Futuros
+Si bien la versión actual del proyecto ha superado con creces las expectativas iniciales, se establecen las siguientes líneas estratégicas para su evolución a corto y medio plazo:
+
+1. **Inteligencia Artificial Contextualizada por Centro:** El próximo gran reto técnico es evolucionar hacia una arquitectura donde cada colegio posea su propia "IA educativa" alimentada de forma privada con el proyecto educativo del centro, sus documentos y su contexto sociocultural. De este modo, al crear un nuevo ABP, el docente podrá conectar la plataforma a esta base de datos local y, además, subir archivos específicos del nuevo proyecto. Esto permitirá que la IA entienda a la perfección el propósito exacto de cada situación de aprendizaje, ofreciendo un soporte metodológico milimétrico.
+2. **Evolución del Ecosistema "Tico" (Gamificación Personalizada):** Se pretende finalizar el desarrollo del juego subyacente para que cada alumno posea su propio Tico de manera individualizada. Esto incluirá la creación de un "álbum de pegatinas" digital que actuará como un portfolio visual donde quedarán registrados todos los libros, películas y fuentes de información que el alumno haya ido descubriendo y "enseñando" a su mascota a lo largo del curso.
+3. **Escalabilidad y Despliegue Global:** Se proyecta la realización de pruebas piloto controladas en centros educativos de distinta tipología demográfica y socioeconómica. El objetivo es validar la versatilidad de la plataforma fuera del ámbito de la escuela rural.
+4. **Analítica Avanzada y Prevención Educativa:** A partir del rastro ético de datos, se pretende desarrollar un algoritmo predictivo de dificultades de aprendizaje en el panel del docente. Analizando tiempos de respuesta, nivel de frustración o reiteración en las consultas, el maestro podrá intervenir de forma preventiva antes de que se consolide el fracaso escolar.
+5. **Entrenamiento de un Modelo Propio (Fine-Tuning LoRA):** Actualmente, el sistema opera parametrizando modelos de lenguaje generalistas mediante prompts. La aspiración técnica máxima será someter a un modelo base a un proceso de ajuste fino (*Fine-Tuning LoRA*) introduciendo exclusivamente literatura académica, currículos oficiales de Educación Primaria y metodologías de ABP, creando así un modelo hiper-especializado y nativo para la docencia.
 ## 8. Anexos
 *(Incluye material extra como manuales de usuario, fragmentos de código relevantes, ejemplos de respuestas de la IA, etc.).*
+
+Bibliografia
+https://dialnet.unirioja.es/servlet/articulo?codigo=9778852 La aplicación de la inteligencia artificial para mejorar la enseñanza y el aprendizaje en el ámbito educativo
+
+https://revistavitalia.org/index.php/vitalia/article/view/575 Impact of artificial intelligence on assessment methods in primary and secondary education: Systematic literature review
+
+https://ojs.ehu.eus/index.php/psicodidactica/article/view/26743 Aplicación de la Inteligencia Artificial en la Personalización del Aprendizaje para Estudiantes con Necesidades Educativas Especiales
+
+https://dialnet.unirioja.es/servlet/articulo?codigo=9698310 Estrategias de gamificación en el aula de primaria
+https://www.tandfonline.com/doi/abs/10.1080/10494820.2021.1952615 A review of opportunities and challenges of chatbots in education 
+
+https://reunir.unir.net/handle/123456789/17969 Tratado sobre el reglamento de inteligencia artificial de la Unión Europea
+Suecia vuelve al lápiz y papel: por qué uno de los países más tecnológicos de Europa está reduciendo la educación digital
+
+https://spain.representation.ec.europa.eu/noticias-eventos/noticias-0/la-comision-publica-directrices-para-apoyar-los-profesores-en-las-prioridades-clave-de-la-educacion-2026-03-06_es La Comisión publica directrices para apoyar a los profesores en las prioridades clave de la educación digital
+Plan de Acción de Educación Digital (2021-2027) https://education.ec.europa.eu/es/focus-topics/digital-education/actions 
+
+Comisión Europea, Dirección General de Educación, Juventud, Deporte y Cultura, Guidelines on the ethical use of artificial intelligence and data in teaching and learning for educators, Oficina de Publicaciones de la Unión Europea, 2026, https://data.europa.eu/doi/10.2766/7967834
+
+Comisión Europea, Dirección General de Educación, Juventud, Deporte y Cultura, Guidelines for teachers and educators on tackling disinformation and promoting digital literacy through education and training, Oficina de Publicaciones de la Unión Europea, 2026, https://data.europa.eu/doi/10.2766/5220136
+
+Comisión Europea, Dirección General de Educación, Juventud, Deporte y Cultura, Making informed choices on digital education content: EU guidelines for teachers and educators, Oficina de Publicaciones de la Unión Europea, 2025, https://data.europa.eu/doi/10.2766/6984929
+
+Comisión Europea, Dirección General de Educación, Juventud, Deporte y Cultura, Guidelines for teaching informatics : practical strategies for European classrooms, Oficina de Publicaciones de la Unión Europea, 2026, https://data.europa.eu/doi/10.2766/3365988
+
+https://artificialintelligenceact.eu/es/ La Ley de Inteligencia Artificial de la UE
+
+https://dialnet.unirioja.es/servlet/articulo?codigo=6492488 Aprendizaje basado en problemas (ABP) y habilidades de pensamiento crítico ¿una relación vinculante?
+https://www.educadua.es/doc/dua/dua_pautas_intro_cv.pdf Diseño Universal para el Aprendizaje (DUA) Pautas para su introducción en el currículo
+Sánchez-Jiménez, M., Vergara, D., Barrientos-Fernández, A., & Nieto-Sobrino, M. (2025). Análisis del conocimiento de las TIC, TAC, TEP y TRIC en el profesorado universitario. Revista Eduweb, 19(1), 21–39. https://doi.org/10.46502/issn.1856-7576/2025.19.01.2
+España. Ley Orgánica 1/1990, de 3 de octubre, de Ordenación General del Sistema Educativo. Boletín Oficial del Estado, núm. 238, de 4 de octubre de 1990.
+España. Ley Orgánica 2/2006, de 3 de mayo, de Educación. Boletín Oficial del Estado, núm. 106, de 4 de mayo de 2006. https://www.boe.es/buscar/act.php?id=BOE-A-2006-7899
+España. Ley Orgánica 8/2013, de 9 de diciembre, para la mejora de la calidad educativa. Boletín Oficial del Estado, núm. 295, de 10 de diciembre de 2013.
+España. Ley Orgánica 3/2020, de 29 de diciembre, por la que se modifica la Ley Orgánica 2/2006, de 3 de mayo, de Educación. Boletín Oficial del Estado, núm. 340, de 30 de diciembre de 2020.
+UNESCO. (2023). Guía para el uso de IA generativa en educación e investigación.
+UNESCO. (2023). La IA generativa y el futuro de la educación.
+González, M., & otros. (2026). Acompañamiento colaborativo y Zona de Desarrollo Próximo en educación superior tecnológica: evidencia empírica y modelo pedagógico. Prohominum. http://www.acvenisproh.com/revistas/index.php/prohominum/article/view/1186
+Thomas, J. W. (2000). A review of research on project-based learning. Autodesk Foundation. https://tecfa.unige.ch/proj/eteach-net/Thomas_researchreview_PBL.pdf
+CAST. (2018). Pautas sobre el Diseño Universal para el Aprendizaje (DUA) 2.0. [Traducido y adaptado por Alba Pastor et al.]. http://www.educadua.es/doc/dua/CAST-Pautas_2_0-Alba-y-otros-Actualizado%20versio%CC%81n-2018.pdf
+Skinner, B. F. (1953). Science and human behavior. Macmillan.
