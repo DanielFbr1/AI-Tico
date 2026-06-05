@@ -2,6 +2,12 @@
 
 Este es el registro oficial de cambios y mejoras del proyecto AI-Tico.
 
+## [V6.7.1] - 2026-06-05
+### Documentación y Descripciones de Aplicaciones
+- **Proyecto de Formar Oraciones**: Creado `README.md` detallando la app como un formador de oraciones interactivo estilo Duolingo con pictogramas ARASAAC para niños.
+- **Proyecto de Claves Dicotómicas**: Actualizado `README.md` detallando la app como un clasificador deductivo interactivo estilo Akinator para seres vivos y especies.
+- **Versión de AI-Tico**: Incrementada la versión de la aplicación principal a la **V6.7.1** en todos los componentes clave del sistema.
+
 ## [V6.7.0] - 2026-06-05
 ### Separación de Aplicaciones en Repositorios Propios
 - **Repositorios Propios**: Separadas las aplicaciones "Formar Oraciones" (Juego_Oraciones_Standalone) y "Claves Dicotómicas" (Juego_Ciencias_Milagros) en sus propios repositorios Git locales independientes y preparados para GitHub.

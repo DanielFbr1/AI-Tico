@@ -1481,7 +1481,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       <main className={`max-w-7xl mx-auto px-6 w-full pb-24 md:pb-8 ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden py-4' : 'py-8 flex-none'} relative`}>
         {/* Etiqueta de Versión para el Alumno */}
         <div className="absolute top-2 right-6 text-[8px] font-bold text-slate-300 uppercase tracking-widest pointer-events-none opacity-40">
-          V6.7.0
+          V6.7.1
         </div>
         {vistaActiva === 'calendario' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1667,7 +1667,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
                            <Award className="w-3.5 h-3.5 text-amber-500" />
-                           <span className="text-[10px] font-black text-slate-400 leading-none">V6.7.0</span>
+                           <span className="text-[10px] font-black text-slate-400 leading-none">V6.7.1</span>
                            <span className="text-[10px] font-black text-slate-400 uppercase">{t.puntos_maximos} Puntos</span>
                         </div>
                         <button

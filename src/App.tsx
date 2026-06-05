@@ -32,7 +32,7 @@ function ErrorFallback({ error }: { error: Error }) {
           Limpiar y Reintentar
         </button>
         <div className="mt-4 px-4 text-[10px] text-gray-400 font-medium tracking-widest uppercase text-center">
-          V6.7.0
+          V6.7.1
         </div>
       </div>
     </div>
@@ -93,7 +93,7 @@ function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<'projects' | 'project-detail' | 'group-detail' | 'tico-full'>('projects');
   const [selectedProject, setSelectedProject] = useState<Proyecto | null>(null);
   const [selectedGrupo, setSelectedGrupo] = useState<Grupo | null>(null);
-  const VERSION = "V6.7.0";
+  const VERSION = "V6.7.1";
 
   // ── Estado para recuperación de contraseña ──
   // Detectar inmediatamente si venimos del flujo de recovery por la URL
@@ -387,7 +387,7 @@ export default function App() {
         <AppContent />
         <Toaster position="top-right" richColors />
         <div className="fixed bottom-2 right-2 flex flex-col items-end gap-1 opacity-50 z-50 pointer-events-none">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V6.7.0</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full border border-slate-200">V6.7.1</span>
         </div>
       </AuthProvider>
     </ErrorBoundary>
