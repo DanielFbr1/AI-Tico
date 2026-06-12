@@ -4,9 +4,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI-Tico</title>
 
-  <!-- Iconos -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SEO: Meta Tags Principales                                  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <title>AI-Tico | Plataforma Educativa con IA para Docentes y Alumnos</title>
+  <meta name="description" content="AI-Tico es la plataforma educativa impulsada por Inteligencia Artificial que acompaña a docentes y alumnos con gamificación, seguimiento de tareas y un mentor IA personalizado." />
+  <meta name="keywords" content="AI-Tico, plataforma educativa, inteligencia artificial, educación, profesor, alumno, gamificación, mentor IA, herramienta docente, IA educativa, aprendizaje basado en proyectos" />
+  <meta name="author" content="Daniel Valimaña Puyo" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <link rel="canonical" href="https://ai-tico.vercel.app/" />
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SEO: Open Graph (Facebook, WhatsApp, LinkedIn)              -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://ai-tico.vercel.app/" />
+  <meta property="og:title" content="AI-Tico | Plataforma Educativa con IA" />
+  <meta property="og:description" content="Plataforma educativa impulsada por IA que acompaña a docentes y alumnos con gamificación y un mentor IA personalizado." />
+  <meta property="og:image" content="https://ai-tico.vercel.app/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="AI-Tico - Plataforma Educativa con Inteligencia Artificial" />
+  <meta property="og:locale" content="es_ES" />
+  <meta property="og:site_name" content="AI-Tico" />
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SEO: Twitter Card                                            -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="AI-Tico | Plataforma Educativa con IA" />
+  <meta name="twitter:description" content="Plataforma educativa impulsada por IA con gamificación y mentor personalizado para docentes y alumnos." />
+  <meta name="twitter:image" content="https://ai-tico.vercel.app/og-image.png" />
+  <meta name="twitter:image:alt" content="AI-Tico - Plataforma Educativa con Inteligencia Artificial" />
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- Iconos                                                       -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
   <link rel="icon" type="image/png" href="/favicon-96x96-tech.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-tech.png" />
@@ -14,14 +49,49 @@
   <link rel="manifest" href="/site-tech.webmanifest" />
   <meta name="theme-color" content="#4f39f6" />
 
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- Fuentes                                                      -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SEO: Datos Estructurados Schema.org (JSON-LD)               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "AI-Tico",
+    "alternateName": "AI Tico",
+    "url": "https://ai-tico.vercel.app",
+    "description": "Plataforma educativa impulsada por Inteligencia Artificial que acompaña a docentes y alumnos con gamificación, seguimiento de tareas y un mentor IA personalizado.",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "es",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Daniel Valimaña Puyo",
+      "url": "https://github.com/DanielFbr1"
+    },
+    "license": "https://opensource.org/licenses/MIT",
+    "screenshot": "https://ai-tico.vercel.app/og-image.png"
+  }
+  </script>
 </head>
 
 <body>
   <div id="root"></div>
+  <noscript>
+    <p>AI-Tico requiere JavaScript para funcionar. Por favor, actívalo en tu navegador.</p>
+  </noscript>
   <script>
     window.onerror = function (msg, url, line, col, error) {
       console.error("❌ ERROR GLOBAL:", msg, "en", url, ":", line);

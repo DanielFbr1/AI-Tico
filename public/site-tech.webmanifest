@@ -1,6 +1,12 @@
 {
-    "name": "AI-Tico",
+    "name": "AI-Tico | Plataforma Educativa con IA",
     "short_name": "AI-Tico",
+    "description": "Plataforma educativa impulsada por Inteligencia Artificial que acompaña a docentes y alumnos con gamificación y un mentor IA personalizado.",
+    "start_url": "/",
+    "scope": "/",
+    "lang": "es",
+    "dir": "ltr",
+    "categories": ["education", "productivity"],
     "icons": [
         {
             "src": "/web-app-manifest-192x192-tech.png",
@@ -15,7 +21,7 @@
             "purpose": "any"
         }
     ],
-    "theme_color": "#ffffff",
+    "theme_color": "#4f39f6",
     "background_color": "#ffffff",
     "display": "standalone"
 }

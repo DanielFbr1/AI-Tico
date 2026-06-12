@@ -2,6 +2,24 @@
 
 Este es el registro oficial de cambios y mejoras del proyecto AI-Tico.
 
+## [V6.7.2] - 2026-06-12
+### Mejora SEO Completa
+- **Title Tag Optimizado**: Cambiado de "AI-Tico" a "AI-Tico | Plataforma Educativa con IA para Docentes y Alumnos" para mejorar el posicionamiento en buscadores.
+- **Meta Description**: Añadida descripción de ~155 caracteres optimizada para Google.
+- **Meta Keywords**: Añadidas 11 palabras clave relevantes (AI-Tico, plataforma educativa, IA educativa, gamificación, etc.).
+- **Canonical URL**: Establecida `https://ai-tico.vercel.app/` como URL canónica.
+- **Meta Robots y Googlebot**: Directivas para permitir indexación completa con snippets e imágenes grandes.
+- **Open Graph Tags**: 10 meta tags para que al compartir el enlace en WhatsApp, Facebook, LinkedIn se muestre tarjeta profesional con imagen, título y descripción.
+- **Twitter Card**: 5 meta tags para preview en Twitter/X con imagen grande.
+- **Imagen OG**: Generada imagen profesional 1200x630px con gradiente morado e iconos educativos para compartir en redes.
+- **Datos Estructurados Schema.org**: Bloque JSON-LD identificando AI-Tico como `WebApplication` de categoría `EducationalApplication`, gratuita, en español, con autor y licencia MIT.
+- **robots.txt**: Creado archivo permitiendo indexación general y bloqueando `/api/`, con referencia al sitemap.
+- **sitemap.xml**: Creado mapa del sitio con 3 URLs (principal, privacidad, términos) con frecuencias y prioridades.
+- **Web Manifest Mejorado**: Añadidos `description`, `start_url`, `scope`, `lang`, `dir`, `categories` y corregido `theme_color` a `#4f39f6`.
+- **Noscript Fallback**: Añadido mensaje para navegadores sin JavaScript.
+- **Autor SEO**: Configurado "Daniel Valimaña Puyo" como autor en meta tags y Schema.org.
+- **Sincronización de Versión**: Incrementada la versión a **V6.7.2** en `package.json`, `App.tsx`, `DashboardAlumno.tsx`, `ModalDetalleTarea.tsx` y `ModalSeguimientoGrupos.tsx`.
+
 ## [V6.7.1] - 2026-06-05
 ### Documentación y Descripciones de Aplicaciones
 - **Proyecto de Formar Oraciones**: Creado `README.md` detallando la app como un formador de oraciones interactivo estilo Duolingo con pictogramas ARASAAC para niños.
