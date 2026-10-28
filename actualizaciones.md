@@ -1,5 +1,12 @@
 # Registro de Actualizaciones - AI-Tico (Anteriormente Dashboard Docente y Feedback)
 
+## [V7.2.1] - 2026-10-28 — Optimización de Profundidad IA y Prevención de Degradación del Chat
+- **Aumento de Tokens Máximos**: Ampliado el límite de `max_tokens` de 1024 a **2500 tokens** (y hasta **3000** en el chat docente) en `callGroq` para permitir que el modelo de razonamiento (`openai/gpt-oss-120b`) desarrolle explicaciones amplias y ricas sin quedarse sin espacio por los tokens de pensamiento.
+- **Ventana Deslizante Anti-Degradación**: Implementada ventana deslizante de 16 mensajes en el historial (`historial.slice(-16)`) para evitar que el chat pierda calidad, gaste tokens innecesarios o sufra de *context rot* a medida que la conversación se alarga.
+- **Prompt Enriquecido para Profundidad y Rigor**: Sustituida la directriz restrictiva de lenguaje infantil por una pauta de profundidad pedagógica, razonamiento de causas/efectos ("el por qué y el cómo"), analogías cotidianas y estructura clara con datos de interés.
+- **Consultor Docente Avanzado**: Reforzado el prompt docente para orientar situaciones de aprendizaje completas, evaluación competencial LOMLOE y metodologías activas (ABP/gamificación).
+- **Versión**: Actualizada a **V7.2.1**.
+
 ## [V7.2.0] - 2026-10-28 — Subida Integral: Módulo Colegios, Claustro, Gestor Documental, Optimización Multimedia y Tico Tech
 - **Módulo Multitenant para Colegios**: Incorporado `DashboardColegio`, selector de centros `ColegioSelector`, claustro docente (`ColegioClaustroDocentes`), gestor documental (`ColegioGestorDocumental`), servicio RAG escolar (`colegioRAGService`, `documentParser`) y migración SQL de esquemas (`20260814_create_colegios_rag_schema.sql`).
 - **Optimización Multimedia y Skins**: Sincronización de skins en formato WebP transparente, vídeos WebM con canal alfa para animaciones de Tico y scripts de procesamiento por lotes (`convert_images.cjs`, `convert_videos.cjs`, `process_videos_alpha.cjs`).

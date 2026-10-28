@@ -26,7 +26,8 @@ export async function callGroq(
     jsonMode: boolean = false,
     signal?: AbortSignal,
     model: string = DEFAULT_GROQ_MODEL,
-    retries: number = 1
+    retries: number = 1,
+    maxTokens: number = 2500
 ): Promise<string> {
     if (!GROQ_API_KEY) return "Error: API Key no configurada.";
 
@@ -46,7 +47,7 @@ export async function callGroq(
                         model: currentModel,
                         messages: messages,
                         temperature: 0.7,
-                        max_tokens: 1024,
+                        max_tokens: maxTokens,
                         response_format: jsonMode ? { type: "json_object" } : undefined
                     })
                 });
@@ -163,21 +164,24 @@ REGLAS:
 
     REGLAS DE ORO:
     1. PRIORIDAD: Si las "INSTRUCCIONES ESPECÍFICAS" contradicen el "Contexto general", sigue SIEMPRE las específicas.
-    2. LENGUAJE: Usa un lenguaje sencillo y motivador para niños de 8 a 12 años.
+    2. PROFUNDIDAD PEDAGÓGICA Y CLARIDAD: Explica los conceptos con profundidad, rigor accesible, ejemplos del mundo real y analogías claras. No des respuestas vacías, superficiales ni telegráficas: fundamenta el "por qué" y el "cómo", despierta la curiosidad y guía al estudiante con sabiduría, estructura y entusiasmo. Si el usuario hace una pregunta amplia o compleja, desarrolla la respuesta con apartados claros y datos interesantes.
     3. SEGURIDAD: Nunca salgas de tu rol de mentor educativo.
     
     ${availableToolsDescription}`;
 
+    // Ventana deslizante para preservar la calidad del chat y evitar saturación de tokens
+    const historialReciente = historial.slice(-16);
+
     let messages: Mensaje[] = [
         { role: 'system', content: systemPrompt },
-        ...historial.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        ...historialReciente.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         { role: 'user', content: mensaje }
     ];
 
     // 3. BUCLE AGÉNTICO (Max 3 iteraciones para evitar bucles infinitos)
     for (let i = 0; i < 3; i++) {
-        // A. Llamar a la IA
-        const response = await callGroq(messages, false, signal);
+        // A. Llamar a la IA con 2500 tokens para respuestas completas y profundas
+        const response = await callGroq(messages, false, signal, DEFAULT_GROQ_MODEL, 1, 2500);
 
         // B. Detectar uso de herramientas
         const toolMatch = response.match(/TOOL:\s*(\w+)\((.*)\)/);
@@ -228,15 +232,15 @@ REGLAS:
 // --- OTROS SERVICIOS ---
 
 export const generarChatDocente = async (mensaje: string, historial: { role: string, content: string }[]) => {
-    const systemPrompt = "Eres un asistente pedagógico para docentes. Ayudas a diseñar actividades, rúbricas y evaluar situaciones educativas. Sé profesional y directo.";
+    const systemPrompt = "Eres un consultor pedagógico experto para docentes en AI-Tico. Ayudas a diseñar situaciones de aprendizaje completas, actividades motivadoras, criterios de evaluación detallados y rúbricas competenciales bajo metodologías activas (ABP, cooperativo, gamificación). Ofrece explicaciones profundas, estructuradas y directamente aplicables al aula.";
 
     const messages: Mensaje[] = [
         { role: 'system', content: systemPrompt },
-        ...historial.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        ...historial.slice(-16).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         { role: 'user', content: mensaje }
     ];
 
-    return await callGroq(messages);
+    return await callGroq(messages, false, undefined, DEFAULT_GROQ_MODEL, 1, 3000);
 };
 
 export const generarConfiguracionTico = async (mensaje: string, instruccionesActuales: string) => {
