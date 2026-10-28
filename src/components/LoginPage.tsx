@@ -690,7 +690,7 @@ export function LoginPage() {
                             </div>
 
                             <div className="mt-4 md:mt-6 text-center md:text-right">
-                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase relative z-30">AI-Tico Multi-Tenant V7.2.1</span>
+                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase relative z-30">AI-Tico Multi-Tenant V7.2.2</span>
                             </div>
                         </div>
                     </div>

@@ -7,9 +7,11 @@ const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_AUDIO_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
 const TAVILY_API_KEY = import.meta.env.VITE_TAVILY_API_KEY;
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_MODEL = 'gemini-3.5-flash';
 
-if (!GROQ_API_KEY) {
-    console.error("❌ Faltan las claves de API de Groq en .env");
+if (!GROQ_API_KEY && !GEMINI_API_KEY) {
+    console.error("❌ Faltan las claves de API (Groq o Gemini) en .env");
 }
 
 export interface Mensaje {
@@ -91,6 +93,93 @@ export async function callGroq(
         throw new Error("Invalid JSON response from Groq");
     }
     return "¡Cuaack! Mi cerebro va muy rápido y se ha sobrecalentado. 🧠🔥 ¡Dame un segundito y vuelve a preguntarme!";
+}
+
+/**
+ * Invocación a Google Gemini (Gemini 3.5 Flash)
+ * Proporciona profundidad enciclopédica, razonamiento pedagógico y ventana de contexto masiva.
+ */
+export async function callGemini(
+    messages: Mensaje[],
+    jsonMode: boolean = false,
+    signal?: AbortSignal,
+    maxTokens: number = 2500
+): Promise<string> {
+    if (!GEMINI_API_KEY) throw new Error("Gemini API Key no configurada.");
+
+    const systemMsg = messages.find(m => m.role === 'system');
+    const conversationMsgs = messages.filter(m => m.role !== 'system');
+
+    // Mapear al formato de contents de Gemini (role user / model)
+    const contents = conversationMsgs.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+    }));
+
+    if (contents.length > 0 && contents[0].role === 'model') {
+        contents.unshift({ role: 'user', parts: [{ text: 'Hola' }] });
+    }
+
+    const payload: any = {
+        contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: 'Hola' }] }],
+        generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: maxTokens,
+            responseMimeType: jsonMode ? 'application/json' : undefined
+        }
+    };
+
+    if (systemMsg) {
+        payload.system_instruction = {
+            parts: [{ text: systemMsg.content }]
+        };
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    const response = await fetch(url, {
+        method: 'POST',
+        signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(`Gemini Error ${response.status}: ${JSON.stringify(errData)}`);
+    }
+
+    const data = await response.json();
+    const candidate = data.candidates?.[0];
+    const text = candidate?.content?.parts?.[0]?.text || "";
+
+    if (jsonMode) {
+        JSON.parse(text); // Valida formato JSON
+    }
+
+    return text;
+}
+
+/**
+ * Despachador principal con fallback automático:
+ * 1º Google Gemini 3.5 Flash (máxima inteligencia y profundidad)
+ * 2º Groq gpt-oss-120b (fallback rápido y resiliente)
+ */
+export async function callAI(
+    messages: Mensaje[],
+    jsonMode: boolean = false,
+    signal?: AbortSignal,
+    maxTokens: number = 2500
+): Promise<string> {
+    if (GEMINI_API_KEY) {
+        try {
+            return await callGemini(messages, jsonMode, signal, maxTokens);
+        } catch (error: any) {
+            if (error.name === 'AbortError') throw error;
+            console.warn("⚠️ Fallback automático (Gemini -> Groq):", error.message || error);
+        }
+    }
+
+    return await callGroq(messages, jsonMode, signal, DEFAULT_GROQ_MODEL, 1, maxTokens);
 }
 
 // --- MENTOR IA (Chat Principal) ---
@@ -181,7 +270,7 @@ REGLAS:
     // 3. BUCLE AGÉNTICO (Max 3 iteraciones para evitar bucles infinitos)
     for (let i = 0; i < 3; i++) {
         // A. Llamar a la IA con 2500 tokens para respuestas completas y profundas
-        const response = await callGroq(messages, false, signal, DEFAULT_GROQ_MODEL, 1, 2500);
+        const response = await callAI(messages, false, signal, 2500);
 
         // B. Detectar uso de herramientas
         const toolMatch = response.match(/TOOL:\s*(\w+)\((.*)\)/);
@@ -240,7 +329,7 @@ export const generarChatDocente = async (mensaje: string, historial: { role: str
         { role: 'user', content: mensaje }
     ];
 
-    return await callGroq(messages, false, undefined, DEFAULT_GROQ_MODEL, 1, 3000);
+    return await callAI(messages, false, undefined, 3000);
 };
 
 export const generarConfiguracionTico = async (mensaje: string, instruccionesActuales: string) => {
@@ -264,7 +353,7 @@ export const generarConfiguracionTico = async (mensaje: string, instruccionesAct
     Si el docente te pide un cambio de comportamiento evidente (ej: "haz que sea más creativo" o "que no les de pistas"), actualiza "update_settings" con el valor correspondiente.
     Si el docente te hace una pregunta del proyecto, responde en "reply" y deja lo demás igual.`;
 
-    const response = await callGroq([
+    const response = await callAI([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: "Procesa la solicitud del docente y devuelve el JSON." }
     ], true);
@@ -302,7 +391,7 @@ export const generarTareasDocente = async (contexto: string) => {
     Asegúrate de que el JSON sea válido y no incluyas texto fuera del objeto.`;
 
     try {
-        const response = await callGroq([{ role: 'user', content: prompt }], true);
+        const response = await callAI([{ role: 'user', content: prompt }], true);
         const parsed = JSON.parse(response);
 
         if (parsed.tasks && Array.isArray(parsed.tasks)) {
@@ -350,7 +439,7 @@ export const generarConfiguracionProyecto = async (historial: Mensaje[]) => {
         ...historial
     ];
 
-    const response = await callGroq(messages, true);
+    const response = await callAI(messages, true);
     try {
         return JSON.parse(response);
     } catch (e) {
@@ -367,7 +456,7 @@ Devuelve OBLIGATORIAMENTE un JSON con esta estructura exacta:
 
 Cada descripción debe tener 1-2 frases concretas y específicas para ese nivel. Responde SOLO con el JSON, sin texto adicional.`;
 
-    const response = await callGroq([{ role: 'user', content: prompt }], true, undefined, 'openai/gpt-oss-20b');
+    const response = await callAI([{ role: 'user', content: prompt }], true);
     try {
         const parsed = JSON.parse(response);
 

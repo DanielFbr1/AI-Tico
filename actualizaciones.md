@@ -1,5 +1,12 @@
 # Registro de Actualizaciones - AI-Tico (Anteriormente Dashboard Docente y Feedback)
 
+## [V7.2.2] - 2026-10-28 — Integración de Google Gemini 3.5 Flash como Motor Principal con Fallback a Groq
+- **Motor Principal Google Gemini 3.5 Flash**: Conectada la API nativa de Google Gemini (`gemini-3.5-flash`) en `src/services/ai.ts` con la clave de Google AI Studio del usuario.
+- **Arquitectura Híbrida Inteligente (`callAI`)**: Todas las funciones de generación (`generarRespuestaIA`, `generarChatDocente`, `generarConfiguracionTico`, etc.) invocan primero a Gemini 3.5 Flash para obtener máxima profundidad enciclopédica, razonamiento pedagógico y comprensión contextual; si Gemini alcanza su límite o experimenta congestión, conmuta automáticamente a Groq (`openai/gpt-oss-120b`).
+- **Soporte Nativo JSON**: Configuración de `responseMimeType: "application/json"` en Gemini para garantizar generación estricta de rúbricas y tareas sin fallos de parseo.
+- **Variables de Entorno**: Actualizada la clave en `.env` y `.env.local` con `VITE_GEMINI_API_KEY`.
+- **Versión**: Actualizada a **V7.2.2**.
+
 ## [V7.2.1] - 2026-10-28 — Optimización de Profundidad IA y Prevención de Degradación del Chat
 - **Aumento de Tokens Máximos**: Ampliado el límite de `max_tokens` de 1024 a **2500 tokens** (y hasta **3000** en el chat docente) en `callGroq` para permitir que el modelo de razonamiento (`openai/gpt-oss-120b`) desarrolle explicaciones amplias y ricas sin quedarse sin espacio por los tokens de pensamiento.
 - **Ventana Deslizante Anti-Degradación**: Implementada ventana deslizante de 16 mensajes en el historial (`historial.slice(-16)`) para evitar que el chat pierda calidad, gaste tokens innecesarios o sufra de *context rot* a medida que la conversación se alarga.
