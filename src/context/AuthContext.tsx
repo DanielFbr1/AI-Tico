@@ -2,14 +2,16 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 
-interface Perfil {
+export interface Perfil {
     id: string;
     nombre: string;
-    rol: 'profesor' | 'alumno' | 'familia';
+    rol: 'profesor' | 'alumno' | 'familia' | 'colegio';
     clase?: string;
     grupo_id?: number;
     proyecto_id?: string;
     codigo_sala?: string;
+    colegio_id?: string;
+    colegio_nombre?: string;
 }
 
 interface AuthContextType {
@@ -68,17 +70,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 return;
             }
 
-            // 2. Fallback: Si no hay metadata, consultar la tabla profiles
-            if (!metadata?.rol) {
-                console.warn("⚠️ Metadata vacía, consultando DB...");
-                const { data: profileData } = await supabase
+            // 2. Fallback: Si no hay metadata o faltan campos, consultar la tabla profiles
+            let profileData: any = null;
+            if (!metadata?.rol || !metadata?.colegio_id) {
+                const { data } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', user.id)
                     .single();
 
+                profileData = data;
                 if (profileData) {
-                    metadata = { ...metadata, rol: profileData.rol, nombre: profileData.nombre, codigo_sala: profileData.codigo_sala };
+                    metadata = {
+                        ...metadata,
+                        rol: metadata?.rol || profileData.rol,
+                        nombre: metadata?.nombre || metadata?.full_name || profileData.full_name || profileData.nombre,
+                        codigo_sala: metadata?.codigo_sala || profileData.codigo_sala,
+                        colegio_id: metadata?.colegio_id || profileData.colegio_id,
+                        colegio_nombre: metadata?.colegio_nombre || profileData.colegio_nombre
+                    };
                 }
             }
 
@@ -90,10 +100,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     rol: metadata.rol,
                     clase: metadata.clase,
                     codigo_sala: metadata.codigo_sala,
-                    proyecto_id: metadata.proyecto_id
+                    proyecto_id: metadata.proyecto_id,
+                    colegio_id: metadata.colegio_id || profileData?.colegio_id,
+                    colegio_nombre: metadata.colegio_nombre || profileData?.colegio_nombre
                 };
                 setPerfil(fetchedPerfil);
-                console.log("✅ Perfil cargado:", metadata.rol);
+                console.log("✅ Perfil cargado:", metadata.rol, "Colegio:", fetchedPerfil.colegio_nombre || fetchedPerfil.colegio_id || "N/A");
             } else {
                 console.error("❌ Usuario sin rol en Metadata ni DB. Asignando 'alumno' por defecto para seguridad.");
                 setPerfil({

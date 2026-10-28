@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles, Loader2, Mic, MicOff, Volume2, VolumeX, Square } from 'lucide-react';
 import { Grupo } from '../types';
 import { generarRespuestaIA } from '../services/ai';
+import { ColegioRAGService } from '../services/colegioRAGService';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ interface ChatIAProps {
   mostrarEjemplo?: boolean;
   proyectoNombre?: string;
   contextoIA?: string;
+  colegioId?: string;
 }
 
 const mensajesEjemplo: Mensaje[] = [
@@ -62,7 +64,7 @@ const preguntasSugeridas = [
   { texto: "¿Qué nos falta para completar la tarea?", categoria: 'Metacognitiva' as const }
 ];
 
-export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, proyectoNombre, contextoIA }: ChatIAProps) {
+export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, proyectoNombre, contextoIA, colegioId }: ChatIAProps) {
   const { user, perfil } = useAuth();
   const isReadOnly = readOnly ?? false;
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
@@ -317,7 +319,46 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
 
       if (errorAlumno) throw errorAlumno;
 
-      // 3. Obtener respuesta de IA con MEMORIA (Historial completo)
+      // 3. Enriquecer con RAG institucional del colegio si está disponible
+      let contextoRAG = '';
+      let targetColegioId = colegioId || perfil?.colegio_id;
+      
+      if (!targetColegioId && grupo?.proyecto_id && !mostrarEjemplo) {
+        try {
+          const { data: pData } = await supabase
+            .from('proyectos')
+            .select('colegio_id')
+            .eq('id', grupo.proyecto_id)
+            .maybeSingle();
+          if (pData?.colegio_id) {
+            targetColegioId = pData.colegio_id;
+          }
+        } catch (fetchErr) {
+          console.warn('No se pudo resolver colegio_id del proyecto:', fetchErr);
+        }
+      }
+
+      if (targetColegioId && !mostrarEjemplo) {
+        try {
+          const ragResults = await ColegioRAGService.searchKnowledge(targetColegioId, mensajeTexto, 3);
+          const relevantes = ragResults.filter(r => r.score >= 0.25);
+          if (relevantes.length > 0) {
+            contextoRAG = `\n\n---\nDOCUMENTOS OFICIALES Y NORMATIVA DEL COLEGIO:\n`;
+            relevantes.forEach((r, i) => {
+              const doc = r.chunk.metadata?.nombre_archivo || 'Documento institucional';
+              contextoRAG += `[Fuente ${i + 1}: ${doc}]\n${r.chunk.contenido}\n`;
+            });
+            contextoRAG += '---\n';
+          }
+        } catch (ragErr) {
+          console.warn('RAG institucional no disponible en MentorChat:', ragErr);
+        }
+      }
+
+      const contextoBase = proyectoNombre !== 'Proyecto Demo' ? (contextoIA || "") : "";
+      const contextoCompleto = [contextoBase, contextoRAG].filter(Boolean).join('\n');
+
+      // 4. Obtener respuesta de IA con MEMORIA (Historial completo)
       // Pasamos el historial previo. generarRespuestaIA añadirá el mensajeUsuario al final automáticamente.
       const historialParaIA = mensajes.map(m => ({
         role: (m.tipo === 'ia' ? 'assistant' : 'user') as 'assistant' | 'user' | 'system',
@@ -330,7 +371,7 @@ export function MentorChat({ grupo, onNuevoMensaje, readOnly, mostrarEjemplo, pr
         mostrarEjemplo ? 'Proyecto Demo' : (proyectoNombre || 'Proyecto'), // Nombre del Proyecto
         historialParaIA,
         grupo.hitos || [], // Tareas del grupo
-        proyectoNombre !== 'Proyecto Demo' ? (contextoIA || "") : "", // Contexto IA
+        contextoCompleto, // Contexto IA + RAG institucional
         grupo.configuracion, // configuracion
         controller.signal
       );

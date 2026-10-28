@@ -46,3 +46,7 @@ coverage/
 .cache/
 .vercel
 .env*.local
+
+# Archivos de pruebas locales y accesos directos
+test_*.webm
+*.lnk

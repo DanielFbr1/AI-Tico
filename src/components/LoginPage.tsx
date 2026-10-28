@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Brain, User, GraduationCap, ArrowRight, Key, Check, Users, Mail, RefreshCw, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Brain, User, GraduationCap, ArrowRight, Key, Check, Users, Mail, RefreshCw, ShieldCheck, CheckCircle2, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function LoginPage() {
     const { refreshPerfil } = useAuth();
-    const [view, setView] = useState<'selection' | 'teacher-auth' | 'student-verify' | 'student-auth' | 'family-auth'>('selection');
+    const [view, setView] = useState<'selection' | 'teacher-auth' | 'student-verify' | 'student-auth' | 'family-auth' | 'school-auth'>('selection');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [roomCode, setRoomCode] = useState('');
     const [studentName, setStudentName] = useState('');
+    const [schoolName, setSchoolName] = useState('');
+    const [schoolCity, setSchoolCity] = useState('');
+    const [schoolCode, setSchoolCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [sessionData, setSessionData] = useState<any>(null);
     const [error, setError] = useState('');
@@ -28,17 +31,38 @@ export function LoginPage() {
         setError('');
 
         try {
-            const targetRole = (view === 'teacher-auth') ? 'profesor' : (view === 'family-auth') ? 'familia' : 'alumno';
-            const authEmail = email;
+            const targetRole = (view === 'teacher-auth') ? 'profesor' : (view === 'family-auth') ? 'familia' : (view === 'school-auth') ? 'colegio' : 'alumno';
+            const authEmail = email.trim();
+
+            if (targetRole === 'colegio' && isSignUp && !schoolName.trim()) {
+                throw new Error("Por favor, introduce el nombre del colegio o institución.");
+            }
 
             let sessionData = null;
 
             if (isSignUp) {
+                // Validación previa para colegio: comprobar si ya existe con ese nombre
+                if (targetRole === 'colegio') {
+                    const { data: existingSchool } = await supabase
+                        .from('colegios')
+                        .select('id, nombre')
+                        .ilike('nombre', schoolName.trim())
+                        .maybeSingle();
+
+                    if (existingSchool) {
+                        throw new Error(`El colegio "${existingSchool.nombre}" ya está registrado en el sistema. Inicia sesión o contacta con el administrador.`);
+                    }
+                }
+
                 // Flags para onboarding
                 if (targetRole === 'profesor') {
                     // El tutorial se activará tras crear el primer proyecto
                 } else if (targetRole === 'familia') {
                     localStorage.setItem('isNewFamily', 'true');
+                } else if (targetRole === 'colegio') {
+                    localStorage.setItem('isNewSchool', 'true');
+                    localStorage.setItem('pendingSchoolName', schoolName.trim());
+                    localStorage.setItem('pendingSchoolCity', schoolCity.trim());
                 } else {
                     localStorage.setItem('isNewStudent', 'true');
                 }
@@ -46,7 +70,9 @@ export function LoginPage() {
                 // Prepare metadata
                 const metaData: any = {
                     rol: targetRole,
-                    nombre: studentName || email.split('@')[0]
+                    nombre: studentName || (targetRole === 'colegio' ? schoolName.trim() : email.split('@')[0]),
+                    colegio_nombre: targetRole === 'colegio' ? schoolName.trim() : undefined,
+                    ciudad: targetRole === 'colegio' ? schoolCity.trim() : undefined
                 };
 
                 // Only add codigo_sala if provided
@@ -67,16 +93,45 @@ export function LoginPage() {
                     localStorage.removeItem('isNewTeacher');
                     localStorage.removeItem('isNewStudent');
                     localStorage.removeItem('isNewFamily');
+                    localStorage.removeItem('isNewSchool');
                     throw error;
                 }
 
                 if (data.session) {
                     sessionData = data.session;
+                    
+                    // Si es colegio y tenemos sesión inmediata, creamos el registro institucional
+                    if (targetRole === 'colegio') {
+                        const { data: newSchool, error: schoolErr } = await supabase
+                            .from('colegios')
+                            .insert({
+                                nombre: schoolName.trim(),
+                                ciudad: schoolCity.trim() || undefined,
+                                email_contacto: authEmail,
+                                codigo_institucional: schoolCode.trim() || ('COL-' + Math.random().toString(36).substring(2, 7).toUpperCase()),
+                                created_by: data.session.user.id
+                            })
+                            .select()
+                            .single();
+
+                        if (!schoolErr && newSchool) {
+                            await supabase.from('profiles').update({
+                                colegio_id: newSchool.id,
+                                colegio_nombre: newSchool.nombre,
+                                rol: 'colegio'
+                            }).eq('id', data.session.user.id);
+                        }
+                    }
+
                     await refreshPerfil();
                 } else {
                     // No hay sesión inmediata → se requiere confirmación por email
                     // Guardar el rol elegido para que se aplique al confirmar
                     localStorage.setItem('pendingRole', targetRole);
+                    if (targetRole === 'colegio') {
+                        localStorage.setItem('pendingSchoolName', schoolName.trim());
+                        localStorage.setItem('pendingSchoolCity', schoolCity.trim());
+                    }
                     setEmailSent(true);
                     setResendCooldown(60);
                     return;
@@ -97,16 +152,57 @@ export function LoginPage() {
                     data: { rol: targetRole }
                 });
 
-                await supabase.from('profiles').update({
-                    rol: targetRole
-                }).eq('id', sessionData.user.id);
+                // Si es colegio, asegurar que exista el registro en la tabla colegios
+                if (targetRole === 'colegio') {
+                    const { data: userSchool } = await supabase
+                        .from('colegios')
+                        .select('id, nombre')
+                        .or(`created_by.eq.${sessionData.user.id},email_contacto.eq.${authEmail}`)
+                        .maybeSingle();
+
+                    let assignedSchoolId = userSchool?.id;
+                    let assignedSchoolName = userSchool?.nombre;
+
+                    if (!userSchool) {
+                        // Crear registro base del colegio si es la primera vez que entra como colegio
+                        const fallbackName = sessionData.user.user_metadata?.colegio_nombre || sessionData.user.user_metadata?.nombre || 'Colegio Principal';
+                        const { data: createdSchool } = await supabase
+                            .from('colegios')
+                            .insert({
+                                nombre: fallbackName,
+                                email_contacto: authEmail,
+                                codigo_institucional: 'COL-' + Math.random().toString(36).substring(2, 7).toUpperCase(),
+                                created_by: sessionData.user.id
+                            })
+                            .select()
+                            .single();
+                        
+                        if (createdSchool) {
+                            assignedSchoolId = createdSchool.id;
+                            assignedSchoolName = createdSchool.nombre;
+                        }
+                    }
+
+                    await supabase.from('profiles').update({
+                        rol: targetRole,
+                        colegio_id: assignedSchoolId,
+                        colegio_nombre: assignedSchoolName
+                    }).eq('id', sessionData.user.id);
+                } else {
+                    await supabase.from('profiles').update({
+                        rol: targetRole
+                    }).eq('id', sessionData.user.id);
+                }
 
                 setSessionData(sessionData);
                 await refreshPerfil();
             }
         } catch (error: any) {
             console.error(error);
-            if (error.message?.toLowerCase().includes("limit") || error.message?.toLowerCase().includes("rate")) {
+            const msg = (error?.message || '').toLowerCase();
+            if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed') || error?.name === 'AuthRetryableFetchError') {
+                setError("🔌 No se puede conectar con el servidor de autenticación (Supabase). El proyecto puede estar pausado o sin conexión. Inténtalo más tarde.");
+            } else if (error.message?.toLowerCase().includes("limit") || error.message?.toLowerCase().includes("rate")) {
                 setError("🛑 Límite de seguridad alcanzado. Espera unos segundos.");
             } else if (error.message?.includes("Invalid login")) {
                 setError("Usuario o contraseña incorrectos.");
@@ -125,7 +221,7 @@ export function LoginPage() {
         try {
             setLoading(true);
             // Guardar el rol seleccionado para recuperarlo al volver del OAuth
-            const targetRole = (view === 'teacher-auth') ? 'profesor' : (view === 'family-auth') ? 'familia' : 'alumno';
+            const targetRole = (view === 'teacher-auth') ? 'profesor' : (view === 'family-auth') ? 'familia' : (view === 'school-auth') ? 'colegio' : 'alumno';
             localStorage.setItem('pendingRole', targetRole);
 
             const { error } = await supabase.auth.signInWithOAuth({
@@ -510,23 +606,46 @@ export function LoginPage() {
                     </div>
 
                     {/* Contenedor de Cuerpo - Para móvil centrado, para desktop paneles a la derecha */}
-                    <div className="w-full flex flex-col md:flex-row items-center justify-center md:justify-end md:flex-1 md:mt-24">
+                    <div className="w-full flex flex-col md:flex-row items-center justify-center md:justify-end md:flex-1 md:mt-16">
                         <div className="w-full max-w-sm md:max-w-md lg:max-w-lg mb-4 md:mb-0">
-                            <div className="grid grid-cols-1 gap-3 md:gap-5">
+                            <div className="grid grid-cols-1 gap-2.5 md:gap-3.5">
+                                {/* Colegio / Institución */}
+                                <button
+                                    onClick={() => {
+                                        setView('school-auth');
+                                        setIsSignUp(false);
+                                    }}
+                                    className="group flex items-center text-left bg-gradient-to-r from-indigo-900/40 via-white/10 to-white/5 hover:from-indigo-600/30 hover:to-indigo-500/20 border border-indigo-500/30 hover:border-indigo-400 rounded-2xl p-3.5 md:p-4 backdrop-blur-xl transition-all duration-300 relative overflow-hidden shadow-2xl"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-11 h-11 md:w-12 md:h-12 bg-indigo-500/30 rounded-xl flex items-center justify-center shrink-0 mr-3.5 border border-indigo-400/50 shadow-[0_0_20px_rgba(99,102,241,0.4)]">
+                                        <Building2 className="w-5 h-5 md:w-6 md:h-6 text-indigo-300" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">Colegio</h2>
+                                            <span className="text-[9px] font-black uppercase tracking-widest bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-full border border-indigo-400/30">Admin & IA</span>
+                                        </div>
+                                        <p className="text-[11px] text-indigo-200/70 font-medium">Gestión institucional y asistente RAG</p>
+                                    </div>
+                                    <ArrowRight className="w-5 h-5 text-indigo-300 opacity-50 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
+                                </button>
+
                                 {/* Docente */}
                                 <button
                                     onClick={() => {
                                         setView('teacher-auth');
                                         setIsSignUp(false);
                                     }}
-                                    className="group flex items-center text-left bg-white/10 hover:bg-white/20 border border-white/20 hover:border-cyan-400 rounded-2xl p-4 md:p-5 backdrop-blur-xl transition-all duration-300 relative overflow-hidden shadow-2xl"
+                                    className="group flex items-center text-left bg-white/10 hover:bg-white/20 border border-white/20 hover:border-cyan-400 rounded-2xl p-3.5 md:p-4 backdrop-blur-xl transition-all duration-300 relative overflow-hidden shadow-2xl"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <div className="w-12 h-12 md:w-14 md:h-14 bg-cyan-500/30 rounded-xl flex items-center justify-center shrink-0 mr-4 border border-cyan-400/50 shadow-[0_0_20px_rgba(34,211,238,0.3)]">
-                                        <GraduationCap className="w-6 h-6 md:w-7 md:h-7 text-cyan-300" />
+                                    <div className="w-11 h-11 md:w-12 md:h-12 bg-cyan-500/30 rounded-xl flex items-center justify-center shrink-0 mr-3.5 border border-cyan-400/50 shadow-[0_0_20px_rgba(34,211,238,0.3)]">
+                                        <GraduationCap className="w-5 h-5 md:w-6 md:h-6 text-cyan-300" />
                                     </div>
                                     <div className="flex-1">
-                                        <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Docente</h2>
+                                        <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">Docente</h2>
+                                        <p className="text-[11px] text-slate-300/70 font-medium">Proyectos, rúbricas y seguimiento</p>
                                     </div>
                                     <ArrowRight className="w-5 h-5 text-cyan-300 opacity-50 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
                                 </button>
@@ -537,14 +656,15 @@ export function LoginPage() {
                                         setView('student-auth');
                                         setIsSignUp(false);
                                     }}
-                                    className="group flex items-center text-left bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400 rounded-2xl p-4 md:p-5 backdrop-blur-xl transition-all duration-300 relative overflow-hidden shadow-2xl"
+                                    className="group flex items-center text-left bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400 rounded-2xl p-3.5 md:p-4 backdrop-blur-xl transition-all duration-300 relative overflow-hidden shadow-2xl"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <div className="w-12 h-12 md:w-14 md:h-14 bg-yellow-500/30 rounded-xl flex items-center justify-center shrink-0 mr-4 border border-yellow-400/50 shadow-[0_0_20px_rgba(250,204,21,0.3)]">
-                                        <User className="w-6 h-6 md:w-7 md:h-7 text-yellow-300" />
+                                    <div className="w-11 h-11 md:w-12 md:h-12 bg-yellow-500/30 rounded-xl flex items-center justify-center shrink-0 mr-3.5 border border-yellow-400/50 shadow-[0_0_20px_rgba(250,204,21,0.3)]">
+                                        <User className="w-5 h-5 md:w-6 md:h-6 text-yellow-300" />
                                     </div>
                                     <div className="flex-1">
-                                        <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Alumno</h2>
+                                        <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">Alumno</h2>
+                                        <p className="text-[11px] text-slate-300/70 font-medium">Proyectos, equipo y mentor Tico</p>
                                     </div>
                                     <ArrowRight className="w-5 h-5 text-yellow-300 opacity-50 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
                                 </button>
@@ -555,21 +675,22 @@ export function LoginPage() {
                                         setView('family-auth');
                                         setIsSignUp(false);
                                     }}
-                                    className="group flex items-center text-left bg-white/10 hover:bg-white/20 border border-white/20 hover:border-pink-400 rounded-2xl p-4 md:p-5 backdrop-blur-xl transition-all duration-300 relative overflow-hidden shadow-2xl"
+                                    className="group flex items-center text-left bg-white/10 hover:bg-white/20 border border-white/20 hover:border-pink-400 rounded-2xl p-3.5 md:p-4 backdrop-blur-xl transition-all duration-300 relative overflow-hidden shadow-2xl"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <div className="w-12 h-12 md:w-14 md:h-14 bg-pink-500/30 rounded-xl flex items-center justify-center shrink-0 mr-4 border border-pink-400/50 shadow-[0_0_20px_rgba(244,114,182,0.3)]">
-                                        <Users className="w-6 h-6 md:w-7 md:h-7 text-pink-300" />
+                                    <div className="w-11 h-11 md:w-12 md:h-12 bg-pink-500/30 rounded-xl flex items-center justify-center shrink-0 mr-3.5 border border-pink-400/50 shadow-[0_0_20px_rgba(244,114,182,0.3)]">
+                                        <Users className="w-5 h-5 md:w-6 md:h-6 text-pink-300" />
                                     </div>
                                     <div className="flex-1">
-                                        <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Familia</h2>
+                                        <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">Familia</h2>
+                                        <p className="text-[11px] text-slate-300/70 font-medium">Progreso y comunicación escolar</p>
                                     </div>
                                     <ArrowRight className="w-5 h-5 text-pink-300 opacity-50 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
                                 </button>
                             </div>
 
-                            <div className="mt-6 md:mt-8 text-center md:text-right">
-                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase relative z-30">Sistema Unificado V6.4.9</span>
+                            <div className="mt-4 md:mt-6 text-center md:text-right">
+                                <span className="text-[10px] md:text-xs text-white/40 font-bold tracking-widest uppercase relative z-30">AI-Tico Multi-Tenant V7.2.0</span>
                             </div>
                         </div>
                     </div>
@@ -578,18 +699,17 @@ export function LoginPage() {
         );
     }
 
+    const isSchool = view === 'school-auth';
     const isTeacher = view === 'teacher-auth';
     const isFamily = view === 'family-auth';
     const isStudent = view === 'student-auth';
-    const isTeacherOrFamily = isTeacher || isFamily;
 
     // Theme values for Auth form based on role
-    const themeColor = isTeacher ? 'cyan' : isFamily ? 'pink' : 'yellow';
-    const ringColorClass = isTeacher ? 'focus:ring-cyan-500/50' : isFamily ? 'focus:ring-pink-500/50' : 'focus:ring-yellow-500/50';
-    const borderColorClassActive = isTeacher ? 'focus:border-cyan-500' : isFamily ? 'focus:border-pink-500' : 'focus:border-yellow-500';
-    const btnBgClass = isTeacher ? 'bg-cyan-600 hover:bg-cyan-500 shadow-[0_0_20px_rgba(8,145,178,0.4)]' : isFamily ? 'bg-pink-600 hover:bg-pink-500 shadow-[0_0_20px_rgba(219,39,119,0.4)]' : 'bg-yellow-600 hover:bg-yellow-500 shadow-[0_0_20px_rgba(202,138,4,0.4)]';
-    const iconColorClass = isTeacher ? 'text-cyan-400' : isFamily ? 'text-pink-400' : 'text-yellow-400';
-    const iconBgClass = isTeacher ? 'bg-cyan-500/20 border-cyan-500/30' : isFamily ? 'bg-pink-500/20 border-pink-500/30' : 'bg-yellow-500/20 border-yellow-500/30';
+    const ringColorClass = isSchool ? 'focus:ring-indigo-500/50' : isTeacher ? 'focus:ring-cyan-500/50' : isFamily ? 'focus:ring-pink-500/50' : 'focus:ring-yellow-500/50';
+    const borderColorClassActive = isSchool ? 'focus:border-indigo-500' : isTeacher ? 'focus:border-cyan-500' : isFamily ? 'focus:border-pink-500' : 'focus:border-yellow-500';
+    const btnBgClass = isSchool ? 'bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.4)]' : isTeacher ? 'bg-cyan-600 hover:bg-cyan-500 shadow-[0_0_20px_rgba(8,145,178,0.4)]' : isFamily ? 'bg-pink-600 hover:bg-pink-500 shadow-[0_0_20px_rgba(219,39,119,0.4)]' : 'bg-yellow-600 hover:bg-yellow-500 shadow-[0_0_20px_rgba(202,138,4,0.4)]';
+    const iconColorClass = isSchool ? 'text-indigo-400' : isTeacher ? 'text-cyan-400' : isFamily ? 'text-pink-400' : 'text-yellow-400';
+    const iconBgClass = isSchool ? 'bg-indigo-500/20 border-indigo-500/30' : isTeacher ? 'bg-cyan-500/20 border-cyan-500/30' : isFamily ? 'bg-pink-500/20 border-pink-500/30' : 'bg-yellow-500/20 border-yellow-500/30';
 
     return (
         <div className="h-[100dvh] w-full bg-[#0A0F1A] flex items-center justify-center p-4 relative overflow-hidden font-sans">
@@ -605,6 +725,9 @@ export function LoginPage() {
                             setEmail('');
                             setPassword('');
                             setStudentName('');
+                            setSchoolName('');
+                            setSchoolCity('');
+                            setSchoolCode('');
                             setRoomCode('');
                         }}
                         className="absolute top-5 left-5 text-slate-400 hover:text-white transition-colors bg-white/5 p-2 rounded-full border border-white/5 hover:border-white/20"
@@ -612,22 +735,22 @@ export function LoginPage() {
                         <ArrowRight className="w-4 h-4 rotate-180" />
                     </button>
 
-                    <div className="flex flex-col items-center mb-6 mt-2">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${iconBgClass} mb-4`}>
-                            {isFamily ? <Users className={`w-6 h-6 ${iconColorClass}`} /> : isTeacher ? <GraduationCap className={`w-6 h-6 ${iconColorClass}`} /> : <User className={`w-6 h-6 ${iconColorClass}`} />}
+                    <div className="flex flex-col items-center mb-5 mt-1">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${iconBgClass} mb-3`}>
+                            {isSchool ? <Building2 className={`w-6 h-6 ${iconColorClass}`} /> : isFamily ? <Users className={`w-6 h-6 ${iconColorClass}`} /> : isTeacher ? <GraduationCap className={`w-6 h-6 ${iconColorClass}`} /> : <User className={`w-6 h-6 ${iconColorClass}`} />}
                         </div>
                         <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
-                            {isFamily ? 'Acceso Familia' : isTeacher ? 'Acceso Docente' : 'Acceso Alumno'}
+                            {isSchool ? 'Acceso Colegio' : isFamily ? 'Acceso Familia' : isTeacher ? 'Acceso Docente' : 'Acceso Alumno'}
                         </h1>
                         <p className="text-slate-400 text-xs mt-1">
-                            {isSignUp ? 'Crear nueva cuenta' : 'Ingresa tus credenciales'}
+                            {isSignUp ? (isSchool ? 'Registrar nueva institución educativa' : 'Crear nueva cuenta') : 'Ingresa tus credenciales'}
                         </p>
                     </div>
 
-                    <form onSubmit={handleAuth} className="space-y-3 md:space-y-4">
+                    <form onSubmit={handleAuth} className="space-y-3 md:space-y-3.5">
 
                         {/* Social Login (compact) - Visible para todos los roles */}
-                        <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div className="grid grid-cols-2 gap-2 mb-1">
                             <button
                                 type="button"
                                 onClick={() => handleSocialLogin('google')}
@@ -646,10 +769,49 @@ export function LoginPage() {
                             </button>
                         </div>
 
-                        {/* Nombre Completo (solo en registro) */}
-                        {isSignUp && (
+                        {/* Campos específicos de Registro de Colegio */}
+                        {isSignUp && isSchool && (
+                            <>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1">Nombre del Colegio / Centro</label>
+                                    <input
+                                        type="text"
+                                        value={schoolName}
+                                        onChange={(e) => setSchoolName(e.target.value)}
+                                        className={`w-full px-3.5 py-2 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-xs placeholder:text-slate-600`}
+                                        placeholder="Ej: CEIP Cervantes / Colegio San José"
+                                        required
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1">Ciudad / Localidad</label>
+                                        <input
+                                            type="text"
+                                            value={schoolCity}
+                                            onChange={(e) => setSchoolCity(e.target.value)}
+                                            className={`w-full px-3 py-2 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-xs placeholder:text-slate-600`}
+                                            placeholder="Madrid"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1">Responsable / Cargo</label>
+                                        <input
+                                            type="text"
+                                            value={studentName}
+                                            onChange={(e) => setStudentName(e.target.value)}
+                                            className={`w-full px-3 py-2 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-xs placeholder:text-slate-600`}
+                                            placeholder="Dirección / Jefatura"
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Nombre Completo (solo en registro no-colegio) */}
+                        {isSignUp && !isSchool && (
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Nombre Completo</label>
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1">Nombre Completo</label>
                                 <input
                                     type="text"
                                     value={studentName}
@@ -663,24 +825,26 @@ export function LoginPage() {
 
                         {/* Email */}
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Email</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1">
+                                {isSchool ? 'Email Institucional / Admin' : 'Email'}
+                            </label>
                             <input
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className={`w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
-                                placeholder="correo@ejemplo.com"
+                                className={`w-full px-3.5 py-2 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
+                                placeholder={isSchool ? 'direccion@colegio.edu' : 'correo@ejemplo.com'}
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Contraseña</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1">Contraseña</label>
                             <input
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className={`w-full px-4 py-2.5 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
+                                className={`w-full px-3.5 py-2 bg-[#0B101E]/50 border border-white/10 rounded-xl focus:ring-2 ${ringColorClass} ${borderColorClassActive} text-white outline-none transition-all text-sm placeholder:text-slate-600`}
                                 placeholder="••••••••"
                                 required
                             />
@@ -696,15 +860,15 @@ export function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className={`w-full py-3 mt-2 rounded-xl font-bold text-sm text-white transition-all ${btnBgClass} disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                            className={`w-full py-3 mt-1 rounded-xl font-bold text-sm text-white transition-all ${btnBgClass} disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
                         >
                             {loading ? (
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : null}
-                            {loading ? 'Procesando...' : sessionData ? 'Entrando...' : isSignUp ? 'Crear Cuenta' : 'Entrar'}
+                            {loading ? 'Procesando...' : sessionData ? 'Entrando...' : isSignUp ? (isSchool ? 'Registrar Colegio' : 'Crear Cuenta') : 'Entrar'}
                         </button>
 
-                        <div className="text-center pt-2 space-y-1">
+                        <div className="text-center pt-1.5 space-y-1">
                             {!isSignUp && (
                                 <button
                                     type="button"
@@ -722,7 +886,7 @@ export function LoginPage() {
                                 onClick={() => setIsSignUp(!isSignUp)}
                                 className="text-slate-400 hover:text-white text-xs font-medium transition-colors"
                             >
-                                {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+                                {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : (isSchool ? '¿Nuevo colegio? Regístrate aquí' : '¿No tienes cuenta? Regístrate')}
                             </button>
                         </div>
                     </form>

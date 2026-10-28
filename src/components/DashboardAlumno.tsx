@@ -94,6 +94,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
   useGroupTracking(grupoReal?.id || 0);
   const [nombreProyecto, setNombreProyecto] = useState<string>(''); // New state for AI context
   const [asignaturaProyecto, setAsignaturaProyecto] = useState<string>('');
+  const [colegioIdProyecto, setColegioIdProyecto] = useState<string>('');
   const [contextoProyecto, setContextoProyecto] = useState<string>(''); // NEW: AI Context from Project
   const [rubricaProyecto, setRubricaProyecto] = useState<Rubrica | null>(null);
   const [fasesProyecto, setFasesProyecto] = useState<ProyectoFase[]>([]);
@@ -299,7 +300,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       if (!targetProjectId && roomCode) {
         const { data: proyecto, error: errorProyecto } = await supabase
           .from('proyectos')
-          .select('id, nombre, asignatura, contexto_ia, rubrica, fases')
+          .select('id, nombre, asignatura, contexto_ia, rubrica, fases, colegio_id')
           .eq('codigo_sala', roomCode)
           .single();
 
@@ -310,6 +311,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
         targetProjectId = proyecto.id;
         setNombreProyecto(proyecto.nombre); // Capture name from Room Code resolution
         setAsignaturaProyecto(proyecto.asignatura || '');
+        setColegioIdProyecto(proyecto.colegio_id || '');
         setContextoProyecto(proyecto.contexto_ia || ''); // Capture AI context
         setRubricaProyecto(proyecto.rubrica as Rubrica);
         setFasesProyecto(proyecto.fases as ProyectoFase[] || []);
@@ -317,10 +319,11 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
 
       if (targetProjectId && !nombreProyecto) {
         // Fetch project details if we have ID but not details (e.g. login via profile)
-        const { data: pData } = await supabase.from('proyectos').select('nombre, asignatura, contexto_ia, rubrica, fases').eq('id', targetProjectId).single();
+        const { data: pData } = await supabase.from('proyectos').select('nombre, asignatura, contexto_ia, rubrica, fases, colegio_id').eq('id', targetProjectId).single();
         if (pData) {
           setNombreProyecto(pData.nombre);
           setAsignaturaProyecto(pData.asignatura || '');
+          setColegioIdProyecto(pData.colegio_id || '');
           setContextoProyecto(pData.contexto_ia || '');
           setRubricaProyecto(pData.rubrica as Rubrica);
           setFasesProyecto(pData.fases as ProyectoFase[] || []);
@@ -1481,7 +1484,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
       <main className={`max-w-7xl mx-auto px-6 w-full pb-24 md:pb-8 ${vistaActiva === 'chat' ? 'flex-1 overflow-hidden py-4' : 'py-8 flex-none'} relative`}>
         {/* Etiqueta de Versión para el Alumno */}
         <div className="absolute top-2 right-6 text-[8px] font-bold text-slate-300 uppercase tracking-widest pointer-events-none opacity-40">
-          V6.7.2
+          V7.1.2
         </div>
         {vistaActiva === 'calendario' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1667,7 +1670,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
                            <Award className="w-3.5 h-3.5 text-amber-500" />
-                           <span className="text-[10px] font-black text-slate-400 leading-none">V6.7.2</span>
+                           <span className="text-[10px] font-black text-slate-400 leading-none">V7.1.2</span>
                            <span className="text-[10px] font-black text-slate-400 uppercase">{t.puntos_maximos} Puntos</span>
                         </div>
                         <button
@@ -1933,6 +1936,7 @@ export function DashboardAlumno({ alumno, onLogout }: DashboardAlumnoProps) {
                       mostrarEjemplo={showExample} 
                       proyectoNombre={nombreProyecto} 
                       contextoIA={contextoProyecto} 
+                      colegioId={colegioIdProyecto}
                     />
                   </div>
                 </div>

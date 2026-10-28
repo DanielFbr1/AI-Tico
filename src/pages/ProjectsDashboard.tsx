@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Proyecto, Organizacion } from '../types';
-import { Layout, ArrowRight, Users, Key, Plus, Loader2, Sparkles, LogOut, RefreshCw, Trash2, Folder, BookOpen, GraduationCap, School, Search, X, MessageCircle, ChevronLeft } from 'lucide-react';
+import { Layout, ArrowRight, Users, Key, Plus, Loader2, Sparkles, LogOut, RefreshCw, Trash2, Folder, BookOpen, GraduationCap, School, Search, X, MessageCircle, ChevronLeft, Building2 } from 'lucide-react';
 import { PROYECTOS_MOCK } from '../data/mockData';
 import { ModalCrearProyecto } from '../components/ModalCrearProyecto';
 import { ModalUnirseProyectoProfesor } from '../components/ModalUnirseProyectoProfesor';
@@ -19,7 +19,7 @@ interface ProjectsDashboardProps {
 import { useAuth } from '../context/AuthContext';
 
 export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
-    const { signOut: authSignOut, session } = useAuth();
+    const { signOut: authSignOut, session, perfil } = useAuth();
     const [proyectos, setProyectos] = useState<Proyecto[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSeeding, setIsSeeding] = useState(false);
@@ -510,13 +510,28 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
                             <Layout className="w-4 h-4 md:w-7 md:h-7" />
                         </div>
                         <div className="overflow-hidden">
-                            <h1 className="text-base md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1 truncate">
-                                Tus Proyectos
-                            </h1>
-                            <p className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1 md:gap-2">
-                                <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                {proyectos.length} proyectos en total
-                            </p>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-base md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1 truncate">
+                                    Tus Proyectos
+                                </h1>
+                                {perfil?.colegio_nombre && (
+                                    <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-200/80 rounded-full text-indigo-700 text-xs font-bold shadow-xs ml-2">
+                                        <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                        <span className="truncate max-w-[200px]">{perfil.colegio_nombre}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <p className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1 md:gap-2">
+                                    <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    {proyectos.length} proyectos en total
+                                </p>
+                                {perfil?.colegio_nombre && (
+                                    <span className="sm:hidden text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                                        🏫 {perfil.colegio_nombre}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -694,8 +709,17 @@ export function ProjectsDashboard({ onSelectProject }: ProjectsDashboardProps) {
 
                                                 <div className="flex flex-col mb-4 relative z-10">
                                                     <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors tracking-tight leading-tight">{proyecto.nombre}</h3>
-                                                    <div className="flex items-center gap-2 mt-1">
+                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
                                                         <p className="text-slate-400 font-medium text-[11px] uppercase tracking-widest opacity-70">{proyecto.tipo}</p>
+                                                        {proyecto.colegio && (
+                                                            <>
+                                                                <span className="text-slate-200">•</span>
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50/80 px-2 py-0.5 rounded-md border border-indigo-100/70">
+                                                                    <Building2 className="w-3 h-3 text-indigo-500 shrink-0" />
+                                                                    <span className="truncate max-w-[140px]">{proyecto.colegio}</span>
+                                                                </span>
+                                                            </>
+                                                        )}
                                                         {proyecto.asignatura && (
                                                             <>
                                                                 <span className="text-slate-200">•</span>

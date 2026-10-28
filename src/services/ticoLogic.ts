@@ -295,8 +295,8 @@ export const generateStickerContext = async (input: string, resourceType?: strin
         
         Response format: ONLY 1 sentence describing the visual subject in a very cute and friendly way.`;
 
-        // Use llama-3.1-8b-instant for FASTER translation
-        const finalPrompt = await callGroq([{ role: 'user', content: prompt }], false, undefined, 'llama-3.1-8b-instant');
+        // Use openai/gpt-oss-20b for FASTER translation
+        const finalPrompt = await callGroq([{ role: 'user', content: prompt }], false, undefined, 'openai/gpt-oss-20b');
 
         console.log("✅ Smart Prompt Ready:", finalPrompt);
         return { englishContext: finalPrompt };

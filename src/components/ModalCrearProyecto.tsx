@@ -3,6 +3,7 @@ import { X, Plus, Users, Layout, Sparkles, Bot, GraduationCap } from 'lucide-rea
 import { Proyecto, ProyectoEstado, Organizacion } from '../types';
 import { AsistenteDisenoProyecto } from './AsistenteDisenoProyecto';
 import { ASIGNATURAS } from '../data/asignaturas';
+import { ColegioSelector } from './ui/ColegioSelector';
 
 interface ModalCrearProyectoProps {
     onClose: () => void;
@@ -18,6 +19,7 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
     const [tipo, setTipo] = useState('Aprendizaje Basado en Proyectos');
     const [clase, setClase] = useState('');
     const [colegio, setColegio] = useState('');
+    const [colegioId, setColegioId] = useState<string | undefined>();
     const [curso, setCurso] = useState('');
     const [etapa, setEtapa] = useState('');
     const [asignatura, setAsignatura] = useState('');
@@ -33,6 +35,7 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
                 tipo,
                 clase: clase.trim(),
                 colegio: colegio.trim(),
+                colegio_id: colegioId,
                 curso: curso.trim(),
                 etapa: etapa.trim(),
                 estado: 'En preparación' as ProyectoEstado,
@@ -182,13 +185,15 @@ export function ModalCrearProyecto({ onClose, onCrear, nombreUsuario, clasesExis
                                         <div className="space-y-3">
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Colegio</label>
-                                                    <input
-                                                        type="text"
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Colegio / Institución</label>
+                                                    <ColegioSelector
                                                         value={colegio}
-                                                        onChange={(e) => setColegio(e.target.value)}
-                                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-sm"
-                                                        placeholder="IE..."
+                                                        colegioId={colegioId}
+                                                        onChange={(nombre, id) => {
+                                                            setColegio(nombre);
+                                                            setColegioId(id);
+                                                        }}
+                                                        placeholder="Buscar centro..."
                                                         required
                                                     />
                                                 </div>

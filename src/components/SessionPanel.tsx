@@ -13,7 +13,7 @@ interface SessionPanelProps {
 }
 
 export function SessionPanel({ onSelectClase, nombreProfesor, initialPath = [] }: SessionPanelProps) {
-    const { user, signOut } = useAuth();
+    const { user, signOut, perfil } = useAuth();
     const [loading, setLoading] = useState(false);
     const [items, setItems] = useState<Organizacion[]>([]);
     const [path, setPath] = useState<Organizacion[]>(initialPath);
@@ -277,10 +277,18 @@ export function SessionPanel({ onSelectClase, nombreProfesor, initialPath = [] }
                 <div className="bg-white/80 backdrop-blur-md p-6 rounded-[2rem] shadow-sm border border-slate-100/50">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                                <GraduationCap className="w-8 h-8 md:w-10 md:h-10 text-slate-800" />
-                                Sesión de {nombreProfesor}
-                            </h1>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                                    <GraduationCap className="w-8 h-8 md:w-10 md:h-10 text-slate-800" />
+                                    Sesión de {nombreProfesor}
+                                </h1>
+                                {perfil?.colegio_nombre && (
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-200/80 rounded-full text-indigo-700 text-xs font-bold shadow-xs">
+                                        <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                        <span>{perfil.colegio_nombre}</span>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Breadcrumb */}
                             <div className="flex flex-wrap items-center gap-2 mt-4 text-sm font-medium">

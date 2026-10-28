@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, Sparkles, AlertCircle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { generarRespuestaIA } from '../services/ai';
+import { ColegioRAGService } from '../services/colegioRAGService';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
@@ -18,9 +19,10 @@ interface MentorIAProps {
     proyectoId: string;
     departamento: string;
     miembro: string;
+    colegioId?: string; // Opcional: si existe, enriquece el contexto con RAG institucional
 }
 
-export function MentorIA({ grupoId, proyectoId, departamento, miembro }: MentorIAProps) {
+export function MentorIA({ grupoId, proyectoId, departamento, miembro, colegioId }: MentorIAProps) {
     const [mensajes, setMensajes] = useState<Mensaje[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -201,16 +203,38 @@ export function MentorIA({ grupoId, proyectoId, departamento, miembro }: MentorI
             if (sendError) throw sendError;
             if (newMsg) setMensajes(prev => [...prev, newMsg]);
 
-            // 2. AI Generation
+            // 2. AI Generation — enriquecer con RAG del colegio si está disponible
             const historial = mensajes.slice(-50).map(m => ({
                 role: m.tipo === 'alumno' ? 'user' as const : 'assistant' as const,
                 content: m.contenido
             }));
 
+            // Buscar fragmentos relevantes del colegio si hay ID disponible
+            let contextoRAG = '';
+            if (colegioId) {
+                try {
+                    const ragResults = await ColegioRAGService.searchKnowledge(colegioId, userMsg, 3);
+                    const relevantes = ragResults.filter(r => r.score >= 0.25);
+                    if (relevantes.length > 0) {
+                        contextoRAG = `\n\n---\nINFORMACIÓN DEL CENTRO EDUCATIVO (documentos oficiales):\n`;
+                        relevantes.forEach((r, i) => {
+                            const doc = r.chunk.metadata?.nombre_archivo || 'Documento oficial';
+                            contextoRAG += `[Fuente ${i + 1}: ${doc}]\n${r.chunk.contenido}\n`;
+                        });
+                        contextoRAG += '---\n';
+                    }
+                } catch (ragErr) {
+                    console.warn('RAG no disponible, usando solo contexto base:', ragErr);
+                }
+            }
+
+            // Combinar contexto del proyecto + contexto RAG institucional
+            const contextoCompleto = [contextoIA, contextoRAG].filter(Boolean).join('\n');
+
             // Safe AI Call
             let respuesta = '';
             try {
-                respuesta = await generarRespuestaIA(userMsg, departamento, "Proyecto ABP", historial, hitos, contextoIA, configuracionGrupo);
+                respuesta = await generarRespuestaIA(userMsg, departamento, "Proyecto ABP", historial, hitos, contextoCompleto, configuracionGrupo);
             } catch (aiErr) {
                 console.error("AI Error:", aiErr);
                 respuesta = "Lo siento, tuve un problema pensando. ¿Me lo repites?";

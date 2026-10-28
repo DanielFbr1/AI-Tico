@@ -91,6 +91,7 @@ export interface Proyecto {
     codigo_sala: string;
     clase?: string;
     colegio?: string;
+    colegio_id?: string;
     curso?: string;
     etapa?: string;
     organizacion_clase_id?: string;
@@ -230,4 +231,83 @@ export interface Organizacion {
     tipo: 'curso' | 'colegio' | 'etapa' | 'clase';
     parent_id: string | null;
     created_at?: string;
+}
+
+// --- MULTI-TENANT COLEGIOS & RAG TYPES ---
+
+export interface ColegioConfigIA {
+    nombre_asistente: string;
+    tono: string;
+    instrucciones_especificas: string;
+    permitir_busqueda_web: boolean;
+}
+
+export interface Colegio {
+    id: string;
+    nombre: string;
+    codigo_institucional?: string;
+    direccion?: string;
+    ciudad?: string;
+    pais?: string;
+    telefono?: string;
+    email_contacto?: string;
+    logo_url?: string;
+    etapas_educativas?: string[];
+    configuracion_ia?: ColegioConfigIA;
+    created_by?: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface ColegioDocumento {
+    id: string;
+    colegio_id: string;
+    nombre_archivo: string;
+    tipo_archivo: 'pdf' | 'docx' | 'xlsx' | 'txt' | 'otro';
+    tamano_bytes?: number;
+    total_chunks?: number;
+    estado: 'procesando' | 'indexado' | 'error';
+    metadata?: Record<string, any>;
+    file_url?: string;
+    subido_por?: string;
+    created_at: string;
+}
+
+export interface ColegioChunk {
+    id: string;
+    colegio_id: string;
+    documento_id: string;
+    chunk_index: number;
+    contenido: string;
+    embedding?: number[];
+    metadata?: {
+        nombre_archivo?: string;
+        tipo_archivo?: string;
+        pagina?: number;
+        total_chunks?: number;
+        [key: string]: any;
+    };
+    created_at?: string;
+}
+
+export interface FuenteRAG {
+    tipo: 'documento' | 'web' | 'conocimiento_general';
+    titulo: string;
+    snippet?: string;
+    url?: string;
+    documento_id?: string;
+    score?: number;
+}
+
+export interface ColegioMensajeIA {
+    id: string;
+    colegio_id: string;
+    usuario_id?: string;
+    remitente_nombre?: string;
+    rol_remitente?: string;
+    pregunta: string;
+    respuesta: string;
+    fuentes_usadas: FuenteRAG[];
+    metadata?: Record<string, any>;
+    created_at: string;
 }
