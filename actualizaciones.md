@@ -2,6 +2,13 @@
 
 Este es el registro oficial de cambios y mejoras del proyecto AI-Tico.
 
+## [V7.1.9] - 2026-10-28 — Diagnóstico: Chat IA caído ("¡Cuaack!..." / "Hubo un error...")
+- **Causa raíz**: La versión desplegada (último commit 2026-06-12) usa el modelo `llama-3.3-70b-versatile`, que Groq ya **no ofrece** (404 `model_not_found`). Todas las llamadas fallan → alumno ve "¡Cuaack!..." y docente (modo JSON) ve "Hubo un error...".
+- **Verificado**: La API key de Groq es válida; `openai/gpt-oss-120b` y `openai/gpt-oss-20b` responden OK (modo texto y JSON). CORS de Groq OK.
+- **Fix**: El código local (sin commitear) ya usaba `gpt-oss`. Corregido el 3er modelo fallback `qwen/qwen3.6-27b` (ya no existe) → `qwen/qwen3.8-27b` en `ai.ts` y `aiProvider.ts`.
+- **Pendiente**: Hacer commit + push / redeploy para que la versión online use los modelos nuevos.
+- **Versión**: Actualizada a **V7.1.9**.
+
 ## [V6.7.2] - 2026-06-12
 ### Mejora SEO Completa
 - **Title Tag Optimizado**: Cambiado de "AI-Tico" a "AI-Tico | Plataforma Educativa con IA para Docentes y Alumnos" para mejorar el posicionamiento en buscadores.

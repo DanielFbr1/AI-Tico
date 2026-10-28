@@ -17,88 +17,79 @@ export interface Mensaje {
     content: string;
 }
 
-// Helper para llamadas a Groq con reintentos
+const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b';
+const GROQ_FALLBACK_MODELS = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'];
+
+// Helper para llamadas a Groq con reintentos y fallback de modelos
 export async function callGroq(
     messages: Mensaje[],
     jsonMode: boolean = false,
     signal?: AbortSignal,
-    model: string = 'llama-3.3-70b-versatile',
-    retries: number = 2
+    model: string = DEFAULT_GROQ_MODEL,
+    retries: number = 1
 ): Promise<string> {
     if (!GROQ_API_KEY) return "Error: API Key no configurada.";
 
-    for (let i = 0; i <= retries; i++) {
-        try {
-            const response = await fetch(GROQ_API_URL, {
-                method: 'POST',
-                signal: signal,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${GROQ_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: model,
-                    messages: messages,
-                    temperature: 0.7,
-                    max_tokens: 1024,
-                    response_format: jsonMode ? { type: "json_object" } : undefined
-                })
-            });
+    const modelsToTry = [model, ...GROQ_FALLBACK_MODELS.filter(m => m !== model)];
 
-            if (response.status === 429 && i < retries) {
-                // Incremento de espera: 3s, 6s...
-                const waitTime = (i + 1) * 3000;
-                console.warn(`⚠️ Groq Rate Limit (429). Reintentando en ${waitTime}ms... (Intento ${i + 1}/${retries})`);
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-                continue;
-            }
+    for (const currentModel of modelsToTry) {
+        for (let i = 0; i <= retries; i++) {
+            try {
+                const response = await fetch(GROQ_API_URL, {
+                    method: 'POST',
+                    signal: signal,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${GROQ_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: currentModel,
+                        messages: messages,
+                        temperature: 0.7,
+                        max_tokens: 1024,
+                        response_format: jsonMode ? { type: "json_object" } : undefined
+                    })
+                });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error("Error Groq API:", errorData);
-
-                // Si es 429 y nos quedan reintentos, esperamos y seguimos
                 if (response.status === 429 && i < retries) {
-                    const waitTime = (i + 1) * 8000; // Espera aún más agresiva (8s, 16s...)
-                    console.warn(`⚠️ Groq Rate Limit (429). Reintentando en ${waitTime}ms...`);
+                    const waitTime = (i + 1) * 2000;
+                    console.warn(`⚠️ Groq Rate Limit (429) en ${currentModel}. Reintentando en ${waitTime}ms...`);
                     await new Promise(resolve => setTimeout(resolve, waitTime));
                     continue;
                 }
 
-                throw new Error(`Groq Error: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const content = data.choices[0]?.message?.content || "";
-
-            if (jsonMode) {
-                try {
-                    JSON.parse(content); // Validar que es JSON
-                } catch (e) {
-                    console.error("Groq no devolvió JSON válido:", content);
-                    if (i < retries) continue; // Reintentar si no es JSON
-                    throw new Error("Invalid JSON response from Groq");
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.warn(`Error Groq API (${currentModel}):`, errorData);
+                    // Si falla el modelo (ej: 404), pasar al siguiente modelo
+                    break;
                 }
-            }
 
-            return content;
-        } catch (error: any) {
-            if (error.name === 'AbortError') throw error;
-            if (i === retries) {
-                console.error("Error definitivo calling Groq:", error);
+                const data = await response.json();
+                const content = data.choices[0]?.message?.content || "";
 
-                // Si esperamos JSON, debemos lanzar error para que el catch del llamador lo gestione
                 if (jsonMode) {
-                    throw error;
+                    try {
+                        JSON.parse(content);
+                    } catch (e) {
+                        if (i < retries) continue;
+                        break;
+                    }
                 }
 
-                return "¡Cuaack! Mi cerebro va muy rápido y se ha sobrecalentado. 🧠🔥 ¡Dame un segundito y vuelve a preguntarme!";
+                return content;
+            } catch (error: any) {
+                if (error.name === 'AbortError') throw error;
+                console.warn(`Error llamando a Groq (${currentModel}):`, error);
+                break;
             }
-            // Espera proporcional antes de reintentar
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
         }
     }
-    throw new Error("Tico está agotado tras múltiples intentos.");
+
+    if (jsonMode) {
+        throw new Error("Invalid JSON response from Groq");
+    }
+    return "¡Cuaack! Mi cerebro va muy rápido y se ha sobrecalentado. 🧠🔥 ¡Dame un segundito y vuelve a preguntarme!";
 }
 
 // --- MENTOR IA (Chat Principal) ---
@@ -372,7 +363,7 @@ Devuelve OBLIGATORIAMENTE un JSON con esta estructura exacta:
 
 Cada descripción debe tener 1-2 frases concretas y específicas para ese nivel. Responde SOLO con el JSON, sin texto adicional.`;
 
-    const response = await callGroq([{ role: 'user', content: prompt }], true, undefined, 'llama-3.1-8b-instant');
+    const response = await callGroq([{ role: 'user', content: prompt }], true, undefined, 'openai/gpt-oss-20b');
     try {
         const parsed = JSON.parse(response);
 
