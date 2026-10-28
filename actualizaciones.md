@@ -1,5 +1,10 @@
 # Registro de Actualizaciones - AI-Tico (Anteriormente Dashboard Docente y Feedback)
 
+## [V7.2.3] - 2026-10-28 — Redespliegue en Producción Vercel con Gemini Activo
+- **Redeploy en Vercel**: Compilación y despliegue del proyecto en producción tras la configuración de la variable pública `VITE_GEMINI_API_KEY` con visibilidad `config` en el panel de Vercel.
+- **Motor Activo en Producción**: Google Gemini 3.5 Flash queda operativo tanto en local como en la nube (`https://ai-tico.vercel.app`) con fallback automático a Groq.
+- **Versión**: Actualizada a **V7.2.3**.
+
 ## [V7.2.2] - 2026-10-28 — Integración de Google Gemini 3.5 Flash como Motor Principal con Fallback a Groq
 - **Motor Principal Google Gemini 3.5 Flash**: Conectada la API nativa de Google Gemini (`gemini-3.5-flash`) en `src/services/ai.ts` con la clave de Google AI Studio del usuario.
 - **Arquitectura Híbrida Inteligente (`callAI`)**: Todas las funciones de generación (`generarRespuestaIA`, `generarChatDocente`, `generarConfiguracionTico`, etc.) invocan primero a Gemini 3.5 Flash para obtener máxima profundidad enciclopédica, razonamiento pedagógico y comprensión contextual; si Gemini alcanza su límite o experimenta congestión, conmuta automáticamente a Groq (`openai/gpt-oss-120b`).
